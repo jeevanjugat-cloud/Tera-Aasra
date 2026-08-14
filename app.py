@@ -46,11 +46,10 @@ try:
 except Exception as e:
     st.error("Supabase ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ।")
 
-# --- ਨਵੀਂ ਡਿਜ਼ਾਈਨ ਕੀਤੀ ਰਸੀਦ (EXACT HARD COPY MATCH) ---
+# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ ---
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
-
     amount_text = f"Rs. {amount}/-" if don_type == "ਪੈਸੇ (Monetary)" else f"{item_details}"
     amount_in_words = f"Rupees {amount} Only" if don_type == "ਪੈਸੇ (Monetary)" else item_details
     display_phone = phone if phone else "________________"
@@ -65,11 +64,10 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; padding: 20px; }}
             .receipt-box {{
                 max-width: 850px; margin: auto; padding: 20px 30px;
-                background-color: #F8F1D1; /* ਪੀਲਾ ਪਿਛੋਕੜ (Yellow background) */
-                border-top: 25px solid #4A1B15; /* ਮੈਰੂਨ ਬਾਰਡਰ (Maroon border) */
+                background-color: #F8F1D1; 
+                border-top: 25px solid #4A1B15; 
                 border-bottom: 25px solid #4A1B15;
-                color: #333; position: relative;
-                box-sizing: border-box;
+                color: #333; position: relative; box-sizing: border-box;
             }}
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
@@ -79,30 +77,17 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
             .sub-title-en {{ font-size: 14px; font-weight: bold; color: #0F4C81; margin: 5px 0; }}
             .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
-
-            .reg-row {{ 
-                display: flex; justify-content: space-between; 
-                border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; 
-                padding: 6px 0; font-size: 14px; font-weight: bold; margin-bottom: 15px; margin-top: 10px;
-            }}
-
+            .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 6px 0; font-size: 14px; font-weight: bold; margin-bottom: 15px; margin-top: 10px; }}
             .main-content {{ font-size: 16px; line-height: 2.2; font-weight: bold; color: #222; }}
             .row-inline {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
             .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 18px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 15px; font-weight: bold; }}
             .receipt-no {{ color: #D92B2B; font-size: 22px; font-weight: bold; font-family: monospace; }}
-
             .footer-flex {{ display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; }}
             .bank-details-box {{ font-size: 12px; font-weight: bold; line-height: 1.5; background-color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px; width: 65%; }}
             .bank-details-box span {{ color: #D92B2B; }}
-            
             .amount-box {{ font-size: 22px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 25px; border-radius: 20px; background-color: rgba(255,255,255,0.5); display: inline-block; }}
             .sign-box {{ text-align: right; margin-top: 20px; font-size: 14px; padding-bottom: 15px; }}
-
-            .bottom-note {{ 
-                position: absolute; bottom: 0; left: 0; right: 0;
-                background-color: #4A1B15; color: white; text-align: center; 
-                font-size: 12px; padding: 4px 0; font-weight: bold;
-            }}
+            .bottom-note {{ position: absolute; bottom: 0; left: 0; right: 0; background-color: #4A1B15; color: white; text-align: center; font-size: 12px; padding: 4px 0; font-weight: bold; }}
             @media print {{ body {{ padding: 0; }} .receipt-box {{ border: 2px solid #4A1B15; box-shadow: none; }} }}
         </style>
     </head>
@@ -118,31 +103,19 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
                     <p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p>
                 </div>
             </div>
-
             <div class="reg-row">
                 <div>Regd. No.: ASR/26/2024-25 &nbsp;|&nbsp; PAN NO. ABKTS7853G</div>
                 <div>On Account of: <span class="field-value" style="font-size:16px;">{on_account_of}</span></div>
             </div>
-
             <div class="main-content">
                 <div class="row-inline">
                     <div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 20px;">{receipt_no:04d}</span></div>
                     <div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
                 </div>
-                
-                <div style="margin-top: 10px;">
-                    ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span>
-                </div>
-                
-                <div style="margin-top: 10px;">
-                    ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।
-                </div>
-                
-                <div style="margin-top: 10px;">
-                    ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆਰ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span>
-                </div>
+                <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span></div>
+                <div style="margin-top: 10px;">ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।</div>
+                <div style="margin-top: 10px;">ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆਰ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
             </div>
-
             <div class="footer-flex">
                 <div class="bank-details-box">
                     <div style="background-color: #333; color: white; padding: 2px 10px; display: inline-block; border-radius: 5px 5px 0 0; margin-bottom: 2px;">BANK A/C DETAILS :</div><br>
@@ -156,10 +129,7 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
                     <div class="sign-box">ਪ੍ਰਾਪਤ ਕਰਤਾ</div>
                 </div>
             </div>
-            
-            <div class="bottom-note">
-                Note : If you transfer any amount direct to the account please intimate on Mob : 9915007697
-            </div>
+            <div class="bottom-note">Note : If you transfer any amount direct to the account please intimate on Mob : 9915007697</div>
         </div>
         <script>window.onload = function() {{ window.print(); }}</script>
     </body>
@@ -209,10 +179,10 @@ with colB:
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "💸 ਦਾਨ (Donations)", 
     "📉 ਖਰਚੇ (Expenses)", 
-    "📊 ਖਾਤੇ ਅਤੇ ਮਿਲਾਨ (P&L / Banks)",
+    "🏦 ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ (Mirror Banks)",
     "📦 ਸਟਾਕ (Stock)", 
     "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-    "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Excel)"
+    "📂 ਬਲਕ ਅੱਪਲੋਡ (Admin Only)"
 ])
 
 # TAB 1: DONATIONS
@@ -221,7 +191,7 @@ with tab1:
     with st.form("donation_form", clear_on_submit=True):
         donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ")
         donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
-        on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of) - ਜਿਵੇਂ: Monthly Donation March")
+        on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
         don_type = st.radio("ਦਾਨ ਦੀ ਕਿਸਮ (Type)", ["ਪੈਸੇ (Monetary)", "ਸਮਾਨ (In-Kind / Ration)"])
         
         col_m1, col_m2 = st.columns(2)
@@ -247,25 +217,7 @@ with tab1:
             html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
             st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
             with open(html_file, "r", encoding="utf-8") as file:
-                st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Download Format)", data=file.read(), file_name=html_file, mime="text/html")
-
-    st.markdown("---")
-    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ")
-    search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
-    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ"):
-        res = supabase.table("donations").select("*").eq("id", search_id).execute()
-        if res.data:
-            record = res.data[0]
-            html_file_rep = generate_html_receipt(
-                search_id, record['name'], record['phone'], record['amount'], record['date'], 
-                record.get('payment_mode', 'ਨਕਦ (Cash)'), record.get('donation_type', 'ਪੈਸੇ (Monetary)'), 
-                record.get('item_details', ''), record.get('bank_account', 'ਨਕਦ (Cash)'), record.get('on_account_of', '')
-            )
-            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record['name']})!")
-            with open(html_file_rep, "r", encoding="utf-8") as file:
-                st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
-        else:
-            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
+                st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html")
 
 # TAB 2: EXPENSES
 with tab2:
@@ -284,38 +236,108 @@ with tab2:
             }).execute()
             st.success("ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ!")
 
-# TAB 3: P&L AND BANK RECONCILIATION
+# TAB 3: FULL MIRROR BANK ACCOUNTS & P&L
 with tab3:
-    st.header("ਖਾਤਾ ਸੰਖੇਪ ਅਤੇ ਬੈਂਕ ਮਿਲਾਨ (Accounts & Reconciliation)")
-    don_res = supabase.table("donations").select("*").execute()
-    exp_res = supabase.table("expenses").select("*").execute()
+    st.header("ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ ਅਤੇ ਮਿਲਾਨ (Full Mirror Ledger & Reconciliation)")
     
-    df_don = pd.DataFrame(don_res.data) if don_res.data else pd.DataFrame(columns=['amount', 'bank_account', 'donation_type'])
-    df_exp = pd.DataFrame(exp_res.data) if exp_res.data else pd.DataFrame(columns=['amount', 'bank_account', 'category'])
+    # Fetch Data
+    don_data = supabase.table("donations").select("*").execute().data or []
+    exp_data = supabase.table("expenses").select("*").execute().data or []
+    ledger_data = supabase.table("bank_ledger").select("*").execute().data or []
     
-    st.subheader("🏦 ਬੈਂਕ ਖਾਤਿਆਂ ਦਾ ਮਿਲਾਨ (Mirror Accounts)")
-    cols = st.columns(3)
-    for i, bank in enumerate(BANK_ACCOUNTS):
-        bank_don = df_don[(df_don['bank_account'] == bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don.empty else 0
-        bank_exp = df_exp[df_exp['bank_account'] == bank]['amount'].sum() if not df_exp.empty else 0
-        sys_bal = bank_don - bank_exp
-        
-        with cols[i]:
-            st.info(f"**{bank}**\n\nਸਿਸਟਮ ਬੈਲੇਂਸ: ₹ {sys_bal:,.2f}")
-            actual_bal = st.number_input(f"ਅਸਲ ਬੈਲੇਂਸ ({bank})", value=float(sys_bal), step=100.0, key=f"bal_{i}")
-            diff = actual_bal - sys_bal
-            if diff == 0:
-                st.success("✅ ਖਾਤਾ ਮਿਲ ਗਿਆ")
-            else:
-                st.error(f"⚠️ ਫਰਕ (Mismatch): ₹ {diff:,.2f}")
-
-    st.markdown("---")
-    st.subheader("📊 Income & Expenditure Statement (P&L)")
+    df_don = pd.DataFrame(don_data)
+    df_exp = pd.DataFrame(exp_data)
+    df_ledg = pd.DataFrame(ledger_data)
+    
+    selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank to view Ledger)", BANK_ACCOUNTS)
+    
+    # Compile Full Ledger for Selected Bank
+    ledger_entries = []
+    
+    if not df_don.empty:
+        bank_dons = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]
+        for _, row in bank_dons.iterrows():
+            ledger_entries.append({'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            
     if not df_exp.empty:
-        exp_summary = df_exp.groupby('category')['amount'].sum().reset_index()
-        st.dataframe(exp_summary, use_container_width=True)
+        bank_exps = df_exp[df_exp['bank_account'] == selected_bank]
+        for _, row in bank_exps.iterrows():
+            ledger_entries.append({'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
+            
+    if not df_ledg.empty:
+        bank_ledg = df_ledg[df_ledg['bank_name'] == selected_bank]
+        for _, row in bank_ledg.iterrows():
+            ledger_entries.append({'Date': row['txn_date'], 'Description': row['description'], 'Credit': float(row['credit']), 'Debit': float(row['debit']), 'Source': row['source']})
+            
+    df_compiled = pd.DataFrame(ledger_entries)
+    
+    if not df_compiled.empty:
+        df_compiled['Date'] = pd.to_datetime(df_compiled['Date'])
+        df_compiled = df_compiled.sort_values(by='Date')
+        
+        # Calculate Running Balance
+        df_compiled['Balance'] = df_compiled['Credit'].cumsum() - df_compiled['Debit'].cumsum()
+        
+        st.dataframe(df_compiled[['Date', 'Description', 'Source', 'Credit', 'Debit', 'Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Balance': '{:.2f}'}), use_container_width=True)
+        
+        sys_bal = df_compiled['Balance'].iloc[-1]
     else:
-        st.write("ਕੋਈ ਖਰਚਾ ਦਰਜ ਨਹੀਂ ਹੈ।")
+        st.info("ਇਸ ਖਾਤੇ ਵਿੱਚ ਹਾਲੇ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਹੈ। (No entries yet)")
+        sys_bal = 0.0
+        
+    st.markdown("### ⚖️ ਬੈਂਕ ਮਿਲਾਨ (Reconciliation Tally)")
+    col_bal1, col_bal2, col_bal3 = st.columns(3)
+    col_bal1.metric(f"ਸਿਸਟਮ ਦਾ ਬੈਲੇਂਸ ({selected_bank})", f"₹ {sys_bal:,.2f}")
+    actual_bal = col_bal2.number_input("ਬੈਂਕ ਦਾ ਅਸਲ ਬੈਲੇਂਸ (Actual Bank Balance)", value=float(sys_bal), step=100.0)
+    
+    diff = actual_bal - sys_bal
+    if diff == 0:
+        col_bal3.success("✅ ਖਾਤਾ ਮਿਲ ਗਿਆ (Tally Matched)")
+    else:
+        col_bal3.error(f"⚠️ ਫਰਕ (Mismatch): ₹ {diff:,.2f}")
+        
+    st.markdown("---")
+    st.subheader(f"➕ {selected_bank} ਵਿੱਚ ਹੋਰ ਐਂਟਰੀਆਂ ਪਾਓ (Add Bank Charges/Interest etc.)")
+    
+    t3_col1, t3_col2 = st.columns(2)
+    with t3_col1:
+        with st.form("manual_ledger"):
+            st.write("ਹੱਥੀਂ ਐਂਟਰੀ ਕਰੋ (Manual Entry)")
+            m_date = st.date_input("ਮਿਤੀ (Date)")
+            m_desc = st.text_input("ਵੇਰਵਾ (ਜਿਵੇਂ ਬੈਂਕ ਵਿਆਜ, SMS ਚਾਰਜ)")
+            m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
+            m_amt = st.number_input("ਰਕਮ (₹)", min_value=1.0)
+            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ"):
+                credit_val = m_amt if "Credit" in m_type else 0.0
+                debit_val = m_amt if "Debit" in m_type else 0.0
+                supabase.table("bank_ledger").insert({
+                    "bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"),
+                    "description": m_desc, "credit": credit_val, "debit": debit_val, "source": "Manual"
+                }).execute()
+                st.success("ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
+                st.rerun()
+                
+    with t3_col2:
+        st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
+        st.warning("Excel ਕਾਲਮ ਨਾਮ ਬਿਲਕੁਲ ਇਹ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: Date, Description, Credit, Debit")
+        stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'])
+        if stmt_file:
+            try:
+                df_stmt = pd.read_excel(stmt_file)
+                st.dataframe(df_stmt.head(3))
+                if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ"):
+                    ledg_records = []
+                    for _, row in df_stmt.iterrows():
+                        ledg_records.append({
+                            "bank_name": selected_bank, "txn_date": str(row['Date'])[:10],
+                            "description": row['Description'], "credit": float(row.get('Credit', 0)),
+                            "debit": float(row.get('Debit', 0)), "source": "Statement Upload"
+                        })
+                    supabase.table("bank_ledger").insert(ledg_records).execute()
+                    st.success("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ ਜਾਂ ਕਾਲਮ ਨਾਮ ਮੈਚ ਨਹੀਂ ਹੋਏ। ਐਰਰ: {e}")
 
 # TAB 4: STOCK
 with tab4:
@@ -358,19 +380,22 @@ with tab5:
             supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
             st.success("ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
 
-# TAB 6: BULK UPLOAD EXCEL
+# TAB 6: BULK UPLOAD EXCEL (ADMIN ONLY)
 with tab6:
     st.header("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)")
-    st.warning("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਇਹ ਕਾਲਮ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of")
     
-    uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
-    if uploaded_file is not None:
-        try:
-            df_upload = pd.read_excel(uploaded_file)
-            st.write(df_upload.head())
-            if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
-                records = df_upload.to_dict(orient='records')
-                supabase.table("donations").insert(records).execute()
-                st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
-        except Exception as e:
-            st.error(f"ਫਾਈਲ ਵਿੱਚ ਕੋਈ ਗਲਤੀ ਹੈ: {e}")
+    if not st.session_state.is_admin:
+        st.error("⚠️ ਸੁਰੱਖਿਆ ਕਾਰਨਾਂ ਕਰਕੇ: ਸਿਰਫ਼ ਐਡਮਿਨ (Admin) ਹੀ ਬਲਕ ਅੱਪਲੋਡ ਕਰ ਸਕਦਾ ਹੈ।")
+    else:
+        st.warning("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਇਹ ਕਾਲਮ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of")
+        uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
+        if uploaded_file is not None:
+            try:
+                df_upload = pd.read_excel(uploaded_file)
+                st.write(df_upload.head())
+                if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
+                    records = df_upload.to_dict(orient='records')
+                    supabase.table("donations").insert(records).execute()
+                    st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
+            except Exception as e:
+                st.error(f"ਫਾਈਲ ਵਿੱਚ ਕੋਈ ਗਲਤੀ ਹੈ: {e}")
