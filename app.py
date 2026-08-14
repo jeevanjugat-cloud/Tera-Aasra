@@ -6,15 +6,21 @@ import io
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ ਸਭਾ"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ"
 NGO_ADDRESS_PB = "ਰਜਿਸਟਰਡ, ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
+
+# --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
+# ਤੁਸੀਂ ਇੱਥੇ ਪਾਸਵਰਡ ਆਪਣੀ ਮਰਜ਼ੀ ਅਨੁਸਾਰ ਬਦਲ ਸਕਦੇ ਹੋ
+USERS = {
+    "admin": "Japnik@3315",      # ਐਡਮਿਨ: ਸਭ ਕੁਝ ਕਰ ਸਕਦਾ ਹੈ
+    "staff": "12345"      # ਸਟਾਫ: ਸਿਰਫ ਐਂਟਰੀਆਂ ਕਰ ਸਕਦਾ ਹੈ
+}
 
 # --- SUPABASE ਕਨੈਕਸ਼ਨ (ਇੱਥੇ ਆਪਣੀ ਡਿਟੇਲ ਪਾਓ) ---
 SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
-# --- ਐਡਮਿਨ ਪਾਸਵਰਡ ---
-ADMIN_PASSWORD_SECRET = "1234" 
+st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ", layout="wide")
 
 @st.cache_resource
 def init_connection():
@@ -87,30 +93,55 @@ def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
         f.write(html_content)
     return filename
 
-# --- APP INTERFACE ---
-st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ", layout="wide")
 
-# --- ADMIN LOGIN ---
-if 'is_admin' not in st.session_state:
+# --- SESSION STATE INITIALIZATION ---
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
     st.session_state.is_admin = False
+    st.session_state.username = ""
+
+# --- LOGIN SCREEN (ਲਾਗਇਨ ਸਕਰੀਨ) ---
+if not st.session_state.logged_in:
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<h1 style='text-align: center;'>🙏</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center;'>{NGO_NAME_PB}</h2>", unsafe_allow_html=True)
+        st.markdown("<hr>", unsafe_allow_html=True)
+        
+        st.subheader("🔒 ਸਾਫਟਵੇਅਰ ਵਿੱਚ ਲਾਗਇਨ ਕਰੋ")
+        with st.form("login_form"):
+            username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
+            password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
+            submit_login = st.form_submit_button("ਲਾਗਇਨ (Login)")
+            
+            if submit_login:
+                if username_input in USERS and USERS[username_input] == password_input:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username_input
+                    if username_input == "admin":
+                        st.session_state.is_admin = True
+                    else:
+                        st.session_state.is_admin = False
+                    st.rerun()
+                else:
+                    st.error("❌ ਯੂਜ਼ਰਨੇਮ ਜਾਂ ਪਾਸਵਰਡ ਗਲਤ ਹੈ!")
+    st.stop()  # ਇੱਥੇ ਕੋਡ ਰੁਕ ਜਾਵੇਗਾ ਜਦੋਂ ਤੱਕ ਲਾਗਇਨ ਨਹੀਂ ਹੁੰਦਾ
+
+# ==========================================
+# ਮੁੱਖ ਸਾਫਟਵੇਅਰ (ਸਿਰਫ਼ ਲਾਗਇਨ ਹੋਣ ਤੋਂ ਬਾਅਦ ਖੁੱਲ੍ਹੇਗਾ)
+# ==========================================
 
 with st.sidebar:
-    st.title("🔒 ਸੁਰੱਖਿਆ (Security)")
+    st.title("👤 ਪ੍ਰੋਫਾਈਲ")
     if st.session_state.is_admin:
-        st.success("✅ ਤੁਸੀਂ ਐਡਮਿਨ (Admin) ਹੋ।")
-        if st.button("ਲਾਗਆਊਟ ਕਰੋ (Logout)"):
-            st.session_state.is_admin = False
-            st.rerun()
+        st.success("✅ ਤੁਸੀਂ ਐਡਮਿਨ (Admin) ਵਜੋਂ ਲਾਗਇਨ ਹੋ।")
     else:
-        st.info("ਕਰਮਚਾਰੀ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਨਵੀਂ ਐਂਟਰੀ ਕਰ ਸਕਦੇ ਹੋ।")
-        pwd = st.text_input("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ:", type="password")
-        if st.button("ਲਾਗਇਨ (Login)"):
-            if pwd == ADMIN_PASSWORD_SECRET:
-                st.session_state.is_admin = True
-                st.success("ਐਡਮਿਨ ਪੈਨਲ ਖੁੱਲ੍ਹ ਗਿਆ!")
-                st.rerun()
-            else:
-                st.error("ਗਲਤ ਪਾਸਵਰਡ!")
+        st.info("✅ ਤੁਸੀਂ ਕਰਮਚਾਰੀ (Staff) ਵਜੋਂ ਲਾਗਇਨ ਹੋ।")
+        
+    if st.button("ਲਾਗਆਊਟ ਕਰੋ (Logout)"):
+        st.session_state.logged_in = False
+        st.session_state.is_admin = False
+        st.rerun()
 
 st.title(f"🙏 {NGO_NAME_PB}")
 st.write(f"📍 {NGO_ADDRESS_PB}")
@@ -136,7 +167,6 @@ with tab1:
         submit = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
 
     if submit and donor_name and amount:
-        # ਫਾਰਮ ਵਿੱਚੋਂ ਚੁਣੀ ਹੋਈ ਤਰੀਕ ਨੂੰ ਸੇਵ ਕਰਨ ਲਈ ਤਿਆਰ ਕਰਨਾ
         formatted_date = receipt_date.strftime("%Y-%m-%d")
         
         data, count = supabase.table("donations").insert({
