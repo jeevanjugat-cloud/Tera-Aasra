@@ -8,7 +8,7 @@ import os
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ ਸਭਾ (ਰਜਿ.)"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
