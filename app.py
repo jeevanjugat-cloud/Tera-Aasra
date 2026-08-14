@@ -8,23 +8,29 @@ import os
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
-# --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
-USERS = {
-    "admin": "Japnik@3315",      # ਐਡਮਿਨ
-    "staff": "12345"      # ਸਟਾਫ
-}
+# --- CATEGORIES & ACCOUNTS ---
+BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank", "Punjab & Sind Bank"]
+EXPENSE_CATEGORIES = [
+    "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
+    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
+    "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
+    "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
+    "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
+    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
+    "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"
+]
 
-# --- SUPABASE ਕਨੈਕਸ਼ਨ (ਇੱਥੇ ਆਪਣੀ ਡਿਟੇਲ ਪਾਓ) ---
+USERS = {"admin": "Japnik@3315", "staff": "12345"}
+
+# --- SUPABASE ਕਨੈਕਸ਼ਨ ---
 SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
-# ਪੇਜ ਦੀ ਸੈਟਿੰਗ ਅਤੇ ਬ੍ਰਾਊਜ਼ਰ ਟੈਬ ਵਿੱਚ ਲੋਗੋ ਲਗਾਉਣਾ
-st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ", page_icon="logo.png", layout="wide")
 
-# --- ਫੋਟੋ ਨੂੰ ਕੋਡ ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ (ਰਸੀਦ ਲਈ) ---
 def get_base64_image(image_path):
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
@@ -40,14 +46,15 @@ try:
 except Exception as e:
     st.error("Supabase ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ।")
 
-# --- HTML RECEIPT GENERATOR ---
-def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
+# --- ਨਵੀਂ ਡਿਜ਼ਾਈਨ ਕੀਤੀ ਰਸੀਦ (EXACT HARD COPY MATCH) ---
+def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
-    if logo_base64:
-        img_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Logo" style="width: 120px; height: auto; margin-bottom: 10px;">'
-    else:
-        img_html = '<h1>ੴ</h1>'
+    img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
 
+    amount_text = f"Rs. {amount}/-" if don_type == "ਪੈਸੇ (Monetary)" else f"{item_details}"
+    amount_in_words = f"Rupees {amount} Only" if don_type == "ਪੈਸੇ (Monetary)" else item_details
+    display_phone = phone if phone else "________________"
+    
     html_content = f"""
     <!DOCTYPE html>
     <html lang="pa">
@@ -55,51 +62,106 @@ def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
         <meta charset="UTF-8">
         <title>Receipt #{receipt_no}</title>
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px; }}
-            .receipt-box {{ max-width: 600px; margin: auto; padding: 30px; border: 2px solid #ff9933; border-radius: 10px; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-            .header {{ text-align: center; border-bottom: 2px solid #ff9933; padding-bottom: 10px; margin-bottom: 20px; }}
-            .header h1 {{ color: #cc5200; margin: 0; font-size: 28px; }}
-            .header p {{ color: #555; margin: 5px 0 0 0; font-size: 14px; }}
-            .content {{ line-height: 1.8; font-size: 18px; color: #333; }}
-            .row {{ display: flex; justify-content: space-between; margin-bottom: 10px; }}
-            .amount-box {{ font-size: 24px; font-weight: bold; background-color: #fff0e6; padding: 10px; text-align: center; border-radius: 5px; margin: 20px 0; border: 1px dashed #ff9933; }}
-            .footer {{ margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }}
-            .sign-line {{ border-top: 1px solid #000; width: 150px; text-align: center; padding-top: 5px; font-size: 14px; }}
-            @media print {{ body {{ background-color: #fff; padding: 0; }} .receipt-box {{ box-shadow: none; border: 2px solid #000; }} }}
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; padding: 20px; }}
+            .receipt-box {{
+                max-width: 850px; margin: auto; padding: 20px 30px;
+                background-color: #F8F1D1; /* ਪੀਲਾ ਪਿਛੋਕੜ (Yellow background) */
+                border-top: 25px solid #4A1B15; /* ਮੈਰੂਨ ਬਾਰਡਰ (Maroon border) */
+                border-bottom: 25px solid #4A1B15;
+                color: #333; position: relative;
+                box-sizing: border-box;
+            }}
+            .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
+            .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
+            .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
+            .title-pa {{ font-size: 32px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 1px; }}
+            .title-en {{ font-size: 20px; font-weight: bold; color: #4A1B15; margin: 5px 0 10px 0; }}
+            .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
+            .sub-title-en {{ font-size: 14px; font-weight: bold; color: #0F4C81; margin: 5px 0; }}
+            .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
+
+            .reg-row {{ 
+                display: flex; justify-content: space-between; 
+                border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; 
+                padding: 6px 0; font-size: 14px; font-weight: bold; margin-bottom: 15px; margin-top: 10px;
+            }}
+
+            .main-content {{ font-size: 16px; line-height: 2.2; font-weight: bold; color: #222; }}
+            .row-inline {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
+            .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 18px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 15px; font-weight: bold; }}
+            .receipt-no {{ color: #D92B2B; font-size: 22px; font-weight: bold; font-family: monospace; }}
+
+            .footer-flex {{ display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; }}
+            .bank-details-box {{ font-size: 12px; font-weight: bold; line-height: 1.5; background-color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px; width: 65%; }}
+            .bank-details-box span {{ color: #D92B2B; }}
+            
+            .amount-box {{ font-size: 22px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 25px; border-radius: 20px; background-color: rgba(255,255,255,0.5); display: inline-block; }}
+            .sign-box {{ text-align: right; margin-top: 20px; font-size: 14px; padding-bottom: 15px; }}
+
+            .bottom-note {{ 
+                position: absolute; bottom: 0; left: 0; right: 0;
+                background-color: #4A1B15; color: white; text-align: center; 
+                font-size: 12px; padding: 4px 0; font-weight: bold;
+            }}
+            @media print {{ body {{ padding: 0; }} .receipt-box {{ border: 2px solid #4A1B15; box-shadow: none; }} }}
         </style>
     </head>
     <body>
         <div class="receipt-box">
-            <div class="header">
+            <div class="header-flex">
                 {img_html}
-                <h1>{NGO_NAME_PB}</h1>
-                <p>{NGO_ADDRESS_PB}</p>
-                <h3 style="color:#444; margin-top:15px;">ਦਾਨ ਰਸੀਦ (DONATION RECEIPT)</h3>
+                <div class="header-text">
+                    <p class="title-pa">ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)</p>
+                    <p class="title-en">Shabad Kirtan Nam Simran Satsang (Regd.)</p>
+                    <p class="sub-title-pa">ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (ਸੇਵਾ-ਸਹਿਯੋਗ-ਭਲਾਈ) ਰਾਧਾ ਕ੍ਰਿਸ਼ਨ ਕਲੋਨੀ (ਮੂਲੇ ਚੱਕ), ਨੇੜੇ ਭਗਤਾਂ ਵਾਲਾ ਦਾਣਾ ਮੰਡੀ, ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ</p>
+                    <p class="sub-title-en">Regd. Office: C. B. Tower, Opp. Side Alpha One Mall, G. T. Road, Sri Amritsar Sahib - 143001</p>
+                    <p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p>
+                </div>
             </div>
-            <div class="content">
-                <div class="row">
-                    <span><strong>ਰਸੀਦ ਨੰਬਰ (Receipt No):</strong> {receipt_no}</span>
-                    <span><strong>ਮਿਤੀ (Date):</strong> {date[:10]}</span>
-                </div>
-                <div style="margin-top: 20px;">
-                    <p><strong>ਦਾਨੀ ਦਾ ਨਾਮ (Received with thanks from):</strong> {name}</p>
-                    <p><strong>ਭੁਗਤਾਨ ਦਾ ਤਰੀਕਾ (Payment Mode):</strong> {payment_mode}</p>
-                </div>
-                <div class="amount-box">
-                    ਰਕਮ (Amount): ₹ {amount}/-
-                </div>
-                <p style="text-align: center; color: #666; font-size: 14px;">
-                    <em>ਸਭਾ ਨੂੰ ਮਾਲੀ ਸਹਾਇਤਾ ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ。<br>Thank you for your generous support.</em>
-                </p>
+
+            <div class="reg-row">
+                <div>Regd. No.: ASR/26/2024-25 &nbsp;|&nbsp; PAN NO. ABKTS7853G</div>
+                <div>On Account of: <span class="field-value" style="font-size:16px;">{on_account_of}</span></div>
             </div>
-            <div class="footer">
-                <div></div>
-                <div class="sign-line">ਪ੍ਰਵਾਨਿਤ ਦਸਤਖਤ<br>(Authorized Signatory)</div>
+
+            <div class="main-content">
+                <div class="row-inline">
+                    <div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 20px;">{receipt_no:04d}</span></div>
+                    <div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆਰ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span>
+                </div>
+            </div>
+
+            <div class="footer-flex">
+                <div class="bank-details-box">
+                    <div style="background-color: #333; color: white; padding: 2px 10px; display: inline-block; border-radius: 5px 5px 0 0; margin-bottom: 2px;">BANK A/C DETAILS :</div><br>
+                    <strong>PUNJAB & SIND BANK</strong> A/c No. <span>06181000012550</span> IFSC : <span>PSIB0000618</span><br>
+                    <span style="color:#333; font-weight:normal;">Sultanwind Road, Amritsar</span><br>
+                    <strong>KOTAK MAHINDRA BANK</strong> A/c No. <span>4350934312</span> IFSC : <span>KKBK0004001</span><br>
+                    <span style="color:#333; font-weight:normal;">East Mohan Nagar, Amritsar</span>
+                </div>
+                <div style="text-align: center;">
+                    <div class="amount-box">{amount_text}</div>
+                    <div class="sign-box">ਪ੍ਰਾਪਤ ਕਰਤਾ</div>
+                </div>
+            </div>
+            
+            <div class="bottom-note">
+                Note : If you transfer any amount direct to the account please intimate on Mob : 9915007697
             </div>
         </div>
-        <script>
-            window.onload = function() {{ window.print(); }}
-        </script>
+        <script>window.onload = function() {{ window.print(); }}</script>
     </body>
     </html>
     """
@@ -108,164 +170,155 @@ def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
         f.write(html_content)
     return filename
 
-
-# --- SESSION STATE INITIALIZATION ---
+# --- SESSION STATE ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.is_admin = False
-    st.session_state.username = ""
 
-# --- LOGIN SCREEN ---
+# --- LOGIN ---
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if os.path.exists("logo.png"):
-            st.image("logo.png", width=150)
-        else:
-            st.markdown("<h1 style='text-align: center;'>🙏</h1>", unsafe_allow_html=True)
-            
+        if os.path.exists("logo.png"): st.image("logo.png", width=150)
         st.markdown(f"<h2 style='text-align: center;'>{NGO_NAME_PB}</h2>", unsafe_allow_html=True)
-        st.markdown("<hr>", unsafe_allow_html=True)
-        
-        st.subheader("🔒 ਸਾਫਟਵੇਅਰ ਵਿੱਚ ਲਾਗਇਨ ਕਰੋ")
         with st.form("login_form"):
             username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
             password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
-            submit_login = st.form_submit_button("ਲਾਗਇਨ (Login)")
-            
-            if submit_login:
+            if st.form_submit_button("ਲਾਗਇਨ (Login)"):
                 if username_input in USERS and USERS[username_input] == password_input:
                     st.session_state.logged_in = True
-                    st.session_state.username = username_input
-                    if username_input == "admin":
-                        st.session_state.is_admin = True
-                    else:
-                        st.session_state.is_admin = False
+                    st.session_state.is_admin = (username_input == "admin")
                     st.rerun()
                 else:
-                    st.error("❌ ਯੂਜ਼ਰਨੇਮ ਜਾਂ ਪਾਸਵਰਡ ਗਲਤ ਹੈ!")
+                    st.error("ਗਲਤ ਪਾਸਵਰਡ!")
     st.stop()
 
-# --- MAIN APP ---
 with st.sidebar:
     st.title("👤 ਪ੍ਰੋਫਾਈਲ")
-    if st.session_state.is_admin:
-        st.success("✅ ਤੁਸੀਂ ਐਡਮਿਨ (Admin) ਵਜੋਂ ਲਾਗਇਨ ਹੋ।")
-    else:
-        st.info("✅ ਤੁਸੀਂ ਕਰਮਚਾਰੀ (Staff) ਵਜੋਂ ਲਾਗਇਨ ਹੋ।")
-        
-    if st.button("ਲਾਗਆਊਟ ਕਰੋ (Logout)"):
+    st.success("✅ ਐਡਮਿਨ ਮੋਡ" if st.session_state.is_admin else "✅ ਕਰਮਚਾਰੀ ਮੋਡ")
+    if st.button("ਲਾਗਆਊਟ ਕਰੋ"):
         st.session_state.logged_in = False
-        st.session_state.is_admin = False
         st.rerun()
 
 colA, colB = st.columns([1, 8])
 with colA:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=80)
+    if os.path.exists("logo.png"): st.image("logo.png", width=80)
 with colB:
     st.title(f"{NGO_NAME_PB}")
-    st.write(f"📍 {NGO_ADDRESS_PB}")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "💸 ਦਾਨ (Donation)", 
+    "💸 ਦਾਨ (Donations)", 
     "📉 ਖਰਚੇ (Expenses)", 
+    "📊 ਖਾਤੇ ਅਤੇ ਮਿਲਾਨ (P&L / Banks)",
     "📦 ਸਟਾਕ (Stock)", 
-    "🎓 ਵਿਦਿਆਰਥੀ (Students)", 
-    "📊 ਖਾਤਾ ਸੰਖੇਪ (Accounts)",
-    "📑 ਰਿਪੋਰਟਾਂ (Reports)"
+    "🎓 ਵਿਦਿਆਰਥੀ (Students)",
+    "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Excel)"
 ])
 
 # TAB 1: DONATIONS
 with tab1:
     st.header("ਨਵਾਂ ਦਾਨ ਦਰਜ ਕਰੋ")
     with st.form("donation_form", clear_on_submit=True):
-        donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
-        donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone)")
-        amount = st.number_input("ਰਕਮ / Amount (₹)", min_value=1)
-        pay_mode = st.selectbox("ਭੁਗਤਾਨ ਦਾ ਤਰੀਕਾ (Payment Mode)", ["ਨਕਦ (Cash)", "ਆਨਲਾਈਨ (UPI/Bank)"])
-        receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today())
-        submit = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
-
-    if submit and donor_name and amount:
-        formatted_date = receipt_date.strftime("%Y-%m-%d")
-        data, count = supabase.table("donations").insert({
-            "name": donor_name, "phone": donor_phone, "amount": amount, "date": formatted_date, "payment_mode": pay_mode
-        }).execute()
+        donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ")
+        donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
+        on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of) - ਜਿਵੇਂ: Monthly Donation March")
+        don_type = st.radio("ਦਾਨ ਦੀ ਕਿਸਮ (Type)", ["ਪੈਸੇ (Monetary)", "ਸਮਾਨ (In-Kind / Ration)"])
         
-        receipt_id = data[1][0]['id']
-        html_file = generate_html_receipt(receipt_id, donor_name, amount, formatted_date, pay_mode)
-        st.success(f"ਦਾਨ ਸੇਵ ਹੋ ਗਿਆ! ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            amount = st.number_input("ਰਕਮ (₹)", min_value=0)
+            pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ (Payment Mode)", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
+        with col_m2:
+            item_details = st.text_input("ਜੇਕਰ ਸਮਾਨ ਹੈ ਤਾਂ ਵੇਰਵਾ ਲਿਖੋ")
+            bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ? (Bank)", BANK_ACCOUNTS)
+            
+        receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today())
         
-        with open(html_file, "r", encoding="utf-8") as file:
-            st.download_button(label="🖨️ ਪ੍ਰਿੰਟ ਕਰਨ ਲਈ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html")
-        
-        if donor_phone:
-            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-            url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
-            st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.subheader("🔍 ਦਾਨ ਰਿਕਾਰਡ ਖੋਜੋ (Search Donations)")
-    
-    don_search_col1, don_search_col2 = st.columns(2)
-    with don_search_col1:
-        search_donor_name = st.text_input("ਦਾਨੀ ਦੇ ਨਾਮ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search Name)")
-    with don_search_col2:
-        search_don_date = st.date_input("ਮਿਤੀ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Optional Date)", value=None)
-
-    all_donations = supabase.table("donations").select("*").execute().data
-    if all_donations:
-        df_donations = pd.DataFrame(all_donations)
-        if search_donor_name:
-            df_donations = df_donations[df_donations['name'].str.contains(search_donor_name, case=False, na=False)]
-        if search_don_date:
-            date_str = search_don_date.strftime("%Y-%m-%d")
-            df_donations = df_donations[df_donations['date'].str.startswith(date_str)]
-        
-        st.dataframe(df_donations[['id', 'name', 'phone', 'amount', 'payment_mode', 'date']], use_container_width=True)
+        if st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ") and donor_name:
+            formatted_date = receipt_date.strftime("%Y-%m-%d")
+            data, count = supabase.table("donations").insert({
+                "name": donor_name, "phone": donor_phone, "amount": amount, 
+                "date": formatted_date, "payment_mode": pay_mode,
+                "donation_type": don_type, "item_details": item_details, "bank_account": bank_acc,
+                "on_account_of": on_account_of
+            }).execute()
+            
+            receipt_id = data[1][0]['id']
+            html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
+            st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
+            with open(html_file, "r", encoding="utf-8") as file:
+                st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Download Format)", data=file.read(), file_name=html_file, mime="text/html")
 
     st.markdown("---")
-    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ ਜਾਂ WhatsApp ਭੇਜੋ")
+    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ")
     search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
     if st.button("🔍 ਰਸੀਦ ਲੱਭੋ"):
         res = supabase.table("donations").select("*").eq("id", search_id).execute()
         if res.data:
             record = res.data[0]
-            html_file_rep = generate_html_receipt(search_id, record['name'], record['amount'], record['date'], record.get('payment_mode', 'ਨਕਦ (Cash)'))
+            html_file_rep = generate_html_receipt(
+                search_id, record['name'], record['phone'], record['amount'], record['date'], 
+                record.get('payment_mode', 'ਨਕਦ (Cash)'), record.get('donation_type', 'ਪੈਸੇ (Monetary)'), 
+                record.get('item_details', ''), record.get('bank_account', 'ਨਕਦ (Cash)'), record.get('on_account_of', '')
+            )
             st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record['name']})!")
             with open(html_file_rep, "r", encoding="utf-8") as file:
                 st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
-            if record['phone']:
-                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {record['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{record['amount']}/- ਦਾ ਦਾਨ ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
-                url = f"https://wa.me/{record['phone']}?text={urllib.parse.quote(msg)}"
-                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਦੁਬਾਰਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
         else:
             st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
 
-# TAB 2: EXPENDITURES
+# TAB 2: EXPENSES
 with tab2:
     st.header("ਖਰਚਾ ਦਰਜ ਕਰੋ")
     with st.form("expense_form", clear_on_submit=True):
         desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description)")
+        cat = st.selectbox("ਕੈਟਾਗਰੀ (Sub-head)", [c for c in EXPENSE_CATEGORIES if not c.startswith("---")])
         exp_amount = st.number_input("ਰਕਮ (₹)", min_value=1)
-        exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
+        bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ?", BANK_ACCOUNTS)
+        exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today())
+        
         if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ") and desc:
-            supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d")}).execute()
-            st.success("ਖਰਚਾ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!")
+            supabase.table("expenses").insert({
+                "description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"),
+                "category": cat, "bank_account": bank_acc_exp
+            }).execute()
+            st.success("ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ!")
+
+# TAB 3: P&L AND BANK RECONCILIATION
+with tab3:
+    st.header("ਖਾਤਾ ਸੰਖੇਪ ਅਤੇ ਬੈਂਕ ਮਿਲਾਨ (Accounts & Reconciliation)")
+    don_res = supabase.table("donations").select("*").execute()
+    exp_res = supabase.table("expenses").select("*").execute()
+    
+    df_don = pd.DataFrame(don_res.data) if don_res.data else pd.DataFrame(columns=['amount', 'bank_account', 'donation_type'])
+    df_exp = pd.DataFrame(exp_res.data) if exp_res.data else pd.DataFrame(columns=['amount', 'bank_account', 'category'])
+    
+    st.subheader("🏦 ਬੈਂਕ ਖਾਤਿਆਂ ਦਾ ਮਿਲਾਨ (Mirror Accounts)")
+    cols = st.columns(3)
+    for i, bank in enumerate(BANK_ACCOUNTS):
+        bank_don = df_don[(df_don['bank_account'] == bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don.empty else 0
+        bank_exp = df_exp[df_exp['bank_account'] == bank]['amount'].sum() if not df_exp.empty else 0
+        sys_bal = bank_don - bank_exp
+        
+        with cols[i]:
+            st.info(f"**{bank}**\n\nਸਿਸਟਮ ਬੈਲੇਂਸ: ₹ {sys_bal:,.2f}")
+            actual_bal = st.number_input(f"ਅਸਲ ਬੈਲੇਂਸ ({bank})", value=float(sys_bal), step=100.0, key=f"bal_{i}")
+            diff = actual_bal - sys_bal
+            if diff == 0:
+                st.success("✅ ਖਾਤਾ ਮਿਲ ਗਿਆ")
+            else:
+                st.error(f"⚠️ ਫਰਕ (Mismatch): ₹ {diff:,.2f}")
 
     st.markdown("---")
-    st.subheader("🔍 ਖਰਚੇ ਖੋਜੋ (Search Expenses)")
-    exp_search = st.text_input("ਖਰਚੇ ਦੇ ਵੇਰਵੇ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search Description)")
-    all_exp = supabase.table("expenses").select("*").execute().data
-    if all_exp:
-        df_exp = pd.DataFrame(all_exp)
-        if exp_search:
-            df_exp = df_exp[df_exp['description'].str.contains(exp_search, case=False, na=False)]
-        st.dataframe(df_exp, use_container_width=True)
+    st.subheader("📊 Income & Expenditure Statement (P&L)")
+    if not df_exp.empty:
+        exp_summary = df_exp.groupby('category')['amount'].sum().reset_index()
+        st.dataframe(exp_summary, use_container_width=True)
+    else:
+        st.write("ਕੋਈ ਖਰਚਾ ਦਰਜ ਨਹੀਂ ਹੈ।")
 
-# TAB 3: STOCK MANAGEMENT
-with tab3:
+# TAB 4: STOCK
+with tab4:
     st.header("ਸਟਾਕ / ਭੰਡਾਰ")
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -288,85 +341,36 @@ with tab3:
                 st.success(f"'{item_name}' ਦਾ ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
 
     with col2:
-        st.subheader("ਮੌਜੂਦਾ ਸਟਾਕ ਅਤੇ ਖੋਜ")
-        stock_query = st.text_input("ਸਟਾਕ ਆਈਟਮ ਖੋਜ ਕਰੋ (Search Stock Item)")
         stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
         if stock_res.data:
             df_stock = pd.DataFrame(stock_res.data)
-            if stock_query:
-                df_stock = df_stock[df_stock['item_name'].str.contains(stock_query, case=False, na=False)]
             st.dataframe(df_stock[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
 
-# TAB 4: STUDENTS
-with tab4:
+# TAB 5: STUDENTS
+with tab5:
     st.header("ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ")
     with st.form("student_form", clear_on_submit=True):
         stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ")
         stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
         stu_course = st.selectbox("ਕਲਾਸ", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
         join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ", value=date.today())
-        has_passed = st.checkbox("ਕੀ ਕੋਰਸ ਪੂਰਾ ਕਰ ਲਿਆ ਹੈ?")
-        pass_date = st.date_input("ਪਾਸ ਹੋਣ ਦੀ ਮਿਤੀ", value=date.today()) if has_passed else None
-        
         if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ") and stu_name:
-            p_date = pass_date.strftime("%Y-%m-%d") if has_passed else "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"
-            supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": p_date}).execute()
+            supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
             st.success("ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
 
-    st.markdown("---")
-    st.subheader("🔍 ਵਿਦਿਆਰਥੀ ਖੋਜੋ (Search Students)")
-    stu_query = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ ਖੋਜ ਕਰੋ (Search Student Name)")
-    all_students = supabase.table("students").select("*").execute().data
-    if all_students:
-        df_students = pd.DataFrame(all_students)
-        if stu_query:
-            df_students = df_students[df_students['name'].str.contains(stu_query, case=False, na=False)]
-        st.dataframe(df_students[['name', 'phone', 'course', 'join_date', 'pass_date']], use_container_width=True)
-
-# TAB 5: ACCOUNTS OVERVIEW
-with tab5:
-    st.header("ਖਾਤਾ ਸੰਖੇਪ (Financial Overview)")
-    don_res = supabase.table("donations").select("*").execute()
-    exp_res = supabase.table("expenses").select("*").execute()
-    
-    df_don = pd.DataFrame(don_res.data) if don_res.data else pd.DataFrame(columns=['id', 'name', 'amount', 'date'])
-    df_exp = pd.DataFrame(exp_res.data) if exp_res.data else pd.DataFrame(columns=['id', 'description', 'amount', 'date'])
-    
-    tot_don = df_don['amount'].sum() if not df_don.empty else 0
-    tot_exp = df_exp['amount'].sum() if not df_exp.empty else 0
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("ਕੁੱਲ ਆਮਦਨ (Income)", f"₹ {tot_don:,.2f}")
-    c2.metric("ਕੁੱਲ ਖਰਚਾ (Expenses)", f"₹ {tot_exp:,.2f}")
-    c3.metric("ਮੌਜੂਦਾ ਬਕਾਇਆ (Balance)", f"₹ {tot_don - tot_exp:,.2f}")
-    
-    if st.session_state.is_admin:
-        st.error("⚠️ ਐਡਮਿਨ ਪਾਵਰ: ਗਲਤ ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਕਰੋ (Admin Delete Area)")
-        del_col1, del_col2 = st.columns(2)
-        with del_col1:
-            st.write("ਦਾਨ ਡਿਲੀਟ ਕਰੋ")
-            don_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Donation ID)", min_value=0, step=1)
-            if st.button("ਦਾਨ ਡਿਲੀਟ ਕਰੋ"):
-                supabase.table("donations").delete().eq("id", don_id).execute()
-                st.success("ਡਿਲੀਟ ਹੋ ਗਿਆ!")
-                st.rerun()
-        with del_col2:
-            st.write("ਖਰਚਾ ਡਿਲੀਟ ਕਰੋ")
-            exp_id = st.number_input("ਖਰਚਾ ID (Expense ID)", min_value=0, step=1)
-            if st.button("ਖਰਚਾ ਡਿਲੀਟ ਕਰੋ"):
-                supabase.table("expenses").delete().eq("id", exp_id).execute()
-                st.success("ਡਿਲੀਟ ਹੋ ਗਿਆ!")
-                st.rerun()
-
-# TAB 6: REPORTS
+# TAB 6: BULK UPLOAD EXCEL
 with tab6:
-    st.header("ਐਕਸਲ ਰਿਪੋਰਟ ਡਾਊਨਲੋਡ ਕਰੋ (Download Excel)")
-    if st.button("📊 ਰਿਪੋਰਟ ਤਿਆਰ ਕਰੋ (Generate Report)"):
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            pd.DataFrame(supabase.table("donations").select("*").execute().data or []).to_excel(writer, sheet_name='ਦਾਨ', index=False)
-            pd.DataFrame(supabase.table("expenses").select("*").execute().data or []).to_excel(writer, sheet_name='ਖਰਚੇ', index=False)
-            pd.DataFrame(supabase.table("stock").select("*").execute().data or []).to_excel(writer, sheet_name='ਸਟਾਕ', index=False)
-            pd.DataFrame(supabase.table("students").select("*").execute().data or []).to_excel(writer, sheet_name='ਵਿਦਿਆਰਥੀ', index=False)
-        
-        st.download_button("📥 ਡਾਊਨਲੋਡ ਕਰੋ (Download Excel)", data=buffer.getvalue(), file_name=f"NGO_Report_{datetime.now().strftime('%d-%m-%Y')}.xlsx")
+    st.header("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)")
+    st.warning("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਇਹ ਕਾਲਮ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of")
+    
+    uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
+    if uploaded_file is not None:
+        try:
+            df_upload = pd.read_excel(uploaded_file)
+            st.write(df_upload.head())
+            if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
+                records = df_upload.to_dict(orient='records')
+                supabase.table("donations").insert(records).execute()
+                st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
+        except Exception as e:
+            st.error(f"ਫਾਈਲ ਵਿੱਚ ਕੋਈ ਗਲਤੀ ਹੈ: {e}")
