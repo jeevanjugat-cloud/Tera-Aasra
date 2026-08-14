@@ -3,24 +3,33 @@ import pandas as pd
 from datetime import datetime, date
 import urllib.parse
 import io
+import base64
+import os
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ"
-NGO_ADDRESS_PB = "ਰਜਿਸਟਰਡ, ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ)"
+NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
-# ਤੁਸੀਂ ਇੱਥੇ ਪਾਸਵਰਡ ਆਪਣੀ ਮਰਜ਼ੀ ਅਨੁਸਾਰ ਬਦਲ ਸਕਦੇ ਹੋ
 USERS = {
-    "admin": "Japnik@3315",      # ਐਡਮਿਨ: ਸਭ ਕੁਝ ਕਰ ਸਕਦਾ ਹੈ
-    "staff": "12345"      # ਸਟਾਫ: ਸਿਰਫ ਐਂਟਰੀਆਂ ਕਰ ਸਕਦਾ ਹੈ
+    "admin": "Japnik@3315",      # ਐਡਮਿਨ
+    "staff": "12345"      # ਸਟਾਫ
 }
 
 # --- SUPABASE ਕਨੈਕਸ਼ਨ (ਇੱਥੇ ਆਪਣੀ ਡਿਟੇਲ ਪਾਓ) ---
 SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
-st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ", layout="wide")
+# ਪੇਜ ਦੀ ਸੈਟਿੰਗ ਅਤੇ ਬ੍ਰਾਊਜ਼ਰ ਟੈਬ ਵਿੱਚ ਲੋਗੋ ਲਗਾਉਣਾ
+st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ", page_icon="logo.png", layout="wide")
+
+# --- ਫੋਟੋ ਨੂੰ ਕੋਡ ਵਿੱਚ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ (ਰਸੀਦ ਲਈ) ---
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
 
 @st.cache_resource
 def init_connection():
@@ -33,6 +42,13 @@ except Exception as e:
 
 # --- HTML RECEIPT GENERATOR ---
 def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
+    # ਲੋਗੋ ਨੂੰ ਲਿਆਉਣਾ
+    logo_base64 = get_base64_image("logo.png")
+    if logo_base64:
+        img_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Logo" style="width: 120px; height: auto; margin-bottom: 10px;">'
+    else:
+        img_html = '<h1>ੴ</h1>'
+
     html_content = f"""
     <!DOCTYPE html>
     <html lang="pa">
@@ -56,7 +72,7 @@ def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
     <body>
         <div class="receipt-box">
             <div class="header">
-                <h1>ੴ</h1>
+                {img_html}
                 <h1>{NGO_NAME_PB}</h1>
                 <p>{NGO_ADDRESS_PB}</p>
                 <h3 style="color:#444; margin-top:15px;">ਦਾਨ ਰਸੀਦ (DONATION RECEIPT)</h3>
@@ -104,7 +120,12 @@ if 'logged_in' not in st.session_state:
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("<h1 style='text-align: center;'>🙏</h1>", unsafe_allow_html=True)
+        # ਲਾਗਇਨ ਸਕਰੀਨ 'ਤੇ ਲੋਗੋ ਦਿਖਾਉਣਾ
+        if os.path.exists("logo.png"):
+            st.image("logo.png", width=150)
+        else:
+            st.markdown("<h1 style='text-align: center;'>🙏</h1>", unsafe_allow_html=True)
+            
         st.markdown(f"<h2 style='text-align: center;'>{NGO_NAME_PB}</h2>", unsafe_allow_html=True)
         st.markdown("<hr>", unsafe_allow_html=True)
         
@@ -125,7 +146,7 @@ if not st.session_state.logged_in:
                     st.rerun()
                 else:
                     st.error("❌ ਯੂਜ਼ਰਨੇਮ ਜਾਂ ਪਾਸਵਰਡ ਗਲਤ ਹੈ!")
-    st.stop()  # ਇੱਥੇ ਕੋਡ ਰੁਕ ਜਾਵੇਗਾ ਜਦੋਂ ਤੱਕ ਲਾਗਇਨ ਨਹੀਂ ਹੁੰਦਾ
+    st.stop()
 
 # ==========================================
 # ਮੁੱਖ ਸਾਫਟਵੇਅਰ (ਸਿਰਫ਼ ਲਾਗਇਨ ਹੋਣ ਤੋਂ ਬਾਅਦ ਖੁੱਲ੍ਹੇਗਾ)
@@ -143,8 +164,14 @@ with st.sidebar:
         st.session_state.is_admin = False
         st.rerun()
 
-st.title(f"🙏 {NGO_NAME_PB}")
-st.write(f"📍 {NGO_ADDRESS_PB}")
+# ਮੁੱਖ ਪੇਜ 'ਤੇ ਛੋਟਾ ਲੋਗੋ ਅਤੇ ਨਾਮ ਦਿਖਾਉਣਾ
+colA, colB = st.columns([1, 8])
+with colA:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=80)
+with colB:
+    st.title(f"{NGO_NAME_PB}")
+    st.write(f"📍 {NGO_ADDRESS_PB}")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "💸 ਦਾਨ (Donation)", 
