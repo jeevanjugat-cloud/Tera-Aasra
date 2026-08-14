@@ -8,7 +8,7 @@ import os
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ)"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
@@ -215,6 +215,40 @@ with tab1:
             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
             url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
             st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ ਜਾਂ WhatsApp ਭੇਜੋ")
+    
+    col_search1, col_search2 = st.columns([2, 1])
+    with col_search1:
+        search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
+    with col_search2:
+        st.write("") # spacing
+        st.write("") # spacing
+        search_btn = st.button("🔍 ਰਸੀਦ ਲੱਭੋ")
+        
+    if search_btn:
+        res = supabase.table("donations").select("*").eq("id", search_id).execute()
+        if res.data:
+            record = res.data[0]
+            rep_name = record['name']
+            rep_phone = record['phone']
+            rep_amount = record['amount']
+            rep_date = record['date']
+            rep_mode = record.get('payment_mode', 'ਨਕਦ (Cash)')
+            
+            html_file_rep = generate_html_receipt(search_id, rep_name, rep_amount, rep_date, rep_mode)
+            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({rep_name})!")
+            
+            with open(html_file_rep, "r", encoding="utf-8") as file:
+                st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
+            
+            if rep_phone:
+                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {rep_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{rep_amount}/- ਦਾ ਦਾਨ ({rep_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                url = f"https://wa.me/{rep_phone}?text={urllib.parse.quote(msg)}"
+                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਦੁਬਾਰਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
+        else:
+            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ। ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ਰਸੀਦ ਨੰਬਰ ਭਰੋ।")
 
 # TAB 2: EXPENDITURES
 with tab2:
