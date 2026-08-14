@@ -46,6 +46,47 @@ try:
 except Exception as e:
     st.error("Supabase ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ।")
 
+# --- HTML REPORT GENERATOR (ਪ੍ਰਿੰਟ ਕਰਨ ਲਈ ਰਿਪੋਰਟਾਂ ਬਣਾਉਣ ਵਾਲਾ ਫੰਕਸ਼ਨ) ---
+def generate_html_report(title, df):
+    table_html = df.to_html(index=False, border=1, classes='report-table')
+    logo_base64 = get_base64_image("logo.png")
+    img_html = f'<img src="data:image/png;base64,{logo_base64}" style="height: 80px; margin-bottom: 10px;">' if logo_base64 else ''
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="pa">
+    <head>
+        <meta charset="UTF-8">
+        <title>{title}</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; }}
+            .header {{ text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; }}
+            .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 5px; }}
+            .report-title {{ font-size: 18px; font-weight: bold; color: #D92B2B; margin-top: 10px; }}
+            .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
+            .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; }}
+            .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
+            @media print {{ body {{ padding: 0; }} }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            {img_html}
+            <div class="title">{NGO_NAME_PB}</div>
+            <div>{NGO_ADDRESS_PB}</div>
+            <div class="report-title">{title}</div>
+            <div style="font-size: 12px; margin-top: 5px; color: #555;">Report Generated On: {datetime.now().strftime("%d-%m-%Y %H:%M")}</div>
+        </div>
+        {table_html}
+        <script>window.onload = function() {{ window.print(); }}</script>
+    </body>
+    </html>
+    """
+    filename = f"Report_{title.replace(' ', '_')}.html"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    return filename
+
 # --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ ---
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
@@ -62,13 +103,7 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
         <title>Receipt #{receipt_no}</title>
         <style>
             body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; padding: 20px; }}
-            .receipt-box {{
-                max-width: 850px; margin: auto; padding: 20px 30px;
-                background-color: #F8F1D1; 
-                border-top: 25px solid #4A1B15; 
-                border-bottom: 25px solid #4A1B15;
-                color: #333; position: relative; box-sizing: border-box;
-            }}
+            .receipt-box {{ max-width: 850px; margin: auto; padding: 20px 30px; background-color: #F8F1D1; border-top: 25px solid #4A1B15; border-bottom: 25px solid #4A1B15; color: #333; position: relative; box-sizing: border-box; }}
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
@@ -217,7 +252,7 @@ with tab1:
             html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
             st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
             with open(html_file, "r", encoding="utf-8") as file:
-                st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html")
+                st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print Receipt)", data=file.read(), file_name=html_file, mime="text/html")
 
 # TAB 2: EXPENSES
 with tab2:
@@ -236,11 +271,22 @@ with tab2:
             }).execute()
             st.success("ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ!")
 
+    st.markdown("---")
+    st.subheader("📑 ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ (Expenditure Report)")
+    exp_data_all = supabase.table("expenses").select("*").execute().data or []
+    if exp_data_all:
+        df_exp_view = pd.DataFrame(exp_data_all)
+        df_exp_view = df_exp_view[['date', 'description', 'category', 'amount', 'bank_account']].sort_values(by='date', ascending=False)
+        st.dataframe(df_exp_view, use_container_width=True)
+        
+        report_file_exp = generate_html_report("Expenditure Report (ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ)", df_exp_view)
+        with open(report_file_exp, "r", encoding="utf-8") as file:
+            st.download_button("🖨️ ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Expenses)", data=file.read(), file_name=report_file_exp, mime="text/html")
+
 # TAB 3: FULL MIRROR BANK ACCOUNTS & P&L
 with tab3:
-    st.header("ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ ਅਤੇ ਮਿਲਾਨ (Full Mirror Ledger & Reconciliation)")
+    st.header("ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ (Full Mirror Ledger)")
     
-    # Fetch Data
     don_data = supabase.table("donations").select("*").execute().data or []
     exp_data = supabase.table("expenses").select("*").execute().data or []
     ledger_data = supabase.table("bank_ledger").select("*").execute().data or []
@@ -251,13 +297,19 @@ with tab3:
     
     selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank to view Ledger)", BANK_ACCOUNTS)
     
-    # Compile Full Ledger for Selected Bank
+    st.markdown("### 📅 ਮਿਤੀ ਅਨੁਸਾਰ ਸਟੇਟਮੈਂਟ (Statement Period)")
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1))
+    with col_d2:
+        end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today())
+
     ledger_entries = []
     
     if not df_don.empty:
         bank_dons = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]
         for _, row in bank_dons.iterrows():
-            ledger_entries.append({'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            ledger_entries.append({'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec No: {row['id']})", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
             
     if not df_exp.empty:
         bank_exps = df_exp[df_exp['bank_account'] == selected_bank]
@@ -270,74 +322,44 @@ with tab3:
             ledger_entries.append({'Date': row['txn_date'], 'Description': row['description'], 'Credit': float(row['credit']), 'Debit': float(row['debit']), 'Source': row['source']})
             
     df_compiled = pd.DataFrame(ledger_entries)
+    sys_bal = 0.0
     
     if not df_compiled.empty:
-        df_compiled['Date'] = pd.to_datetime(df_compiled['Date'])
+        df_compiled['Date'] = pd.to_datetime(df_compiled['Date']).dt.date
         df_compiled = df_compiled.sort_values(by='Date')
         
-        # Calculate Running Balance
-        df_compiled['Balance'] = df_compiled['Credit'].cumsum() - df_compiled['Debit'].cumsum()
+        df_before = df_compiled[df_compiled['Date'] < start_date]
+        opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
         
-        st.dataframe(df_compiled[['Date', 'Description', 'Source', 'Credit', 'Debit', 'Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Balance': '{:.2f}'}), use_container_width=True)
+        df_period = df_compiled[(df_compiled['Date'] >= start_date) & (df_compiled['Date'] <= end_date)].copy()
         
-        sys_bal = df_compiled['Balance'].iloc[-1]
+        running_bal = opening_bal
+        balances = []
+        for _, row in df_period.iterrows():
+            running_bal += (row['Credit'] - row['Debit'])
+            balances.append(running_bal)
+        df_period['Balance'] = balances
+        
+        closing_bal = opening_bal + df_period['Credit'].sum() - df_period['Debit'].sum()
+        sys_bal = df_compiled['Credit'].sum() - df_compiled['Debit'].sum()
+        
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("ਓਪਨਿੰਗ ਬੈਲੇਂਸ (Opening)", f"₹ {opening_bal:,.2f}")
+        m2.metric("ਕੁੱਲ ਜਮ੍ਹਾਂ (Total Credit)", f"₹ {df_period['Credit'].sum():,.2f}")
+        m3.metric("ਕੁੱਲ ਖਰਚਾ (Total Debit)", f"₹ {df_period['Debit'].sum():,.2f}")
+        m4.metric("ਕਲੋਜ਼ਿੰਗ ਬੈਲੇਂਸ (Closing)", f"₹ {closing_bal:,.2f}")
+        
+        # Displaying the statement table
+        st.dataframe(df_period[['Date', 'Description', 'Source', 'Credit', 'Debit', 'Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Balance': '{:.2f}'}), use_container_width=True)
+        
+        # Print Command for Bank Statement
+        report_title = f"Bank Statement - {selected_bank} ({start_date} to {end_date})"
+        report_file_bank = generate_html_report(report_title, df_period[['Date', 'Description', 'Source', 'Credit', 'Debit', 'Balance']])
+        with open(report_file_bank, "r", encoding="utf-8") as file:
+            st.download_button("🖨️ ਸਟੇਟਮੈਂਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Statement)", data=file.read(), file_name=report_file_bank, mime="text/html")
+            
     else:
         st.info("ਇਸ ਖਾਤੇ ਵਿੱਚ ਹਾਲੇ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਹੈ। (No entries yet)")
-        sys_bal = 0.0
-        
-    st.markdown("### ⚖️ ਬੈਂਕ ਮਿਲਾਨ (Reconciliation Tally)")
-    col_bal1, col_bal2, col_bal3 = st.columns(3)
-    col_bal1.metric(f"ਸਿਸਟਮ ਦਾ ਬੈਲੇਂਸ ({selected_bank})", f"₹ {sys_bal:,.2f}")
-    actual_bal = col_bal2.number_input("ਬੈਂਕ ਦਾ ਅਸਲ ਬੈਲੇਂਸ (Actual Bank Balance)", value=float(sys_bal), step=100.0)
-    
-    diff = actual_bal - sys_bal
-    if diff == 0:
-        col_bal3.success("✅ ਖਾਤਾ ਮਿਲ ਗਿਆ (Tally Matched)")
-    else:
-        col_bal3.error(f"⚠️ ਫਰਕ (Mismatch): ₹ {diff:,.2f}")
-        
-    st.markdown("---")
-    st.subheader(f"➕ {selected_bank} ਵਿੱਚ ਹੋਰ ਐਂਟਰੀਆਂ ਪਾਓ (Add Bank Charges/Interest etc.)")
-    
-    t3_col1, t3_col2 = st.columns(2)
-    with t3_col1:
-        with st.form("manual_ledger"):
-            st.write("ਹੱਥੀਂ ਐਂਟਰੀ ਕਰੋ (Manual Entry)")
-            m_date = st.date_input("ਮਿਤੀ (Date)")
-            m_desc = st.text_input("ਵੇਰਵਾ (ਜਿਵੇਂ ਬੈਂਕ ਵਿਆਜ, SMS ਚਾਰਜ)")
-            m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
-            m_amt = st.number_input("ਰਕਮ (₹)", min_value=1.0)
-            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ"):
-                credit_val = m_amt if "Credit" in m_type else 0.0
-                debit_val = m_amt if "Debit" in m_type else 0.0
-                supabase.table("bank_ledger").insert({
-                    "bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"),
-                    "description": m_desc, "credit": credit_val, "debit": debit_val, "source": "Manual"
-                }).execute()
-                st.success("ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
-                st.rerun()
-                
-    with t3_col2:
-        st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
-        st.warning("Excel ਕਾਲਮ ਨਾਮ ਬਿਲਕੁਲ ਇਹ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: Date, Description, Credit, Debit")
-        stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'])
-        if stmt_file:
-            try:
-                df_stmt = pd.read_excel(stmt_file)
-                st.dataframe(df_stmt.head(3))
-                if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ"):
-                    ledg_records = []
-                    for _, row in df_stmt.iterrows():
-                        ledg_records.append({
-                            "bank_name": selected_bank, "txn_date": str(row['Date'])[:10],
-                            "description": row['Description'], "credit": float(row.get('Credit', 0)),
-                            "debit": float(row.get('Debit', 0)), "source": "Statement Upload"
-                        })
-                    supabase.table("bank_ledger").insert(ledg_records).execute()
-                    st.success("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ ਜਾਂ ਕਾਲਮ ਨਾਮ ਮੈਚ ਨਹੀਂ ਹੋਏ। ਐਰਰ: {e}")
 
 # TAB 4: STOCK
 with tab4:
@@ -365,8 +387,13 @@ with tab4:
     with col2:
         stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
         if stock_res.data:
-            df_stock = pd.DataFrame(stock_res.data)
-            st.dataframe(df_stock[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
+            df_stock = pd.DataFrame(stock_res.data)[['item_name', 'quantity', 'unit', 'last_updated']]
+            st.dataframe(df_stock, use_container_width=True)
+            
+            # Print Command for Stock
+            report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock)
+            with open(report_file_stock, "r", encoding="utf-8") as file:
+                st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Stock)", data=file.read(), file_name=report_file_stock, mime="text/html")
 
 # TAB 5: STUDENTS
 with tab5:
@@ -380,6 +407,18 @@ with tab5:
             supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
             st.success("ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
 
+    st.markdown("---")
+    st.subheader("📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Student List)")
+    student_data = supabase.table("students").select("*").execute().data or []
+    if student_data:
+        df_students = pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date', 'pass_date']]
+        st.dataframe(df_students, use_container_width=True)
+        
+        # Print Command for Students
+        report_file_stu = generate_html_report("Enrolled Students Record (ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ)", df_students)
+        with open(report_file_stu, "r", encoding="utf-8") as file:
+            st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Student Data)", data=file.read(), file_name=report_file_stu, mime="text/html")
+
 # TAB 6: BULK UPLOAD EXCEL (ADMIN ONLY)
 with tab6:
     st.header("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)")
@@ -387,13 +426,18 @@ with tab6:
     if not st.session_state.is_admin:
         st.error("⚠️ ਸੁਰੱਖਿਆ ਕਾਰਨਾਂ ਕਰਕੇ: ਸਿਰਫ਼ ਐਡਮਿਨ (Admin) ਹੀ ਬਲਕ ਅੱਪਲੋਡ ਕਰ ਸਕਦਾ ਹੈ।")
     else:
-        st.warning("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਇਹ ਕਾਲਮ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of")
+        st.warning("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਇਹ ਕਾਲਮ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of, balance")
         uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
         if uploaded_file is not None:
             try:
                 df_upload = pd.read_excel(uploaded_file)
                 st.write(df_upload.head())
                 if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
+                    if 'balance' in df_upload.columns:
+                        df_upload = df_upload.drop(columns=['balance'])
+                    if 'Balance' in df_upload.columns:
+                        df_upload = df_upload.drop(columns=['Balance'])
+                        
                     records = df_upload.to_dict(orient='records')
                     supabase.table("donations").insert(records).execute()
                     st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
