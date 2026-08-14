@@ -8,7 +8,7 @@ import os
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
-NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
+NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ ਸਭਾ (ਰਜਿ.)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- ਲਾਗਇਨ ਖਾਤੇ (LOGIN ACCOUNTS) ---
@@ -42,7 +42,6 @@ except Exception as e:
 
 # --- HTML RECEIPT GENERATOR ---
 def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
-    # ਲੋਗੋ ਨੂੰ ਲਿਆਉਣਾ
     logo_base64 = get_base64_image("logo.png")
     if logo_base64:
         img_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Logo" style="width: 120px; height: auto; margin-bottom: 10px;">'
@@ -90,7 +89,7 @@ def generate_html_receipt(receipt_no, name, amount, date, payment_mode):
                     ਰਕਮ (Amount): ₹ {amount}/-
                 </div>
                 <p style="text-align: center; color: #666; font-size: 14px;">
-                    <em>ਸਭਾ ਨੂੰ ਮਾਲੀ ਸਹਾਇਤਾ ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।<br>Thank you for your generous support.</em>
+                    <em>ਸਭਾ ਨੂੰ ਮਾਲੀ ਸਹਾਇਤਾ ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ。<br>Thank you for your generous support.</em>
                 </p>
             </div>
             <div class="footer">
@@ -116,11 +115,10 @@ if 'logged_in' not in st.session_state:
     st.session_state.is_admin = False
     st.session_state.username = ""
 
-# --- LOGIN SCREEN (ਲਾਗਇਨ ਸਕਰੀਨ) ---
+# --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # ਲਾਗਇਨ ਸਕਰੀਨ 'ਤੇ ਲੋਗੋ ਦਿਖਾਉਣਾ
         if os.path.exists("logo.png"):
             st.image("logo.png", width=150)
         else:
@@ -148,10 +146,7 @@ if not st.session_state.logged_in:
                     st.error("❌ ਯੂਜ਼ਰਨੇਮ ਜਾਂ ਪਾਸਵਰਡ ਗਲਤ ਹੈ!")
     st.stop()
 
-# ==========================================
-# ਮੁੱਖ ਸਾਫਟਵੇਅਰ (ਸਿਰਫ਼ ਲਾਗਇਨ ਹੋਣ ਤੋਂ ਬਾਅਦ ਖੁੱਲ੍ਹੇਗਾ)
-# ==========================================
-
+# --- MAIN APP ---
 with st.sidebar:
     st.title("👤 ਪ੍ਰੋਫਾਈਲ")
     if st.session_state.is_admin:
@@ -164,7 +159,6 @@ with st.sidebar:
         st.session_state.is_admin = False
         st.rerun()
 
-# ਮੁੱਖ ਪੇਜ 'ਤੇ ਛੋਟਾ ਲੋਗੋ ਅਤੇ ਨਾਮ ਦਿਖਾਉਣਾ
 colA, colB = st.columns([1, 8])
 with colA:
     if os.path.exists("logo.png"):
@@ -195,13 +189,8 @@ with tab1:
 
     if submit and donor_name and amount:
         formatted_date = receipt_date.strftime("%Y-%m-%d")
-        
         data, count = supabase.table("donations").insert({
-            "name": donor_name, 
-            "phone": donor_phone, 
-            "amount": amount, 
-            "date": formatted_date, 
-            "payment_mode": pay_mode
+            "name": donor_name, "phone": donor_phone, "amount": amount, "date": formatted_date, "payment_mode": pay_mode
         }).execute()
         
         receipt_id = data[1][0]['id']
@@ -217,38 +206,42 @@ with tab1:
             st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
 
     st.markdown("---")
-    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ ਜਾਂ WhatsApp ਭੇਜੋ")
+    st.subheader("🔍 ਦਾਨ ਰਿਕਾਰਡ ਖੋਜੋ (Search Donations)")
     
-    col_search1, col_search2 = st.columns([2, 1])
-    with col_search1:
-        search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
-    with col_search2:
-        st.write("") # spacing
-        st.write("") # spacing
-        search_btn = st.button("🔍 ਰਸੀਦ ਲੱਭੋ")
+    don_search_col1, don_search_col2 = st.columns(2)
+    with don_search_col1:
+        search_donor_name = st.text_input("ਦਾਨੀ ਦੇ ਨਾਮ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search Name)")
+    with don_search_col2:
+        search_don_date = st.date_input("ਮਿਤੀ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Optional Date)", value=None)
+
+    all_donations = supabase.table("donations").select("*").execute().data
+    if all_donations:
+        df_donations = pd.DataFrame(all_donations)
+        if search_donor_name:
+            df_donations = df_donations[df_donations['name'].str.contains(search_donor_name, case=False, na=False)]
+        if search_don_date:
+            date_str = search_don_date.strftime("%Y-%m-%d")
+            df_donations = df_donations[df_donations['date'].str.startswith(date_str)]
         
-    if search_btn:
+        st.dataframe(df_donations[['id', 'name', 'phone', 'amount', 'payment_mode', 'date']], use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ ਜਾਂ WhatsApp ਭੇਜੋ")
+    search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
+    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ"):
         res = supabase.table("donations").select("*").eq("id", search_id).execute()
         if res.data:
             record = res.data[0]
-            rep_name = record['name']
-            rep_phone = record['phone']
-            rep_amount = record['amount']
-            rep_date = record['date']
-            rep_mode = record.get('payment_mode', 'ਨਕਦ (Cash)')
-            
-            html_file_rep = generate_html_receipt(search_id, rep_name, rep_amount, rep_date, rep_mode)
-            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({rep_name})!")
-            
+            html_file_rep = generate_html_receipt(search_id, record['name'], record['amount'], record['date'], record.get('payment_mode', 'ਨਕਦ (Cash)'))
+            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record['name']})!")
             with open(html_file_rep, "r", encoding="utf-8") as file:
                 st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
-            
-            if rep_phone:
-                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {rep_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{rep_amount}/- ਦਾ ਦਾਨ ({rep_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-                url = f"https://wa.me/{rep_phone}?text={urllib.parse.quote(msg)}"
+            if record['phone']:
+                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {record['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{record['amount']}/- ਦਾ ਦਾਨ ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                url = f"https://wa.me/{record['phone']}?text={urllib.parse.quote(msg)}"
                 st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਦੁਬਾਰਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
         else:
-            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ। ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ਰਸੀਦ ਨੰਬਰ ਭਰੋ।")
+            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
 
 # TAB 2: EXPENDITURES
 with tab2:
@@ -258,9 +251,18 @@ with tab2:
         exp_amount = st.number_input("ਰਕਮ (₹)", min_value=1)
         exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
         if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ") and desc:
-            formatted_exp_date = exp_date.strftime("%Y-%m-%d")
-            supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": formatted_exp_date}).execute()
+            supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d")}).execute()
             st.success("ਖਰਚਾ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!")
+
+    st.markdown("---")
+    st.subheader("🔍 ਖਰਚੇ ਖੋਜੋ (Search Expenses)")
+    exp_search = st.text_input("ਖਰਚੇ ਦੇ ਵੇਰਵੇ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search Description)")
+    all_exp = supabase.table("expenses").select("*").execute().data
+    if all_exp:
+        df_exp = pd.DataFrame(all_exp)
+        if exp_search:
+            df_exp = df_exp[df_exp['description'].str.contains(exp_search, case=False, na=False)]
+        st.dataframe(df_exp, use_container_width=True)
 
 # TAB 3: STOCK MANAGEMENT
 with tab3:
@@ -276,7 +278,6 @@ with tab3:
             if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ") and item_name:
                 current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
-                
                 if res.data:
                     old_qty = res.data[0]['quantity']
                     new_qty = old_qty + qty if "Add" in stock_action else max(0, old_qty - qty)
@@ -287,11 +288,14 @@ with tab3:
                 st.success(f"'{item_name}' ਦਾ ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
 
     with col2:
-        st.subheader("ਮੌਜੂਦਾ ਸਟਾਕ")
+        st.subheader("ਮੌਜੂਦਾ ਸਟਾਕ ਅਤੇ ਖੋਜ")
+        stock_query = st.text_input("ਸਟਾਕ ਆਈਟਮ ਖੋਜ ਕਰੋ (Search Stock Item)")
         stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
         if stock_res.data:
-            df = pd.DataFrame(stock_res.data)
-            st.dataframe(df[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
+            df_stock = pd.DataFrame(stock_res.data)
+            if stock_query:
+                df_stock = df_stock[df_stock['item_name'].str.contains(stock_query, case=False, na=False)]
+            st.dataframe(df_stock[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
 
 # TAB 4: STUDENTS
 with tab4:
@@ -309,10 +313,19 @@ with tab4:
             supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": p_date}).execute()
             st.success("ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
 
+    st.markdown("---")
+    st.subheader("🔍 ਵਿਦਿਆਰਥੀ ਖੋਜੋ (Search Students)")
+    stu_query = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ ਖੋਜ ਕਰੋ (Search Student Name)")
+    all_students = supabase.table("students").select("*").execute().data
+    if all_students:
+        df_students = pd.DataFrame(all_students)
+        if stu_query:
+            df_students = df_students[df_students['name'].str.contains(stu_query, case=False, na=False)]
+        st.dataframe(df_students[['name', 'phone', 'course', 'join_date', 'pass_date']], use_container_width=True)
+
 # TAB 5: ACCOUNTS OVERVIEW
 with tab5:
     st.header("ਖਾਤਾ ਸੰਖੇਪ (Financial Overview)")
-    
     don_res = supabase.table("donations").select("*").execute()
     exp_res = supabase.table("expenses").select("*").execute()
     
@@ -327,7 +340,6 @@ with tab5:
     c2.metric("ਕੁੱਲ ਖਰਚਾ (Expenses)", f"₹ {tot_exp:,.2f}")
     c3.metric("ਮੌਜੂਦਾ ਬਕਾਇਆ (Balance)", f"₹ {tot_don - tot_exp:,.2f}")
     
-    # ADMIN ONLY: Delete Section
     if st.session_state.is_admin:
         st.error("⚠️ ਐਡਮਿਨ ਪਾਵਰ: ਗਲਤ ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਕਰੋ (Admin Delete Area)")
         del_col1, del_col2 = st.columns(2)
