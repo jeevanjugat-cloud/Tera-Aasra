@@ -5,6 +5,7 @@ import urllib.parse
 import io
 import base64
 import os
+import time  # <-- NEW: To show success messages properly before refreshing
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
@@ -41,46 +42,23 @@ st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha 
 # ==========================================
 st.markdown("""
     <style>
-        /* Hide Streamlit Deploy/GitHub Menu */
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
         footer {visibility: hidden;}
         .stAppDeployButton {display:none !important;}
 
-        /* Sidebar Menu Font Size */
         [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 18px !important; font-weight: 600 !important; padding-bottom: 5px; }
-        
-        /* All Input Labels */
         div[data-testid="stWidgetLabel"] p { font-size: 16px !important; font-weight: 600 !important; }
         h2 { font-size: 26px !important; font-weight: 700 !important; padding-bottom: 5px !important; }
         h3 { font-size: 20px !important; font-weight: 600 !important; }
-        
-        /* Metric text size */
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         [data-testid="stBaseButton-primary"] { font-size: 16px !important; font-weight: bold !important; padding: 5px 20px !important; }
         
-        /* Balance Sheet specific styles */
         .bs-box { border: 2px solid #1E3A8A; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: rgba(30, 58, 138, 0.05); }
         .bs-header { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; border-bottom: 2px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 15px; }
         .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
         .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #D92B2B; border-top: 1px solid #333; padding-top: 8px; margin-top: 10px; }
-        
-        /* Custom WhatsApp Button Style */
-        .whatsapp-btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background-color: #25D366;
-            color: white !important;
-            text-align: center;
-            text-decoration: none;
-            font-size: 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-top: 5px;
-            border: 1px solid #128C7E;
-        }
-        .whatsapp-btn:hover { background-color: #128C7E; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -124,7 +102,6 @@ def generate_html_report(title, content_html):
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
-    
     amount_text = f"Rs. {amount}/-" if don_type == "ਪੈਸੇ (Monetary)" else f"ਕੀਮਤ: Rs. {amount}/-" if amount > 0 else f"{item_details}"
     amount_in_words = f"Rupees {amount} Only" if don_type == "ਪੈਸੇ (Monetary)" else f"{item_details} (In-Kind Donation)"
     display_phone = phone if phone else "________________"
@@ -279,7 +256,7 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
                 
                 receipt_id = data[1][0]['id']
                 html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of)
-                st.success(f"✅ ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ। (Receipt Ready)")
+                st.success(f"✅ ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
                 
                 col_d1, col_d2 = st.columns([1, 3])
                 with col_d1:
@@ -473,7 +450,7 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                 m_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
                 if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("bank_ledger").insert({"bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"), "description": m_desc, "credit": m_amt if "Credit" in m_type else 0.0, "debit": m_amt if "Debit" in m_type else 0.0, "source": "Manual"}).execute()
-                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!"); st.rerun()
+                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
         with t3_col2:
             st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
             stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'], key="bank_stmt")
@@ -485,11 +462,10 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                     ledg_records = [{"bank_name": selected_bank, "txn_date": str(row['date'])[:10], "description": str(row['description']), "credit": float(row.get('credit',0)), "debit": float(row.get('debit',0)), "balance": float(row.get('balance',0)), "source": "Statement Upload"} for _, row in df_stmt.iterrows() if pd.notna(row.get('date')) and pd.notna(row.get('description'))]
                     if ledg_records:
                         supabase.table("bank_ledger").insert(ledg_records).execute()
-                        st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); st.rerun()
+                        st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
 
         st.markdown("---")
         st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
-        st.info("ਜੇਕਰ ਕੋਈ ਪੈਸਾ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਵਿੱਚ ਆਇਆ ਹੈ ਅਤੇ ਤੁਸੀਂ ਉਸਦੀ ਰਸੀਦ ਕੱਟਣੀ ਹੈ, ਤਾਂ ਇੱਥੇ ਉਸ ਐਂਟਰੀ ਦਾ ID ਭਰੋ।")
         col_conv1, col_conv2 = st.columns(2)
         with col_conv1:
             ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
@@ -504,7 +480,7 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
         if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
             ldata = st.session_state['convert_ledger_data']
             with col_conv2:
-                st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ (Entry Found):**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
+                st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ:**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
                 with st.form("convert_bank_receipt"):
                     c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
                     c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
@@ -521,12 +497,12 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                 
                 rec_id = data_conv[1][0]['id']
                 h_file = generate_html_receipt(rec_id, c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct)
-                st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ! (Receipt Ready)")
+                st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ!")
                 
-                col_d1, col_d2 = st.columns([1, 3])
-                with col_d1:
+                col_c1, col_c2 = st.columns([1, 3])
+                with col_c1:
                     with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
-                with col_d2:
+                with col_c2:
                     if c_phone:
                         msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                         url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
@@ -618,7 +594,7 @@ elif selected_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)":
                 a_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
                 if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("assets").insert({"name": a_name, "value": a_val, "date_added": str(date.today())}).execute()
-                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); st.rerun()
+                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
         with ac2:
             with st.form("add_liab"):
                 st.write("**Fund/Liability (ਫੰਡ ਜਾਂ ਉਧਾਰ ਜੋੜੋ)**")
@@ -626,7 +602,7 @@ elif selected_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)":
                 l_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
                 if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
-                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); st.rerun()
+                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
 
 # ==========================================
 # 5. STOCK
@@ -706,13 +682,12 @@ elif selected_tab == "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)
         st.download_button("📥 ਐਕਸਲ ਡਾਊਨਲੋਡ ਕਰੋ (Download Backup)", data=buffer.getvalue(), file_name=f"NGO_Backup_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
 
 # ==========================================
-# 8. DELETE SYSTEM (ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ) - NEW APPROVAL WORKFLOW
+# 8. DELETE SYSTEM (ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ)
 # ==========================================
 elif selected_tab == "🗑️ ਡਿਲੀਟ (Delete)":
     st.header("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Management)")
     t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students"}
     
-    # FOR ADMIN: SHOW PENDING APPROVALS
     if is_admin:
         st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਬੇਨਤੀਆਂ (Pending Requests from Staff)")
         reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
@@ -721,34 +696,34 @@ elif selected_tab == "🗑️ ਡਿਲੀਟ (Delete)":
             st.dataframe(df_reqs, use_container_width=True)
             
             with st.form("approve_reject_form"):
-                req_id = st.number_input("ਬੇਨਤੀ ID ਭਰੋ (Enter Request ID to action)", min_value=0, step=1)
+                req_id = st.number_input("ਬੇਨਤੀ ID ਭਰੋ (Enter Request ID)", min_value=0, step=1)
                 action = st.radio("ਕੀ ਕਰਨਾ ਹੈ? (Action)", ["✅ ਮਨਜ਼ੂਰ ਕਰੋ ਅਤੇ ਡਿਲੀਟ ਕਰੋ (Approve & Delete)", "❌ ਰੱਦ ਕਰੋ (Reject)"])
                 if st.form_submit_button("ਲਾਗੂ ਕਰੋ (Apply)", type="primary") and req_id > 0:
-                    target_req = next((r for r in reqs if r['id'] == req_id), None)
+                    req_id_int = int(req_id)
+                    target_req = next((r for r in reqs if int(r['id']) == req_id_int), None)
                     if target_req:
                         if "Approve" in action:
                             t_name = target_req['table_name']
                             r_id = target_req['record_id']
-                            if t_name == "stock":
-                                supabase.table(t_name).delete().eq("item_name", r_id).execute()
-                            else:
-                                supabase.table(t_name).delete().eq("id", int(r_id)).execute()
-                            supabase.table("deletion_requests").update({"status": "Approved"}).eq("id", req_id).execute()
-                            st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ! (Entry Deleted!)")
+                            try:
+                                if t_name == "stock": supabase.table(t_name).delete().eq("item_name", str(r_id)).execute()
+                                else: supabase.table(t_name).delete().eq("id", int(float(r_id))).execute()
+                                supabase.table("deletion_requests").update({"status": "Approved"}).eq("id", req_id_int).execute()
+                                st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ! (Entry Deleted!)")
+                                time.sleep(1.5); st.rerun()
+                            except Exception as e: st.error(f"Error: {e}")
                         else:
-                            supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
-                            st.success("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ! (Request Rejected!)")
-                        st.rerun()
-                    else:
-                        st.error("ਗਲਤ ਬੇਨਤੀ ID! (Invalid Request ID)")
-        else:
-            st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ। (No pending requests.)")
+                            try:
+                                supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id_int).execute()
+                                st.success("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ! (Request Rejected!)")
+                                time.sleep(1.5); st.rerun()
+                            except Exception as e: st.error(f"Error: {e}")
+                    else: st.error("ਗਲਤ ਬੇਨਤੀ ID! (Invalid Request ID)")
+        else: st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ। (No pending requests.)")
         st.markdown("---")
         st.subheader("⚡ ਸਿੱਧਾ ਡਿਲੀਟ ਕਰੋ (Direct Admin Delete)")
         
-    # SHARED UI: SEARCH AND DELETE/REQUEST
-    if is_staff:
-        st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ। (Staff can only request deletion from Admin.)")
+    if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ। (Staff can only request deletion.)")
         
     del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
     
@@ -788,16 +763,18 @@ elif selected_tab == "🗑️ ਡਿਲੀਟ (Delete)":
         
         if is_admin:
             if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Confirm Direct Delete)", type="primary"):
-                if del_type == "ਸਟਾਕ (Stock)": supabase.table(t_map[del_type]).delete().eq("item_name", record_id).execute()
-                else: supabase.table(t_map[del_type]).delete().eq("id", int(record_id)).execute()
-                st.success("✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); st.session_state.pop('del_entry_data', None); st.rerun()
+                try:
+                    if del_type == "ਸਟਾਕ (Stock)": supabase.table(t_map[del_type]).delete().eq("item_name", record_id).execute()
+                    else: supabase.table(t_map[del_type]).delete().eq("id", int(float(record_id))).execute()
+                    st.success("✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
+                except Exception as e: st.error(f"Error: {e}")
         elif is_staff:
             if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Send to Admin for Approval)", type="primary"):
                 supabase.table("deletion_requests").insert({
-                    "table_name": t_map[del_type], "record_id": record_id, "details": details_str, "requested_by": "staff"
+                    "table_name": t_map[del_type], "record_id": str(record_id), "details": details_str, "requested_by": "staff"
                 }).execute()
                 st.success("✅ ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਨੂੰ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ! (Request sent to Admin!)")
-                st.session_state.pop('del_entry_data', None)
+                st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
 
 # ==========================================
 # 9. ADMIN TOOLS (Bulk Uploads)
