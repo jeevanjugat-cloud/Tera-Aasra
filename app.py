@@ -39,7 +39,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS (UI DESIGN & LARGE HOME BUTTONS)
+# CUSTOM CSS (UI DESIGN & CENTERED HEADER)
 # ==========================================
 st.markdown("""
     <style>
@@ -55,6 +55,30 @@ st.markdown("""
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         
+        /* Centered Header Style for All Pages */
+        .main-header-container {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .main-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1E3A8A;
+            margin-bottom: 5px;
+        }
+        .main-tagline {
+            font-size: 20px;
+            font-weight: bold;
+            color: #D92B2B;
+            margin-bottom: 5px;
+        }
+        .main-address {
+            font-size: 15px;
+            color: #555;
+            font-weight: 600;
+        }
+
         /* Larger Home Page Buttons */
         div.stButton > button {
             font-size: 18px !important;
@@ -210,8 +234,12 @@ if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if os.path.exists("logo.png"): st.image("logo.png", width=150)
-        st.markdown(f"<h2 style='text-align: center;'>{NGO_NAME_PB}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: #D92B2B; font-weight: bold;'>{NGO_TAGLINE_PB}</p>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="main-header-container">
+                <div class="main-title">{NGO_NAME_PB}</div>
+                <div class="main-tagline">{NGO_TAGLINE_PB}</div>
+            </div>
+        """, unsafe_allow_html=True)
         with st.form("login_form"):
             username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
             password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
@@ -266,12 +294,19 @@ with st.sidebar:
     selected_tab = st.radio("ਚੁਣੋ (Select)", menu_options, index=current_idx, label_visibility="collapsed")
     st.session_state.current_tab = selected_tab
 
-colA, colB = st.columns([1, 8])
-with colA:
-    if os.path.exists("logo.png"): st.image("logo.png", width=80)
-with colB: 
-    st.title(f"{NGO_NAME_PB}")
-    st.markdown(f"<p style='color: #D92B2B; font-weight: bold; margin-top: -15px;'>{NGO_TAGLINE_PB}</p>", unsafe_allow_html=True)
+# --- CENTERED HEADER ON ALL PAGES ---
+colA, colB, colC = st.columns([1, 4, 1])
+with colB:
+    logo_path = "logo.png"
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=90, use_column_width=False)
+    st.markdown(f"""
+        <div class="main-header-container">
+            <div class="main-title">{NGO_NAME_PB}</div>
+            <div class="main-tagline">{NGO_TAGLINE_PB}</div>
+            <div class="main-address">{NGO_ADDRESS_PB}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -649,7 +684,7 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
                         with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
