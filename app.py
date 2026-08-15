@@ -21,7 +21,7 @@ EXPENSE_CATEGORIES = [
     "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
-    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
+    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀස (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
     "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"
 ]
 
@@ -256,7 +256,7 @@ is_admin = st.session_state.role == "admin"
 is_mgmt = st.session_state.role == "management"
 is_staff = st.session_state.role == "staff"
 
-# --- SIDEBAR NAVIGATION (APPEARS AFTER HOME) ---
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.title("👤 ਪ੍ਰੋਫਾਈਲ (Profile)")
     role_display = "ਐਡਮਿਨ ਮੋਡ (Admin)" if is_admin else "ਮੈਨੇਜਮੈਂਟ (View Only)" if is_mgmt else "ਕਰਮਚਾਰੀ ਮੋਡ (Staff)"
@@ -307,6 +307,12 @@ with colB:
             <div class="main-address">{NGO_ADDRESS_PB}</div>
         </div>
     """, unsafe_allow_html=True)
+
+# --- QUICK HOME NAVIGATION BUTTON FOR MOBILE USERS ---
+if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)":
+    if st.button("🏠 ਹੋਮ ਪੇਜ 'ਤੇ ਜਾਓ (Back to Home Dashboard)", type="secondary"):
+        st.session_state.current_tab = "🏠 ਹੋਮ ਪੇਜ (Home)"
+        st.rerun()
 
 st.markdown("---")
 
@@ -684,7 +690,7 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
                         with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
