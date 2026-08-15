@@ -239,26 +239,33 @@ with tab1:
             
         receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today())
         
-        if st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ") and donor_name:
-            formatted_date = receipt_date.strftime("%Y-%m-%d")
-            data, count = supabase.table("donations").insert({
-                "name": donor_name, "phone": donor_phone, "amount": amount, 
-                "date": formatted_date, "payment_mode": pay_mode,
-                "donation_type": don_type, "item_details": item_details, "bank_account": bank_acc,
-                "on_account_of": on_account_of
-            }).execute()
-            
-            receipt_id = data[1][0]['id']
-            html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
-            st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
-            with open(html_file, "r", encoding="utf-8") as file:
-                st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print Receipt)", data=file.read(), file_name=html_file, mime="text/html")
-            
-            if donor_phone:
-                amt_text = f"₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ)" if don_type == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{item_details}'"
-                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-                url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
-                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
+        st.markdown("---")
+        # ਨਵਾਂ ਚੈੱਕਬਾਕਸ (To avoid double entry)
+        add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ (Bank Ledger) ਵਿੱਚ ਵੀ ਜੋੜੋ", value=True, help="ਜੇਕਰ ਇਹ ਐਂਟਰੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਰਾਹੀਂ ਪਹਿਲਾਂ ਹੀ ਅੱਪਲੋਡ ਹੋ ਚੁੱਕੀ ਹੈ, ਤਾਂ ਇਸਨੂੰ Uncheck ਕਰ ਦਿਓ ਤਾਂ ਜੋ ਬੈਲੇਂਸ ਡਬਲ ਨਾ ਹੋਵੇ।")
+        
+        submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
+        
+    if submitted and donor_name:
+        formatted_date = receipt_date.strftime("%Y-%m-%d")
+        data, count = supabase.table("donations").insert({
+            "name": donor_name, "phone": donor_phone, "amount": amount, 
+            "date": formatted_date, "payment_mode": pay_mode,
+            "donation_type": don_type, "item_details": item_details, "bank_account": bank_acc,
+            "on_account_of": on_account_of, "add_to_mirror": add_to_mirror
+        }).execute()
+        
+        receipt_id = data[1][0]['id']
+        html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
+        st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
+        
+        with open(html_file, "r", encoding="utf-8") as file:
+            st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print Receipt)", data=file.read(), file_name=html_file, mime="text/html")
+        
+        if donor_phone:
+            amt_text = f"₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ)" if don_type == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{item_details}'"
+            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+            url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
+            st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
 
     st.markdown("---")
     st.subheader("🔍 ਦਾਨ ਰਿਕਾਰਡ ਖੋਜੋ (Search Donations)")
@@ -312,10 +319,13 @@ with tab2:
         bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ?", BANK_ACCOUNTS)
         exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today())
         
+        st.markdown("---")
+        add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ (Bank Ledger) ਵਿੱਚ ਵੀ ਦਿਖਾਓ", value=True)
+        
         if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ") and desc:
             supabase.table("expenses").insert({
                 "description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"),
-                "category": cat, "bank_account": bank_acc_exp
+                "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp
             }).execute()
             st.success("ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ!")
 
@@ -324,7 +334,6 @@ with tab2:
     exp_data_all = supabase.table("expenses").select("*").execute().data or []
     if exp_data_all:
         df_exp_view = pd.DataFrame(exp_data_all)
-        # Added 'id' to let admin know what to delete
         df_exp_view = df_exp_view[['id', 'date', 'description', 'category', 'amount', 'bank_account']].sort_values(by='date', ascending=False)
         st.dataframe(df_exp_view, use_container_width=True)
         
@@ -356,12 +365,20 @@ with tab3:
     ledger_entries = []
     
     if not df_don.empty:
-        bank_dons = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]
+        if 'add_to_mirror' not in df_don.columns:
+            df_don['add_to_mirror'] = True
+        df_don['add_to_mirror'] = df_don['add_to_mirror'].fillna(True).astype(bool)
+        
+        bank_dons = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)]
         for _, row in bank_dons.iterrows():
-            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec No: {row['id']})", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
             
     if not df_exp.empty:
-        bank_exps = df_exp[df_exp['bank_account'] == selected_bank]
+        if 'add_to_mirror' not in df_exp.columns:
+            df_exp['add_to_mirror'] = True
+        df_exp['add_to_mirror'] = df_exp['add_to_mirror'].fillna(True).astype(bool)
+        
+        bank_exps = df_exp[(df_exp['bank_account'] == selected_bank) & (df_exp['add_to_mirror'] == True)]
         for _, row in bank_exps.iterrows():
             ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
             
@@ -398,7 +415,6 @@ with tab3:
         m3.metric("ਕੁੱਲ ਖਰਚਾ (Total Debit)", f"₹ {df_period['Debit'].sum():,.2f}")
         m4.metric("ਕਲੋਜ਼ਿੰਗ ਬੈਲੇਂਸ (Closing)", f"₹ {closing_bal:,.2f}")
         
-        # Added ID so admin knows which bank ledger entry to delete
         st.dataframe(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'Running Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), use_container_width=True)
         
         report_title = f"Bank Statement - {selected_bank} ({start_date} to {end_date})"
@@ -420,7 +436,7 @@ with tab3:
         col_bal3.error(f"⚠️ ਫਰਕ (Mismatch): ₹ {diff:,.2f}")
 
     st.markdown("---")
-    st.subheader(f"➕ {selected_bank} ਵਿੱਚ ਹੋਰ ਐਂਟਰੀਆਂ ਪਾਓ (Add Bank Charges/Interest etc.)")
+    st.subheader(f"➕ ਬੈਂਕ ਦੀਆਂ ਹੋਰ ਐਂਟਰੀਆਂ ਪਾਓ (Add Bank Ledger Entries)")
     
     t3_col1, t3_col2 = st.columns(2)
     with t3_col1:
@@ -470,6 +486,47 @@ with tab3:
                             st.rerun()
             except Exception as e:
                 st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ। ਐਰਰ: {e}")
+
+    # ਨਵਾਂ ਫੀਚਰ: ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਕੱਟੋ
+    st.markdown("---")
+    st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
+    st.info("ਜੇਕਰ ਕੋਈ ਪੈਸਾ ਬੈਂਕ ਸਟੇਟਮੈਂਟ (Ledger) ਵਿੱਚ ਆਇਆ ਹੈ ਅਤੇ ਤੁਸੀਂ ਉਸਦੀ ਰਸੀਦ ਕੱਟਣੀ ਹੈ, ਤਾਂ ਇੱਥੇ ਉਸ ਐਂਟਰੀ ਦਾ ID ਭਰੋ। ਸਿਸਟਮ ਇਸਨੂੰ ਦਾਨ ਵਿੱਚ ਬਦਲ ਦੇਵੇਗਾ ਅਤੇ ਬੈਲੇਂਸ ਡਬਲ ਨਹੀਂ ਕਰੇਗਾ।")
+    
+    col_conv1, col_conv2 = st.columns(2)
+    with col_conv1:
+        ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID (Bank Entry ID) ਭਰੋ", min_value=0, step=1)
+        if st.button("ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ"):
+            res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
+            if res.data and res.data[0]['credit'] > 0:
+                st.session_state['convert_ledger_id'] = ledger_id
+                st.session_state['convert_ledger_data'] = res.data[0]
+            else:
+                st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit/ਜਮ੍ਹਾਂ) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+
+    if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
+        ldata = st.session_state['convert_ledger_data']
+        with col_conv2:
+            st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ:**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
+            with st.form("convert_bank_receipt"):
+                c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
+                c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
+                c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
+                
+                submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ")
+                
+        if submitted_conv and c_name:
+            data_conv, _ = supabase.table("donations").insert({
+                "name": c_name, "phone": c_phone, "amount": ldata['credit'],
+                "date": ldata['txn_date'], "payment_mode": "Bank Transfer",
+                "donation_type": "ਪੈਸੇ (Monetary)", "bank_account": ldata['bank_name'],
+                "on_account_of": c_acct, "add_to_mirror": False  # To avoid double counting!
+            }).execute()
+            
+            rec_id = data_conv[1][0]['id']
+            h_file = generate_html_receipt(rec_id, c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct)
+            st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ!")
+            with open(h_file, "r", encoding="utf-8") as file:
+                st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
 
 # TAB 4: STOCK
 with tab4:
@@ -535,7 +592,7 @@ with tab6:
         st.error("⚠️ ਸੁਰੱਖਿਆ ਕਾਰਨਾਂ ਕਰਕੇ: ਸਿਰਫ਼ ਐਡਮਿਨ (Admin) ਹੀ ਇੱਥੇ ਬਦਲਾਅ ਕਰ ਸਕਦਾ ਹੈ।")
     else:
         st.subheader("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload Donations)")
-        st.warning("ਐਕਸਲ ਫਾਈਲ ਕਾਲਮ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of, balance")
+        st.warning("ਐਕਸਲ ਫਾਈਲ ਕਾਲਮ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of, balance, add_to_mirror")
         uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
         if uploaded_file is not None:
             try:
@@ -544,9 +601,12 @@ with tab6:
                 if 'balance' not in df_upload.columns:
                     st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! ਹਰੇਕ ਐਂਟਰੀ ਲਈ ਬੈਲੇਂਸ ਹੋਣਾ ਲਾਜ਼ਮੀ ਹੈ।")
                 else:
+                    if 'add_to_mirror' not in df_upload.columns:
+                        df_upload['add_to_mirror'] = True
                     st.write(df_upload.head())
                     if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
                         df_upload['balance'] = df_upload['balance'].fillna(0)
+                        df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
                         records = df_upload.to_dict(orient='records')
                         supabase.table("donations").insert(records).execute()
                         st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
