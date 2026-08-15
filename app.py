@@ -31,6 +31,51 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
+# ==========================================
+# CUSTOM CSS FOR PROFESSIONAL UI (ਯੂਜ਼ਰ ਇੰਟਰਫੇਸ ਡਿਜ਼ਾਈਨ)
+# ==========================================
+st.markdown("""
+    <style>
+        /* Sidebar Menu Font Size */
+        [data-testid="stSidebar"] [data-testid="stRadio"] p {
+            font-size: 19px !important;
+            font-weight: 700 !important;
+            padding-bottom: 8px;
+            color: #1E3A8A;
+        }
+        
+        /* All Input Labels (ਦਾਨ, ਖਰਚੇ ਫਾਰਮ ਆਦਿ) */
+        label p, div[data-testid="stWidgetLabel"] p {
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            color: #2C3E50 !important;
+        }
+        
+        /* Button styling for better visibility */
+        [data-testid="stButton"] button {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            border-radius: 6px;
+        }
+        [data-testid="stFormSubmitButton"] button {
+            background-color: #1E3A8A !important;
+            color: white !important;
+            font-size: 18px !important;
+            padding: 10px 20px !important;
+        }
+        
+        /* Metric text size (ਬੈਲੇਂਸ ਦਿਖਾਉਣ ਲਈ) */
+        [data-testid="stMetricLabel"] p {
+            font-size: 18px !important;
+            font-weight: bold !important;
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 28px !important;
+            color: #D92B2B !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def get_base64_image(image_path):
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
@@ -87,7 +132,7 @@ def generate_html_report(title, df):
         f.write(html_content)
     return filename
 
-# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ (RECEIPT DESIGN) ---
+# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ (RECEIPT DESIGN - ADJUSTED FONTS) ---
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
@@ -107,22 +152,28 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
-            .title-pa {{ font-size: 32px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 1px; }}
-            .title-en {{ font-size: 20px; font-weight: bold; color: #4A1B15; margin: 5px 0 10px 0; }}
-            .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
-            .sub-title-en {{ font-size: 14px; font-weight: bold; color: #0F4C81; margin: 5px 0; }}
+            /* Font adjustments here */
+            .title-pa {{ font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
+            .title-en {{ font-size: 18px; font-weight: bold; color: #4A1B15; margin: 5px 0 8px 0; }}
+            .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
+            .sub-title-en {{ font-size: 13px; font-weight: bold; color: #0F4C81; margin: 4px 0; }}
             .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
-            .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 6px 0; font-size: 14px; font-weight: bold; margin-bottom: 15px; margin-top: 10px; }}
-            .main-content {{ font-size: 16px; line-height: 2.2; font-weight: bold; color: #222; }}
+            
+            .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 5px 0; font-size: 13px; font-weight: bold; margin-bottom: 12px; margin-top: 10px; }}
+            
+            .main-content {{ font-size: 15px; line-height: 2.0; font-weight: bold; color: #222; }}
             .row-inline {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
-            .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 18px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 15px; font-weight: bold; }}
-            .receipt-no {{ color: #D92B2B; font-size: 22px; font-weight: bold; font-family: monospace; }}
+            .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 16px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 10px; font-weight: bold; }}
+            .receipt-no {{ color: #D92B2B; font-size: 20px; font-weight: bold; font-family: monospace; }}
+            
             .footer-flex {{ display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; }}
-            .bank-details-box {{ font-size: 12px; font-weight: bold; line-height: 1.5; background-color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px; width: 65%; }}
+            .bank-details-box {{ font-size: 11px; font-weight: bold; line-height: 1.4; background-color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px; width: 65%; }}
             .bank-details-box span {{ color: #D92B2B; }}
-            .amount-box {{ font-size: 22px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 25px; border-radius: 20px; background-color: rgba(255,255,255,0.5); display: inline-block; }}
-            .sign-box {{ text-align: right; margin-top: 20px; font-size: 14px; padding-bottom: 15px; }}
-            .bottom-note {{ position: absolute; bottom: 0; left: 0; right: 0; background-color: #4A1B15; color: white; text-align: center; font-size: 12px; padding: 4px 0; font-weight: bold; }}
+            
+            .amount-box {{ font-size: 18px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 20px; border-radius: 15px; background-color: rgba(255,255,255,0.5); display: inline-block; }}
+            .sign-box {{ text-align: right; margin-top: 15px; font-size: 14px; padding-bottom: 10px; }}
+            
+            .bottom-note {{ position: absolute; bottom: 0; left: 0; right: 0; background-color: #4A1B15; color: white; text-align: center; font-size: 11px; padding: 4px 0; font-weight: bold; }}
             @media print {{ body {{ padding: 0; }} .receipt-box {{ border: 2px solid #4A1B15; box-shadow: none; }} }}
         </style>
     </head>
@@ -140,11 +191,11 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             </div>
             <div class="reg-row">
                 <div>Regd. No.: ASR/26/2024-25 &nbsp;|&nbsp; PAN NO. ABKTS7853G</div>
-                <div>On Account of: <span class="field-value" style="font-size:16px;">{on_account_of}</span></div>
+                <div>On Account of: <span class="field-value" style="font-size:14px;">{on_account_of}</span></div>
             </div>
             <div class="main-content">
                 <div class="row-inline">
-                    <div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 20px;">{receipt_no:04d}</span></div>
+                    <div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 15px;">{receipt_no:04d}</span></div>
                     <div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
                 </div>
                 <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span></div>
@@ -209,7 +260,6 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("ਮੁੱਖ ਮੀਨੂ (Main Menu)")
     
-    # Navigation Options
     menu_options = [
         "💸 ਦਾਨ (Donations)", 
         "📉 ਖਰਚੇ (Expenses)", 
@@ -539,8 +589,15 @@ elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
             rec_id = data_conv[1][0]['id']
             h_file = generate_html_receipt(rec_id, c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct)
             st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ! (Receipt Ready)")
+            
             with open(h_file, "r", encoding="utf-8") as file:
                 st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
+            
+            if c_phone:
+                amt_text = f"₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ)"
+                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
+                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ (Send WhatsApp)]({url})", unsafe_allow_html=True)
 
 # ==========================================
 # 4. STOCK (ਸਟਾਕ)
@@ -619,7 +676,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                 df_upload = pd.read_excel(uploaded_file)
                 df_upload.columns = df_upload.columns.str.lower()
                 if 'balance' not in df_upload.columns:
-                    st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! ਹਰੇਕ ਐਂਟਰੀ ਲਈ ਬੈਲੇਂਸ ਹੋਣਾ ਲਾਜ਼ਮੀ ਹੈ।")
+                    st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! ਹਰੇਕ ਐਂਟਰੀ ਲਈ ਬੈਲੇਂਸ ਹੋਣਾ ਲਾਜ਼ਮੀ ਹੈ। (Balance column missing!)")
                 else:
                     if 'add_to_mirror' not in df_upload.columns:
                         df_upload['add_to_mirror'] = True
@@ -656,7 +713,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
             if 'del_stock_data' in st.session_state and st.session_state.get('del_stock_name') == del_item:
                 data = st.session_state['del_stock_data']
                 st.info(f"📦 **ਸਟਾਕ ਦਾ ਵੇਰਵਾ (Stock Details):**\n\n**ਨਾਮ (Name):** {data['item_name']}\n\n**ਮਾਤਰਾ (Qty):** {data['quantity']} {data['unit']}\n\n**ਆਖਰੀ ਅਪਡੇਟ (Last Updated):** {data['last_updated']}")
-                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure?)")
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure you want to delete?)")
                 if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
                     supabase.table("stock").delete().eq("item_name", del_item).execute()
                     st.success(f"✅ ਸਟਾਕ '{del_item}' ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
@@ -696,7 +753,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                 elif del_type == "ਵਿਦਿਆਰਥੀ (Student)":
                     st.info(f"🎓 **ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ (Student):** {data.get('name')}\n\n**ਕੋਰਸ (Course):** {data.get('course')}\n\n**ਦਾਖਲਾ ਮਿਤੀ (Join Date):** {data.get('join_date')}")
                 
-                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure?)")
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure you want to delete?)")
                 if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
                     supabase.table(table_map[del_type]).delete().eq("id", del_id).execute()
                     st.success(f"✅ ID #{del_id} ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
