@@ -29,7 +29,7 @@ USERS = {"admin": "Japnik@3315", "staff": "12345"}
 SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
-st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 def get_base64_image(image_path):
     if os.path.exists(image_path):
@@ -44,7 +44,7 @@ def init_connection():
 try:
     supabase: Client = init_connection()
 except Exception as e:
-    st.error("Supabase ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ।")
+    st.error("Supabase ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ। (Error connecting to Supabase.)")
 
 # --- HTML REPORT GENERATOR ---
 def generate_html_report(title, df):
@@ -87,7 +87,7 @@ def generate_html_report(title, df):
         f.write(html_content)
     return filename
 
-# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ ---
+# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ (RECEIPT DESIGN) ---
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
@@ -180,7 +180,7 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.is_admin = False
 
-# --- LOGIN ---
+# --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -195,54 +195,67 @@ if not st.session_state.logged_in:
                     st.session_state.is_admin = (username_input == "admin")
                     st.rerun()
                 else:
-                    st.error("ਗਲਤ ਪਾਸਵਰਡ!")
+                    st.error("ਗਲਤ ਪਾਸਵਰਡ! (Incorrect Password!)")
     st.stop()
 
+# --- SIDEBAR NAVIGATION (ਖੱਬੇ ਪਾਸੇ ਦਾ ਮੀਨੂ) ---
 with st.sidebar:
-    st.title("👤 ਪ੍ਰੋਫਾਈਲ")
-    st.success("✅ ਐਡਮਿਨ ਮੋਡ" if st.session_state.is_admin else "✅ ਕਰਮਚਾਰੀ ਮੋਡ")
-    if st.button("ਲਾਗਆਊਟ ਕਰੋ"):
+    st.title("👤 ਪ੍ਰੋਫਾਈਲ (Profile)")
+    st.success("✅ ਐਡਮਿਨ ਮੋਡ (Admin Mode)" if st.session_state.is_admin else "✅ ਕਰਮਚਾਰੀ ਮੋਡ (Staff Mode)")
+    if st.button("ਲਾਗਆਊਟ ਕਰੋ (Logout)"):
         st.session_state.logged_in = False
         st.rerun()
+    
+    st.markdown("---")
+    st.subheader("ਮੁੱਖ ਮੀਨੂ (Main Menu)")
+    
+    # Navigation Options
+    menu_options = [
+        "💸 ਦਾਨ (Donations)", 
+        "📉 ਖਰਚੇ (Expenses)", 
+        "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)",
+        "📦 ਸਟਾਕ (Stock)", 
+        "🎓 ਵਿਦਿਆਰਥੀ (Students)"
+    ]
+    if st.session_state.is_admin:
+        menu_options.append("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)")
+        
+    selected_tab = st.radio("ਚੁਣੋ (Select)", menu_options, label_visibility="collapsed")
 
+# --- MAIN CONTENT HEADER ---
 colA, colB = st.columns([1, 8])
 with colA:
     if os.path.exists("logo.png"): st.image("logo.png", width=80)
 with colB:
     st.title(f"{NGO_NAME_PB}")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "💸 ਦਾਨ (Donations)", 
-    "📉 ਖਰਚੇ (Expenses)", 
-    "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)",
-    "📦 ਸਟਾਕ (Stock)", 
-    "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-    "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin)"
-])
+st.markdown("---")
 
-# TAB 1: DONATIONS
-with tab1:
-    st.header("ਨਵਾਂ ਦਾਨ ਦਰਜ ਕਰੋ")
+# ==========================================
+# 1. DONATIONS (ਦਾਨ)
+# ==========================================
+if selected_tab == "💸 ਦਾਨ (Donations)":
+    st.header("ਨਵਾਂ ਦਾਨ ਦਰਜ ਕਰੋ (Enter New Donation)")
     with st.form("donation_form", clear_on_submit=True):
-        donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ")
-        donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
-        on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
-        don_type = st.radio("ਦਾਨ ਦੀ ਕਿਸਮ (Type)", ["ਪੈਸੇ (Monetary)", "ਸਮਾਨ (In-Kind / Ration)"])
+        donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
+        donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone Number - Optional)")
+        on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of - e.g. Monthly Donation)")
+        don_type = st.radio("ਦਾਨ ਦੀ ਕਿਸਮ (Type of Donation)", ["ਪੈਸੇ (Monetary)", "ਸਮਾਨ (In-Kind / Ration)"])
         
         col_m1, col_m2 = st.columns(2)
         with col_m1:
-            amount = st.number_input("ਰਕਮ (₹)", min_value=0)
+            amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=0)
             pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ (Payment Mode)", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
         with col_m2:
-            item_details = st.text_input("ਜੇਕਰ ਸਮਾਨ ਹੈ ਤਾਂ ਵੇਰਵਾ ਲਿਖੋ")
-            bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ? (Bank)", BANK_ACCOUNTS)
+            item_details = st.text_input("ਜੇਕਰ ਸਮਾਨ ਹੈ ਤਾਂ ਵੇਰਵਾ ਲਿਖੋ (Item Details if In-Kind)")
+            bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ? (Select Bank)", BANK_ACCOUNTS)
             
-        receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today())
+        receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today())
         
         st.markdown("---")
-        add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ (Bank Ledger) ਵਿੱਚ ਵੀ ਜੋੜੋ", value=True, help="ਜੇਕਰ ਇਹ ਐਂਟਰੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਰਾਹੀਂ ਪਹਿਲਾਂ ਹੀ ਅੱਪਲੋਡ ਹੋ ਚੁੱਕੀ ਹੈ, ਤਾਂ ਇਸਨੂੰ Uncheck ਕਰ ਦਿਓ ਤਾਂ ਜੋ ਬੈਲੇਂਸ ਡਬਲ ਨਾ ਹੋਵੇ।")
+        add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਜੋੜੋ (Add to Bank Mirror Ledger)", value=True, help="Uncheck if this is already uploaded via Bank Statement.")
         
-        submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
+        submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ (Save & Generate Receipt)")
         
     if submitted and donor_name:
         formatted_date = receipt_date.strftime("%Y-%m-%d")
@@ -255,7 +268,7 @@ with tab1:
         
         receipt_id = data[1][0]['id']
         html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, don_type, item_details, bank_acc, on_account_of)
-        st.success(f"ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
+        st.success(f"✅ ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ। (Receipt Ready)")
         
         with open(html_file, "r", encoding="utf-8") as file:
             st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print Receipt)", data=file.read(), file_name=html_file, mime="text/html")
@@ -264,15 +277,15 @@ with tab1:
             amt_text = f"₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ)" if don_type == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{item_details}'"
             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
             url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
-            st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
+            st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ (Send WhatsApp)]({url})", unsafe_allow_html=True)
 
     st.markdown("---")
     st.subheader("🔍 ਦਾਨ ਰਿਕਾਰਡ ਖੋਜੋ (Search Donations)")
     don_search_col1, don_search_col2 = st.columns(2)
     with don_search_col1:
-        search_donor_name = st.text_input("ਦਾਨੀ ਦੇ ਨਾਮ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search Name)")
+        search_donor_name = st.text_input("ਦਾਨੀ ਦੇ ਨਾਮ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search by Name)")
     with don_search_col2:
-        search_don_date = st.date_input("ਮਿਤੀ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Optional Date)", value=None)
+        search_don_date = st.date_input("ਮਿਤੀ ਦੁਆਰਾ ਖੋਜ ਕਰੋ (Search by Date)", value=None)
 
     all_donations = supabase.table("donations").select("*").execute().data
     if all_donations:
@@ -285,9 +298,9 @@ with tab1:
         st.dataframe(df_donations[['id', 'name', 'phone', 'amount', 'payment_mode', 'bank_account', 'date']], use_container_width=True)
 
     st.markdown("---")
-    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Reprint Receipt)")
-    search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ (Receipt No.) ਭਰੋ", min_value=1, step=1)
-    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ"):
+    st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Reprint Old Receipt)")
+    search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ ਭਰੋ (Enter Receipt No.)", min_value=1, step=1)
+    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ (Find Receipt)"):
         res = supabase.table("donations").select("*").eq("id", search_id).execute()
         if res.data:
             record = res.data[0]
@@ -296,7 +309,7 @@ with tab1:
                 record.get('payment_mode', 'ਨਕਦ (Cash)'), record.get('donation_type', 'ਪੈਸੇ (Monetary)'), 
                 record.get('item_details', ''), record.get('bank_account', 'ਨਕਦ (Cash)'), record.get('on_account_of', '')
             )
-            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record.get('name', '')})!")
+            st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record.get('name', '')})! (Receipt Found!)")
             with open(html_file_rep, "r", encoding="utf-8") as file:
                 st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
             
@@ -304,29 +317,31 @@ with tab1:
                 amt_text = f"₹{record['amount']}/- ਦਾ ਦਾਨ" if record.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{record.get('item_details')}'"
                 msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {record['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
                 url = f"https://wa.me/{record['phone']}?text={urllib.parse.quote(msg)}"
-                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਦੁਬਾਰਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ]({url})", unsafe_allow_html=True)
+                st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਦੁਬਾਰਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ (Resend WhatsApp)]({url})", unsafe_allow_html=True)
         else:
-            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
+            st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ। (Receipt not found.)")
 
-# TAB 2: EXPENSES
-with tab2:
-    st.header("ਖਰਚਾ ਦਰਜ ਕਰੋ")
+# ==========================================
+# 2. EXPENSES (ਖਰਚੇ)
+# ==========================================
+elif selected_tab == "📉 ਖਰਚੇ (Expenses)":
+    st.header("ਖਰਚਾ ਦਰਜ ਕਰੋ (Enter Expense)")
     with st.form("expense_form", clear_on_submit=True):
-        desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description)")
-        cat = st.selectbox("ਕੈਟਾਗਰੀ (Sub-head)", [c for c in EXPENSE_CATEGORIES if not c.startswith("---")])
-        exp_amount = st.number_input("ਰਕਮ (₹)", min_value=1)
-        bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ?", BANK_ACCOUNTS)
-        exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today())
+        desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Expense Description)")
+        cat = st.selectbox("ਕੈਟਾਗਰੀ (Category / Sub-head)", [c for c in EXPENSE_CATEGORIES if not c.startswith("---")])
+        exp_amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1)
+        bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ? (From which Bank?)", BANK_ACCOUNTS)
+        exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
         
         st.markdown("---")
-        add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ (Bank Ledger) ਵਿੱਚ ਵੀ ਦਿਖਾਓ", value=True)
+        add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Mirror Ledger)", value=True)
         
-        if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ") and desc:
+        if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)") and desc:
             supabase.table("expenses").insert({
                 "description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"),
                 "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp
             }).execute()
-            st.success("ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ!")
+            st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved Successfully!)")
 
     st.markdown("---")
     st.subheader("📑 ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ (Expenditure Report)")
@@ -338,10 +353,12 @@ with tab2:
         
         report_file_exp = generate_html_report("Expenditure Report (ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ)", df_exp_view)
         with open(report_file_exp, "r", encoding="utf-8") as file:
-            st.download_button("🖨️ ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Expenses)", data=file.read(), file_name=report_file_exp, mime="text/html")
+            st.download_button("🖨️ ਖਰਚਿਆਂ ਦੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Expense Report)", data=file.read(), file_name=report_file_exp, mime="text/html")
 
-# TAB 3: FULL MIRROR BANK ACCOUNTS & P&L
-with tab3:
+# ==========================================
+# 3. MIRROR BANKS (ਮਿਰਰ ਬੈਂਕ)
+# ==========================================
+elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
     st.header("ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ (Full Mirror Ledger)")
     
     don_data = supabase.table("donations").select("*").execute().data or []
@@ -352,7 +369,7 @@ with tab3:
     df_exp = pd.DataFrame(exp_data)
     df_ledg = pd.DataFrame(ledger_data)
     
-    selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank to view Ledger)", BANK_ACCOUNTS)
+    selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank)", BANK_ACCOUNTS)
     
     st.markdown("### 📅 ਮਿਤੀ ਅਨੁਸਾਰ ਸਟੇਟਮੈਂਟ (Statement Period)")
     col_d1, col_d2 = st.columns(2)
@@ -370,7 +387,7 @@ with tab3:
         
         bank_dons = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)]
         for _, row in bank_dons.iterrows():
-            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec No: {row['id']})", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ (Donation): {row['name']} (Rec No: {row['id']})", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
             
     if not df_exp.empty:
         if 'add_to_mirror' not in df_exp.columns:
@@ -379,7 +396,7 @@ with tab3:
         
         bank_exps = df_exp[(df_exp['bank_account'] == selected_bank) & (df_exp['add_to_mirror'] == True)]
         for _, row in bank_exps.iterrows():
-            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
+            ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ (Expense): {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
             
     if not df_ledg.empty:
         bank_ledg = df_ledg[df_ledg['bank_name'] == selected_bank]
@@ -425,7 +442,7 @@ with tab3:
 
     st.markdown("### ⚖️ ਬੈਂਕ ਮਿਲਾਨ (Reconciliation Tally)")
     col_bal1, col_bal2, col_bal3 = st.columns(3)
-    col_bal1.metric(f"ਅੱਜ ਤੱਕ ਦਾ ਕੁੱਲ ਸਿਸਟਮ ਬੈਲੇਂਸ", f"₹ {sys_bal:,.2f}")
+    col_bal1.metric(f"ਅੱਜ ਤੱਕ ਦਾ ਕੁੱਲ ਸਿਸਟਮ ਬੈਲੇਂਸ (System Bal)", f"₹ {sys_bal:,.2f}")
     actual_bal = col_bal2.number_input("ਬੈਂਕ ਦਾ ਅਸਲ ਬੈਲੇਂਸ (Actual Bank Balance)", value=float(sys_bal), step=100.0)
     
     diff = actual_bal - sys_bal
@@ -442,31 +459,31 @@ with tab3:
         with st.form("manual_ledger"):
             st.write("ਹੱਥੀਂ ਐਂਟਰੀ ਕਰੋ (Manual Entry)")
             m_date = st.date_input("ਮਿਤੀ (Date)")
-            m_desc = st.text_input("ਵੇਰਵਾ (ਜਿਵੇਂ ਬੈਂਕ ਵਿਆਜ, SMS ਚਾਰਜ)")
-            m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
-            m_amt = st.number_input("ਰਕਮ (₹)", min_value=1.0)
-            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ"):
+            m_desc = st.text_input("ਵੇਰਵਾ (Description - e.g. Bank Interest)")
+            m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ (Type)", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
+            m_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
+            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ (Save Entry)"):
                 credit_val = m_amt if "Credit" in m_type else 0.0
                 debit_val = m_amt if "Debit" in m_type else 0.0
                 supabase.table("bank_ledger").insert({
                     "bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"),
                     "description": m_desc, "credit": credit_val, "debit": debit_val, "balance": 0, "source": "Manual"
                 }).execute()
-                st.success("ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
+                st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ! (Entry Saved)")
                 st.rerun()
                 
     with t3_col2:
         st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
-        st.warning("Excel ਕਾਲਮ ਨਾਮ: Date, Description, Credit, Debit, Balance")
+        st.warning("Excel Columns: Date, Description, Credit, Debit, Balance")
         stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'], key="bank_stmt")
         if stmt_file:
             try:
                 df_stmt = pd.read_excel(stmt_file)
                 df_stmt.columns = df_stmt.columns.str.lower()
                 if 'balance' not in df_stmt.columns:
-                    st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਸ਼ਾਮਲ ਕਰੋ।")
+                    st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! (Balance column missing!)")
                 else:
-                    if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ"):
+                    if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement)"):
                         ledg_records = []
                         for _, row in df_stmt.iterrows():
                             if pd.isna(row.get('date')) or pd.isna(row.get('description')):
@@ -481,10 +498,10 @@ with tab3:
                             })
                         if ledg_records:
                             supabase.table("bank_ledger").insert(ledg_records).execute()
-                            st.success("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!")
+                            st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ! (Statement Uploaded)")
                             st.rerun()
             except Exception as e:
-                st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ। ਐਰਰ: {e}")
+                st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ (File Error): {e}")
 
     st.markdown("---")
     st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
@@ -492,8 +509,8 @@ with tab3:
     
     col_conv1, col_conv2 = st.columns(2)
     with col_conv1:
-        ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID (Bank Entry ID) ਭਰੋ", min_value=0, step=1)
-        if st.button("ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ"):
+        ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
+        if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)"):
             res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
             if res.data and res.data[0]['credit'] > 0:
                 st.session_state['convert_ledger_id'] = ledger_id
@@ -504,12 +521,12 @@ with tab3:
     if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
         ldata = st.session_state['convert_ledger_data']
         with col_conv2:
-            st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ:**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
+            st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ (Entry Found):**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
             with st.form("convert_bank_receipt"):
                 c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
-                c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
+                c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
                 c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
-                submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ")
+                submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)")
                 
         if submitted_conv and c_name:
             data_conv, _ = supabase.table("donations").insert({
@@ -521,22 +538,24 @@ with tab3:
             
             rec_id = data_conv[1][0]['id']
             h_file = generate_html_receipt(rec_id, c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct)
-            st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ!")
+            st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ! (Receipt Ready)")
             with open(h_file, "r", encoding="utf-8") as file:
                 st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
 
-# TAB 4: STOCK
-with tab4:
-    st.header("ਸਟਾਕ / ਭੰਡਾਰ")
+# ==========================================
+# 4. STOCK (ਸਟਾਕ)
+# ==========================================
+elif selected_tab == "📦 ਸਟਾਕ (Stock)":
+    st.header("ਸਟਾਕ / ਭੰਡਾਰ (Stock Management)")
     col1, col2 = st.columns([1, 2])
     with col1:
         with st.form("stock_form", clear_on_submit=True):
-            item_name = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ")
-            qty = st.number_input("ਮਾਤਰਾ", min_value=0.0, step=0.5)
-            unit = st.selectbox("ਇਕਾਈ", ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)"])
-            stock_action = st.radio("ਐਕਸ਼ਨ", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add)", "ਸਮਾਨ ਵਰਤਿਆ (Remove)"])
+            item_name = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ (Item Name)")
+            qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=0.0, step=0.5)
+            unit = st.selectbox("ਇਕਾਈ (Unit)", ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)"])
+            stock_action = st.radio("ਐਕਸ਼ਨ (Action)", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add Stock)", "ਸਮਾਨ ਵਰਤਿਆ (Remove Stock)"])
             
-            if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ") and item_name:
+            if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Update Stock)") and item_name:
                 current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
                 if res.data:
@@ -546,7 +565,7 @@ with tab4:
                 else:
                     new_qty = qty if "Add" in stock_action else 0
                     supabase.table("stock").insert({"item_name": item_name, "quantity": new_qty, "unit": unit, "last_updated": current_date}).execute()
-                st.success(f"'{item_name}' ਦਾ ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
+                st.success(f"✅ '{item_name}' ਦਾ ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ! (Stock Updated)")
 
     with col2:
         stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
@@ -556,19 +575,21 @@ with tab4:
             
             report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock)
             with open(report_file_stock, "r", encoding="utf-8") as file:
-                st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Stock)", data=file.read(), file_name=report_file_stock, mime="text/html")
+                st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Stock Report)", data=file.read(), file_name=report_file_stock, mime="text/html")
 
-# TAB 5: STUDENTS
-with tab5:
-    st.header("ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ")
+# ==========================================
+# 5. STUDENTS (ਵਿਦਿਆਰਥੀ)
+# ==========================================
+elif selected_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
+    st.header("ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ (Student Records)")
     with st.form("student_form", clear_on_submit=True):
-        stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ")
-        stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
-        stu_course = st.selectbox("ਕਲਾਸ", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
-        join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ", value=date.today())
-        if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ") and stu_name:
-            supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
-            st.success("ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+        stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ (Student Name)")
+        stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone Number)")
+        stu_course = st.selectbox("ਕਲਾਸ (Course)", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ (Computer Class)", "ਸਿਲਾਈ ਸੈਂਟਰ (Tailoring Center)"])
+        join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ (Join Date)", value=date.today())
+        if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ (Save Record)") and stu_name:
+            supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ (Ongoing)"}).execute()
+            st.success("✅ ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ! (Student Record Saved)")
 
     st.markdown("---")
     st.subheader("📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Student List)")
@@ -579,18 +600,20 @@ with tab5:
         
         report_file_stu = generate_html_report("Enrolled Students Record (ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ)", df_students)
         with open(report_file_stu, "r", encoding="utf-8") as file:
-            st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Student Data)", data=file.read(), file_name=report_file_stu, mime="text/html")
+            st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Student List)", data=file.read(), file_name=report_file_stu, mime="text/html")
 
-# TAB 6: ADMIN TOOLS (BULK UPLOAD & UNIVERSAL DELETE)
-with tab6:
+# ==========================================
+# 6. ADMIN TOOLS (ਐਡਮਿਨ ਟੂਲਸ)
+# ==========================================
+elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
     st.header("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Controls)")
     
     if not st.session_state.is_admin:
-        st.error("⚠️ ਸੁਰੱਖਿਆ ਕਾਰਨਾਂ ਕਰਕੇ: ਸਿਰਫ਼ ਐਡਮਿਨ (Admin) ਹੀ ਇੱਥੇ ਬਦਲਾਅ ਕਰ ਸਕਦਾ ਹੈ।")
+        st.error("⚠️ ਸੁਰੱਖਿਆ ਕਾਰਨਾਂ ਕਰਕੇ: ਸਿਰਫ਼ ਐਡਮਿਨ (Admin) ਹੀ ਇੱਥੇ ਬਦਲਾਅ ਕਰ ਸਕਦਾ ਹੈ। (Access Restricted to Admin Only)")
     else:
         st.subheader("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload Donations)")
-        st.warning("ਐਕਸਲ ਫਾਈਲ ਕਾਲਮ: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of, balance, add_to_mirror")
-        uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ", type=['xlsx', 'xls'])
+        st.warning("Excel Columns: name, phone, amount, date, payment_mode, donation_type, item_details, bank_account, on_account_of, balance, add_to_mirror")
+        uploaded_file = st.file_uploader("ਦਾਨ ਦਾ ਰਿਕਾਰਡ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Excel File)", type=['xlsx', 'xls'])
         if uploaded_file is not None:
             try:
                 df_upload = pd.read_excel(uploaded_file)
@@ -606,18 +629,18 @@ with tab6:
                         df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
                         records = df_upload.to_dict(orient='records')
                         supabase.table("donations").insert(records).execute()
-                        st.success(f"{len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ!")
+                        st.success(f"✅ {len(records)} ਐਂਟਰੀਆਂ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈਆਂ! (Entries Saved)")
             except Exception as e:
-                st.error(f"ਫਾਈਲ ਵਿੱਚ ਕੋਈ ਗਲਤੀ ਹੈ: {e}")
+                st.error(f"ਫਾਈਲ ਵਿੱਚ ਕੋਈ ਗਲਤੀ ਹੈ (File Error): {e}")
 
         st.markdown("---")
-        st.subheader("🗑️ ਯੂਨੀਵਰਸਲ ਡਿਲੀਟ ਸਿਸਟਮ (Delete Any Entry)")
+        st.subheader("🗑️ ਯੂਨੀਵਰਸਲ ਡਿਲੀਟ ਸਿਸਟਮ (Universal Delete System)")
         
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category to Delete)", 
                                 ["ਦਾਨ (Donation)", "ਖਰਚਾ (Expense)", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)", "ਸਟਾਕ (Stock)", "ਵਿਦਿਆਰਥੀ (Student)"])
 
         if del_type == "ਸਟਾਕ (Stock)":
-            del_item = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ (Item Name) - ਜਿਵੇਂ ਸਟਾਕ ਲਿਸਟ ਵਿੱਚ ਲਿਖਿਆ ਹੈ")
+            del_item = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ (Enter Item Name) - ਜਿਵੇਂ ਸਟਾਕ ਲਿਸਟ ਵਿੱਚ ਲਿਖਿਆ ਹੈ")
             if st.button("🔍 ਸਟਾਕ ਲੱਭੋ (Find Stock)"):
                 if del_item:
                     res = supabase.table("stock").select("*").eq("item_name", del_item).execute()
@@ -625,22 +648,22 @@ with tab6:
                         st.session_state['del_stock_data'] = res.data[0]
                         st.session_state['del_stock_name'] = del_item
                     else:
-                        st.error("❌ ਇਹ ਵਸਤੂ ਸਟਾਕ ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।")
+                        st.error("❌ ਇਹ ਵਸਤੂ ਸਟਾਕ ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ। (Item not found)")
                         st.session_state.pop('del_stock_data', None)
                 else:
-                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਨਾਮ ਭਰੋ।")
+                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਨਾਮ ਭਰੋ। (Please enter name)")
             
             if 'del_stock_data' in st.session_state and st.session_state.get('del_stock_name') == del_item:
                 data = st.session_state['del_stock_data']
-                st.info(f"📦 **ਸਟਾਕ ਦਾ ਵੇਰਵਾ:**\n\n**ਨਾਮ:** {data['item_name']}\n\n**ਮਾਤਰਾ:** {data['quantity']} {data['unit']}\n\n**ਆਖਰੀ ਅਪਡੇਟ:** {data['last_updated']}")
-                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")
-                if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Confirm Delete)"):
+                st.info(f"📦 **ਸਟਾਕ ਦਾ ਵੇਰਵਾ (Stock Details):**\n\n**ਨਾਮ (Name):** {data['item_name']}\n\n**ਮਾਤਰਾ (Qty):** {data['quantity']} {data['unit']}\n\n**ਆਖਰੀ ਅਪਡੇਟ (Last Updated):** {data['last_updated']}")
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure?)")
+                if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
                     supabase.table("stock").delete().eq("item_name", del_item).execute()
-                    st.success(f"✅ ਸਟਾਕ '{del_item}' ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ!")
+                    st.success(f"✅ ਸਟਾਕ '{del_item}' ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
                     st.session_state.pop('del_stock_data', None)
                     st.rerun()
         else:
-            del_id = st.number_input("ਐਂਟਰੀ ਦਾ ID ਨੰਬਰ ਭਰੋ (Entry ID)", min_value=0, step=1)
+            del_id = st.number_input("ਐਂਟਰੀ ਦਾ ID ਨੰਬਰ ਭਰੋ (Enter Entry ID)", min_value=0, step=1)
             table_map = {
                 "ਦਾਨ (Donation)": "donations",
                 "ਖਰਚਾ (Expense)": "expenses",
@@ -655,27 +678,27 @@ with tab6:
                         st.session_state['del_entry_id'] = del_id
                         st.session_state['del_entry_type'] = del_type
                     else:
-                        st.error("❌ ਇਸ ID ਦੀ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+                        st.error("❌ ਇਸ ID ਦੀ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entry found for this ID)")
                         st.session_state.pop('del_entry_data', None)
                 else:
-                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ID ਭਰੋ।")
+                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ID ਭਰੋ। (Please enter valid ID)")
             
             if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_id') == del_id and st.session_state.get('del_entry_type') == del_type:
                 data = st.session_state['del_entry_data']
                 st.write("### 📄 ਐਂਟਰੀ ਦਾ ਵੇਰਵਾ (Entry Details):")
                 
                 if del_type == "ਦਾਨ (Donation)":
-                    st.info(f"🙏 **ਦਾਨੀ ਦਾ ਨਾਮ:** {data.get('name')}\n\n**ਰਕਮ:** ₹{data.get('amount')}\n\n**ਮਿਤੀ:** {data.get('date')}\n\n**ਕਿਸ ਮੱਦ ਲਈ:** {data.get('on_account_of')}")
+                    st.info(f"🙏 **ਦਾਨੀ ਦਾ ਨਾਮ (Donor):** {data.get('name')}\n\n**ਰਕਮ (Amount):** ₹{data.get('amount')}\n\n**ਮਿਤੀ (Date):** {data.get('date')}\n\n**ਕਿਸ ਮੱਦ ਲਈ (On Acct of):** {data.get('on_account_of')}")
                 elif del_type == "ਖਰਚਾ (Expense)":
-                    st.info(f"📉 **ਵੇਰਵਾ:** {data.get('description')}\n\n**ਰਕਮ:** ₹{data.get('amount')}\n\n**ਕੈਟਾਗਰੀ:** {data.get('category')}\n\n**ਮਿਤੀ:** {data.get('date')}")
+                    st.info(f"📉 **ਵੇਰਵਾ (Description):** {data.get('description')}\n\n**ਰਕਮ (Amount):** ₹{data.get('amount')}\n\n**ਕੈਟਾਗਰੀ (Category):** {data.get('category')}\n\n**ਮਿਤੀ (Date):** {data.get('date')}")
                 elif del_type == "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)":
-                    st.info(f"🏦 **ਬੈਂਕ:** {data.get('bank_name')}\n\n**ਵੇਰਵਾ:** {data.get('description')}\n\n**Credit (ਆਏ):** ₹{data.get('credit')}\n\n**Debit (ਕੱਟੇ):** ₹{data.get('debit')}\n\n**ਮਿਤੀ:** {data.get('txn_date')}")
+                    st.info(f"🏦 **ਬੈਂਕ (Bank):** {data.get('bank_name')}\n\n**ਵੇਰਵਾ (Description):** {data.get('description')}\n\n**Credit (ਆਏ):** ₹{data.get('credit')}\n\n**Debit (ਕੱਟੇ):** ₹{data.get('debit')}\n\n**ਮਿਤੀ (Date):** {data.get('txn_date')}")
                 elif del_type == "ਵਿਦਿਆਰਥੀ (Student)":
-                    st.info(f"🎓 **ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ:** {data.get('name')}\n\n**ਕੋਰਸ:** {data.get('course')}\n\n**ਦਾਖਲਾ ਮਿਤੀ:** {data.get('join_date')}")
+                    st.info(f"🎓 **ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ (Student):** {data.get('name')}\n\n**ਕੋਰਸ (Course):** {data.get('course')}\n\n**ਦਾਖਲਾ ਮਿਤੀ (Join Date):** {data.get('join_date')}")
                 
-                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")
-                if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Confirm Delete)"):
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure?)")
+                if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
                     supabase.table(table_map[del_type]).delete().eq("id", del_id).execute()
-                    st.success(f"✅ ID #{del_id} ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ!")
+                    st.success(f"✅ ID #{del_id} ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
                     st.session_state.pop('del_entry_data', None)
                     st.rerun()
