@@ -104,15 +104,15 @@ def generate_html_report(title, content_html):
     html_content = f"""
     <!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>{title}</title>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; background-color: #fff; }}
-        .header {{ text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; background-color: #fff; text-align: center; }}
+        .header {{ margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; text-align: center; }}
         .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
-        .tagline {{ font-size: 15px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
+        .tagline {{ font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
         .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
         .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
         .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
         .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
-        .bs-box {{ width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; }}
+        .bs-box {{ width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; text-align: left; }}
         @media print {{ body {{ padding: 0; }} }}
     </style></head>
     <body>
@@ -123,7 +123,7 @@ def generate_html_report(title, content_html):
             <div style="font-size: 13px;">{NGO_ADDRESS_PB}</div>
             <div class="report-title">{title}</div>
         </div>
-        {content_html}
+        <div style="text-align: left;">{content_html}</div>
         <script>window.onload = function() {{ window.print(); }}</script>
     </body></html>
     """
@@ -147,8 +147,8 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
-            .title-pa {{ font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
-            .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 3px 0; }}
+            .title-pa {{ font-size: 26px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
+            .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 4px 0; text-align: center; width: 100%; display: block; }}
             .sub-title-en {{ font-size: 13px; font-weight: bold; color: #0F4C81; margin: 3px 0; }}
             .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
             .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 5px 0; font-size: 13px; font-weight: bold; margin-bottom: 12px; margin-top: 10px; }}
@@ -170,7 +170,9 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
                 {img_html}
                 <div class="header-text">
                     <p class="title-pa">{NGO_NAME_PB}</p>
-                    <p class="sub-title-pa">{NGO_TAGLINE_PB}</p>
+                    <div style="text-align: center; width: 100%;">
+                        <span class="sub-title-pa">{NGO_TAGLINE_PB}</span>
+                    </div>
                     <p class="sub-title-en">ਸੇਵਾ ਵਿਸਥਾਰ: ਰਾਧਾ ਕ੍ਰਿਸ਼ਨ ਕਲੋਨੀ (ਮੂਲੇ ਚੱਕ), ਨੇੜੇ ਭਗਤਾਂ ਵਾਲਾ ਦਾਣਾ ਮੰਡੀ, ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ</p>
                     <p class="sub-title-en">Regd. Office: C. B. Tower, Opp. Side Alpha One Mall, G. T. Road, Sri Amritsar Sahib - 143001</p>
                     <p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p>
@@ -429,7 +431,7 @@ elif st.session_state.current_tab == "💸 ਦਾਨ (Donations)":
                         with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
