@@ -41,23 +41,46 @@ st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha 
 # ==========================================
 st.markdown("""
     <style>
+        /* Hide Streamlit Deploy/GitHub Menu */
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
         footer {visibility: hidden;}
         .stAppDeployButton {display:none !important;}
 
+        /* Sidebar Menu Font Size */
         [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 18px !important; font-weight: 600 !important; padding-bottom: 5px; }
+        
+        /* All Input Labels */
         div[data-testid="stWidgetLabel"] p { font-size: 16px !important; font-weight: 600 !important; }
         h2 { font-size: 26px !important; font-weight: 700 !important; padding-bottom: 5px !important; }
         h3 { font-size: 20px !important; font-weight: 600 !important; }
+        
+        /* Metric text size */
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         [data-testid="stBaseButton-primary"] { font-size: 16px !important; font-weight: bold !important; padding: 5px 20px !important; }
         
+        /* Balance Sheet specific styles */
         .bs-box { border: 2px solid #1E3A8A; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: rgba(30, 58, 138, 0.05); }
         .bs-header { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; border-bottom: 2px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 15px; }
         .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
         .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #D92B2B; border-top: 1px solid #333; padding-top: 8px; margin-top: 10px; }
+        
+        /* Custom WhatsApp Button Style */
+        .whatsapp-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #25D366;
+            color: white !important;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 5px;
+            border: 1px solid #128C7E;
+        }
+        .whatsapp-btn:hover { background-color: #128C7E; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,6 +124,7 @@ def generate_html_report(title, content_html):
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
+    
     amount_text = f"Rs. {amount}/-" if don_type == "ਪੈਸੇ (Monetary)" else f"ਕੀਮਤ: Rs. {amount}/-" if amount > 0 else f"{item_details}"
     amount_in_words = f"Rupees {amount} Only" if don_type == "ਪੈਸੇ (Monetary)" else f"{item_details} (In-Kind Donation)"
     display_phone = phone if phone else "________________"
@@ -255,12 +279,16 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
                 
                 receipt_id = data[1][0]['id']
                 html_file = generate_html_receipt(receipt_id, donor_name, donor_phone, amount, formatted_date, pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of)
-                st.success(f"✅ ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ।")
-                with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file, mime="text/html")
-                if donor_phone:
-                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-                    url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
-                    st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ (Send WhatsApp)]({url})", unsafe_allow_html=True)
+                st.success(f"✅ ਰਸੀਦ #{receipt_id} ਤਿਆਰ ਹੈ। (Receipt Ready)")
+                
+                col_d1, col_d2 = st.columns([1, 3])
+                with col_d1:
+                    with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file, mime="text/html")
+                with col_d2:
+                    if donor_phone:
+                        msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{amount}/- ਦਾ ਦਾਨ ({pay_mode} ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                        url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
+                        st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ। (View Only)")
 
@@ -289,11 +317,15 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
                 receipt_id_ik = data_ik[1][0]['id']
                 html_file_ik = generate_html_receipt(receipt_id_ik, donor_name_ik, donor_phone_ik, amount_ik, formatted_date_ik, "N/A", "ਸਮਾਨ (In-Kind / Ration)", item_details_ik, "N/A", "ਸਮਾਨ ਦਾਨ")
                 st.success(f"✅ ਰਸੀਦ #{receipt_id_ik} ਤਿਆਰ ਹੈ।")
-                with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl")
-                if donor_phone_ik:
-                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-                    url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
-                    st.markdown(f"[💬 WhatsApp ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਇੱਥੇ ਕਲਿੱਕ ਕਰੋ (Send WhatsApp)]({url})", unsafe_allow_html=True)
+                
+                col_d1, col_d2 = st.columns([1, 3])
+                with col_d1:
+                    with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl")
+                with col_d2:
+                    if donor_phone_ik:
+                        msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                        url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
+                        st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -319,7 +351,16 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
             record = res.data[0]
             html_file_rep = generate_html_receipt(search_id, record.get('name',''), record.get('phone',''), record.get('amount',0), record.get('date',''), record.get('payment_mode','N/A'), record.get('donation_type','ਪੈਸੇ (Monetary)'), record.get('item_details',''), record.get('bank_account','N/A'), record.get('on_account_of',''))
             st.success(f"✅ ਰਸੀਦ #{search_id} ਮਿਲ ਗਈ ਹੈ ({record.get('name', '')})!")
-            with open(html_file_rep, "r", encoding="utf-8") as file: st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
+            
+            col_r1, col_r2 = st.columns([1, 3])
+            with col_r1:
+                with open(html_file_rep, "r", encoding="utf-8") as file: st.download_button(label="🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Reprint)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn")
+            with col_r2:
+                if record.get('phone', ''):
+                    amt_text = f"₹{record['amount']}/- ਦਾ ਦਾਨ" if record.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{record.get('item_details')}'"
+                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {record['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_text} ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                    url = f"https://wa.me/{record['phone']}?text={urllib.parse.quote(msg)}"
+                    st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Resend via WhatsApp)</a>', unsafe_allow_html=True)
         else: st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
 
 # ==========================================
@@ -445,6 +486,51 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                     if ledg_records:
                         supabase.table("bank_ledger").insert(ledg_records).execute()
                         st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); st.rerun()
+
+        st.markdown("---")
+        st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
+        st.info("ਜੇਕਰ ਕੋਈ ਪੈਸਾ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਵਿੱਚ ਆਇਆ ਹੈ ਅਤੇ ਤੁਸੀਂ ਉਸਦੀ ਰਸੀਦ ਕੱਟਣੀ ਹੈ, ਤਾਂ ਇੱਥੇ ਉਸ ਐਂਟਰੀ ਦਾ ID ਭਰੋ।")
+        col_conv1, col_conv2 = st.columns(2)
+        with col_conv1:
+            ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
+            if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)", type="primary"):
+                res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
+                if res.data and res.data[0]['credit'] > 0:
+                    st.session_state['convert_ledger_id'] = ledger_id
+                    st.session_state['convert_ledger_data'] = res.data[0]
+                else:
+                    st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+
+        if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
+            ldata = st.session_state['convert_ledger_data']
+            with col_conv2:
+                st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ (Entry Found):**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
+                with st.form("convert_bank_receipt"):
+                    c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
+                    c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
+                    c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
+                    submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)", type="primary")
+                    
+            if submitted_conv and c_name:
+                data_conv, _ = supabase.table("donations").insert({
+                    "name": c_name, "phone": c_phone, "amount": ldata['credit'],
+                    "date": ldata['txn_date'], "payment_mode": "Bank Transfer",
+                    "donation_type": "ਪੈਸੇ (Monetary)", "bank_account": ldata['bank_name'],
+                    "on_account_of": c_acct, "add_to_mirror": False
+                }).execute()
+                
+                rec_id = data_conv[1][0]['id']
+                h_file = generate_html_receipt(rec_id, c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct)
+                st.success(f"✅ ਰਸੀਦ #{rec_id} ਤਿਆਰ ਹੈ! (Receipt Ready)")
+                
+                col_d1, col_d2 = st.columns([1, 3])
+                with col_d1:
+                    with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
+                with col_d2:
+                    if c_phone:
+                        msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                        url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
+                        st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
 # ==========================================
 # 4. BALANCE SHEET & P&L
