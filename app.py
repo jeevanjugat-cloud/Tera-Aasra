@@ -10,6 +10,7 @@ from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
 NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
+NGO_TAGLINE_PB = "ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (ਸੇਵਾ-ਸਹਿਯੋਗ-ਭਲਾਈ)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- CATEGORIES & ACCOUNTS ---
@@ -17,7 +18,7 @@ BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
     "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
-    "ਭੇਟਾ - ਕੀਰତਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
+    "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
     "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
@@ -38,7 +39,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS (UI DESIGN & HIDING GITHUB ICON)
+# CUSTOM CSS (UI DESIGN & LARGE HOME BUTTONS)
 # ==========================================
 st.markdown("""
     <style>
@@ -53,7 +54,16 @@ st.markdown("""
         h3 { font-size: 20px !important; font-weight: 600 !important; }
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
-        [data-testid="stBaseButton-primary"] { font-size: 16px !important; font-weight: bold !important; padding: 5px 20px !important; }
+        
+        /* Larger Home Page Buttons */
+        div.stButton > button {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            padding: 18px 10px !important;
+            margin-bottom: 12px !important;
+            border-radius: 10px !important;
+            width: 100% !important;
+        }
         
         .bs-box { border: 2px solid #1E3A8A; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: rgba(30, 58, 138, 0.05); }
         .bs-header { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; border-bottom: 2px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 15px; }
@@ -96,8 +106,9 @@ def generate_html_report(title, content_html):
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; background-color: #fff; }}
         .header {{ text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; }}
-        .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 5px; }}
-        .report-title {{ font-size: 18px; font-weight: bold; color: #D92B2B; margin-top: 10px; }}
+        .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
+        .tagline {{ font-size: 15px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
+        .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
         .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
         .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
         .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
@@ -105,7 +116,13 @@ def generate_html_report(title, content_html):
         @media print {{ body {{ padding: 0; }} }}
     </style></head>
     <body>
-        <div class="header">{img_html}<div class="title">{NGO_NAME_PB}</div><div>{NGO_ADDRESS_PB}</div><div class="report-title">{title}</div></div>
+        <div class="header">
+            {img_html}
+            <div class="title">{NGO_NAME_PB}</div>
+            <div class="tagline">{NGO_TAGLINE_PB}</div>
+            <div style="font-size: 13px;">{NGO_ADDRESS_PB}</div>
+            <div class="report-title">{title}</div>
+        </div>
         {content_html}
         <script>window.onload = function() {{ window.print(); }}</script>
     </body></html>
@@ -131,9 +148,8 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
             .title-pa {{ font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
-            .title-en {{ font-size: 18px; font-weight: bold; color: #4A1B15; margin: 5px 0 8px 0; }}
-            .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
-            .sub-title-en {{ font-size: 13px; font-weight: bold; color: #0F4C81; margin: 4px 0; }}
+            .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 3px 0; }}
+            .sub-title-en {{ font-size: 13px; font-weight: bold; color: #0F4C81; margin: 3px 0; }}
             .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
             .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 5px 0; font-size: 13px; font-weight: bold; margin-bottom: 12px; margin-top: 10px; }}
             .main-content {{ font-size: 15px; line-height: 2.0; font-weight: bold; color: #222; }}
@@ -150,7 +166,16 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
         </style></head>
     <body>
         <div class="receipt-box">
-            <div class="header-flex">{img_html}<div class="header-text"><p class="title-pa">ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)</p><p class="title-en">Shabad Kirtan Nam Simran Satsang (Regd.)</p><p class="sub-title-pa">ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (ਸੇਵਾ-ਸਹਿਯੋਗ-ਭਲਾਈ) ਰਾਧਾ ਕ੍ਰਿਸ਼ਨ ਕਲੋਨੀ (ਮੂਲੇ ਚੱਕ), ਨੇੜੇ ਭਗਤਾਂ ਵਾਲਾ ਦਾਣਾ ਮੰਡੀ, ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ</p><p class="sub-title-en">Regd. Office: C. B. Tower, Opp. Side Alpha One Mall, G. T. Road, Sri Amritsar Sahib - 143001</p><p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p></div></div>
+            <div class="header-flex">
+                {img_html}
+                <div class="header-text">
+                    <p class="title-pa">{NGO_NAME_PB}</p>
+                    <p class="sub-title-pa">{NGO_TAGLINE_PB}</p>
+                    <p class="sub-title-en">ਸੇਵਾ ਵਿਸਥਾਰ: ਰਾਧਾ ਕ੍ਰਿਸ਼ਨ ਕਲੋਨੀ (ਮੂਲੇ ਚੱਕ), ਨੇੜੇ ਭਗਤਾਂ ਵਾਲਾ ਦਾਣਾ ਮੰਡੀ, ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ</p>
+                    <p class="sub-title-en">Regd. Office: C. B. Tower, Opp. Side Alpha One Mall, G. T. Road, Sri Amritsar Sahib - 143001</p>
+                    <p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p>
+                </div>
+            </div>
             <div class="reg-row"><div>Regd. No.: ASR/26/2024-25 &nbsp;|&nbsp; PAN NO. ABKTS7853G</div><div>{collector_info} &nbsp;|&nbsp; On Account of: <span class="field-value" style="font-size:14px;">{on_account_of}</span></div></div>
             <div class="main-content">
                 <div class="row-inline"><div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 15px;">{receipt_no:04d}</span></div><div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div></div>
@@ -184,6 +209,7 @@ if not st.session_state.logged_in:
     with col2:
         if os.path.exists("logo.png"): st.image("logo.png", width=150)
         st.markdown(f"<h2 style='text-align: center;'>{NGO_NAME_PB}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: #D92B2B; font-weight: bold;'>{NGO_TAGLINE_PB}</p>", unsafe_allow_html=True)
         with st.form("login_form"):
             username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
             password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
@@ -230,7 +256,6 @@ with st.sidebar:
     if is_admin:
         menu_options.append("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)")
         
-    # Default index mapping
     try:
         current_idx = menu_options.index(st.session_state.current_tab)
     except:
@@ -242,15 +267,19 @@ with st.sidebar:
 colA, colB = st.columns([1, 8])
 with colA:
     if os.path.exists("logo.png"): st.image("logo.png", width=80)
-with colB: st.title(f"{NGO_NAME_PB}")
+with colB: 
+    st.title(f"{NGO_NAME_PB}")
+    st.markdown(f"<p style='color: #D92B2B; font-weight: bold; margin-top: -15px;'>{NGO_TAGLINE_PB}</p>", unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ==========================================
-# 0. HOME PAGE DASHBOARD (BEAUTIFUL CENTERED CARDS)
+# 0. HOME PAGE DASHBOARD (LARGE CENTERED CARDS)
 # ==========================================
 if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
-    st.markdown("<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 30px;'>ਸਵਾਗਤ ਹੈ ਜੀ! (Welcome to Dashboard)</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 18px; margin-bottom: 40px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 10px;'>{NGO_NAME_PB}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='text-align: center; color: #D92B2B; margin-bottom: 25px;'>{NGO_TAGLINE_PB}</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 19px; margin-bottom: 30px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -283,7 +312,7 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
             st.session_state.current_tab = "🎓 ਵਿਦਿਆਰਥੀ (Students)"
             st.rerun()
         if is_admin or is_staff:
-            if st.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂት (Delete)", use_container_width=True):
+            if st.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", use_container_width=True):
                 st.session_state.current_tab = "🗑️ ਡਿਲੀਟ (Delete)"
                 st.rerun()
 
@@ -400,7 +429,7 @@ elif st.session_state.current_tab == "💸 ਦਾਨ (Donations)":
                         with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
@@ -566,6 +595,64 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
                         supabase.table("bank_ledger").insert(ledg_records).execute()
                         st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
 
+        st.markdown("---")
+        st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
+        col_conv1, col_conv2 = st.columns(2)
+        with col_conv1:
+            ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
+            if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)", type="primary"):
+                res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
+                if res.data and res.data[0]['credit'] > 0:
+                    st.session_state['convert_ledger_id'] = ledger_id
+                    st.session_state['convert_ledger_data'] = res.data[0]
+                else:
+                    st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+
+        if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
+            ldata = st.session_state['convert_ledger_data']
+            with col_conv2:
+                st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ:**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
+                with st.form("convert_bank_receipt"):
+                    c_rec_no = st.number_input("ਰਸੀਦ ਨੰਬਰ (Printed Receipt Serial No.)", min_value=1, step=1)
+                    c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
+                    c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
+                    c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
+                    submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)", type="primary")
+                    
+            if submitted_conv and c_name:
+                books_c = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
+                m_book = None
+                for b in books_c:
+                    if int(b['start_no']) <= int(c_rec_no) <= int(b['end_no']):
+                        m_book = b
+                        break
+                ex_rec = supabase.table("donations").select("*").eq("id", int(c_rec_no)).execute().data
+                
+                if not m_book:
+                    st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ {c_rec_no} ਕਿਸੇ ਵੀ ਜਾਰੀ ਕੀਤੀ ਗਈ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
+                elif ex_rec:
+                    st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ {c_rec_no} ਪਹਿਲਾਂ ਹੀ ਵਰਤੀ ਜਾ ਚੁੱਕੀ ਹੈ!")
+                else:
+                    col_name = m_book['collector_name']
+                    data_conv, _ = supabase.table("donations").insert({
+                        "id": int(c_rec_no), "name": c_name, "phone": c_phone, "amount": ldata['credit'],
+                        "date": ldata['txn_date'], "payment_mode": "Bank Transfer",
+                        "donation_type": "ਪੈਸੇ (Monetary)", "bank_account": ldata['bank_name'],
+                        "on_account_of": c_acct, "add_to_mirror": False, "collector_name": col_name
+                    }).execute()
+                    
+                    h_file = generate_html_receipt(int(c_rec_no), c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct, col_name)
+                    st.success(f"✅ ਰਸੀਦ #{c_rec_no} ਤਿਆਰ ਹੈ! (ਕਲੈਕਟਰ: {col_name})")
+                    
+                    col_c1, col_c2 = st.columns([1, 3])
+                    with col_c1:
+                        with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}")
+                    with col_c2:
+                        if c_phone:
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
+
 # ==========================================
 # 4. BALANCE SHEET & P&L
 # ==========================================
@@ -580,7 +667,7 @@ elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
     
     df_don = pd.DataFrame(don_data)
     df_exp = pd.DataFrame(exp_data)
-    df_ledg = pd.DataFrame(ledg_data)
+    df_ledg = pd.DataFrame(ledger_data)
     df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value'])
     df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
     
