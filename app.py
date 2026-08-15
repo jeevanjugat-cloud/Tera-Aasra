@@ -27,7 +27,7 @@ EXPENSE_CATEGORIES = [
 USERS = {
     "admin": {"password": "Japnik@3315", "role": "admin"},
     "staff": {"password": "12345", "role": "staff"},
-    "view": {"password": "view", "role": "view"}
+    "management": {"password": "view@123", "role": "management"}
 }
 
 # --- SUPABASE ਕਨੈਕਸ਼ਨ ---
