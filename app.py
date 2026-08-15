@@ -14,7 +14,8 @@ NGO_TAGLINE_PB = "ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (�
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- CATEGORIES & ACCOUNTS ---
-BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank", "Punjab & Sind Bank"]
+# Updated Bank accounts as per CA Audit Report
+BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
     "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
@@ -39,7 +40,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS (UI DESIGN & WHATSAPP STYLING)
+# CUSTOM CSS (UI DESIGN & PROFESSIONAL HEADER)
 # ==========================================
 st.markdown("""
     <style>
@@ -226,13 +227,12 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
     with open(filename, "w", encoding="utf-8") as f: f.write(html_content)
     return filename
 
-# --- SESSION STATE INITIALIZATION ---
+# --- SESSION STATE INITIALIZATION FOR TABS AND MODES ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
-if 'current_tab' not in st.session_state:
-    st.session_state.current_tab = "🏠 ਹੋਮ ਪੇਜ (Home)"
 
+if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 ਹੋਮ ਪੇਜ (Home)"
 if 'entry_mode' not in st.session_state: st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
 if 'acc_mode' not in st.session_state: st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
 if 'other_mode' not in st.session_state: st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
@@ -290,13 +290,7 @@ with st.sidebar:
     if is_admin or is_staff:
         menu_options.append("⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)")
         
-    try:
-        current_idx = menu_options.index(st.session_state.current_tab)
-    except:
-        current_idx = 0
-
-    selected_tab = st.radio("ਚੁਣੋ (Select)", menu_options, index=current_idx, label_visibility="collapsed")
-    st.session_state.current_tab = selected_tab
+    st.radio("ਚੁਣੋ (Select)", menu_options, key="current_tab", label_visibility="collapsed")
 
 # --- PROFESSIONAL HEADER ON ALL PAGES ---
 logo_path = "logo.png"
@@ -322,7 +316,7 @@ if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)":
     st.markdown("---")
 
 # ==========================================
-# 0. HOME PAGE DASHBOARD
+# 0. HOME PAGE DASHBOARD (SHORTCUT BUTTONS)
 # ==========================================
 if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
     st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold; color: #1E3A8A; margin-bottom: 25px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
@@ -330,35 +324,59 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
     st.markdown("### 📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦਾਂ (Vouchers & Receipts)")
     c1, c2, c3, c4 = st.columns(4)
     if c1.button("💰 ਨਵਾਂ ਦਾਨ / ਰਸੀਦ (Receipt)", use_container_width=True, type="primary"):
-        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"; st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"; st.rerun()
+        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"
+        st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
+        st.rerun()
     if c2.button("📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind)", use_container_width=True, type="primary"):
-        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"; st.session_state.entry_mode = "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)"; st.rerun()
+        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"
+        st.session_state.entry_mode = "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)"
+        st.rerun()
     if c3.button("📉 ਖਰਚਾ (Payment)", use_container_width=True, type="primary"):
-        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"; st.session_state.entry_mode = "📉 ਖਰਚਾ (Payment Debit)"; st.rerun()
+        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"
+        st.session_state.entry_mode = "📉 ਖਰਚਾ (Payment Debit)"
+        st.rerun()
     if c4.button("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / WhatsApp", use_container_width=True, type="primary"):
-        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"; st.session_state.entry_mode = "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ (Reprint / Resend WhatsApp)"; st.rerun()
+        st.session_state.current_tab = "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)"
+        st.session_state.entry_mode = "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ (Reprint / Resend WhatsApp)"
+        st.rerun()
 
     st.markdown("### 🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਆਡਿਟ (Accounts & Reports)")
     c5, c6, c7, c8 = st.columns(4)
     if c5.button("⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (Balance Sheet)", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"; st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"; st.rerun()
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
+        st.rerun()
     if c6.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"; st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"; st.rerun()
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"
+        st.rerun()
     if c7.button("📁 ਪਾਰਟੀਆਂ/ਚੈੱਕ (Creditors)", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"; st.session_state.acc_mode = "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)"; st.rerun()
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.acc_mode = "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)"
+        st.rerun()
     if c8.button("📊 CA ਆਡਿਟ ਐਕਸਲ ਬੈਕਅੱਪ", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"; st.session_state.acc_mode = "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"; st.rerun()
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.acc_mode = "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
+        st.rerun()
 
-    st.markdown("### 📦 ਸਟਾਕ, ਕਿਤਾਬਾਂ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Management & Bulk Upload)")
+    st.markdown("### 📦 ਸਟਾਕ, ਕਿਤਾਬਾਂ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Management)")
     c9, c10, c11, c12 = st.columns(4)
     if c9.button("📦 ਸਟਾਕ ਭੰਡਾਰ (Stock)", use_container_width=True):
-        st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"; st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"; st.rerun()
+        st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"
+        st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
+        st.rerun()
     if c10.button("📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Books)", use_container_width=True):
-        st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"; st.session_state.other_mode = "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"; st.rerun()
+        st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"
+        st.session_state.other_mode = "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"
+        st.rerun()
     if (is_admin or is_staff) and c11.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
-        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"; st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"; st.rerun()
+        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"
+        st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
+        st.rerun()
     if is_admin and c12.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ", use_container_width=True):
-        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"; st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ (Delete Manager)"; st.rerun()
+        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"
+        st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
+        st.rerun()
 
 # ==========================================
 # 1. SINGLE WINDOW: VOUCHER & RECEIPT ENTRY
@@ -374,12 +392,10 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", 
         "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ (Reprint / Resend WhatsApp)"
     ]
-    if st.session_state.entry_mode not in modes: st.session_state.entry_mode = modes[0]
-    selected_mode = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Action):", modes, index=modes.index(st.session_state.entry_mode), horizontal=True)
-    st.session_state.entry_mode = selected_mode
+    st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Action):", modes, key="entry_mode", horizontal=True)
+    selected_mode = st.session_state.entry_mode
     st.markdown("---")
 
-    # --- 1.1 CASH / BANK DONATION (WITH WHATSAPP & PRINT) ---
     if selected_mode == "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)":
         if not is_mgmt:
             with st.form("donation_form", clear_on_submit=True):
@@ -436,7 +452,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
-    # --- 1.2 IN-KIND DONATION (WITH WHATSAPP & PRINT) ---
     elif selected_mode == "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)":
         if not is_mgmt:
             with st.form("inkind_form", clear_on_submit=True):
@@ -484,7 +499,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
-    # --- 1.3 EXPENSE / PAYMENT ENTRY ---
     elif selected_mode == "📉 ਖਰਚਾ (Payment Debit)":
         if not is_mgmt:
             with st.form("expense_form", clear_on_submit=True):
@@ -501,7 +515,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
-    # --- 1.4 NEW PARTY / VENDOR ---
     elif selected_mode == "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)":
         if not is_mgmt:
             with st.form("party_form", clear_on_submit=True):
@@ -517,7 +530,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
-    # --- 1.5 CHEQUE ISSUANCE ---
     elif selected_mode == "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)":
         if not is_mgmt:
             with st.form("cheque_form", clear_on_submit=True):
@@ -534,7 +546,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
-    # --- 1.6 REPRINT RECEIPT & RESEND WHATSAPP ---
     elif selected_mode == "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ (Reprint / Resend WhatsApp)":
         st.write("### 🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ ਜਾਂ WhatsApp 'ਤੇ ਦੁਬਾਰਾ ਭੇਜੋ")
         col_search1, col_search2 = st.columns(2)
@@ -578,9 +589,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)", 
         "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
     ]
-    if st.session_state.acc_mode not in modes: st.session_state.acc_mode = modes[0]
-    selected_mode = st.radio("ਖਾਤਾ ਚੁਣੋ:", modes, index=modes.index(st.session_state.acc_mode), horizontal=True)
-    st.session_state.acc_mode = selected_mode
+    st.radio("ਖਾਤਾ ਚੁਣੋ:", modes, key="acc_mode", horizontal=True)
+    selected_mode = st.session_state.acc_mode
     st.markdown("---")
 
     don_data = supabase.table("donations").select("*").execute().data or []
@@ -618,7 +628,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         st.markdown(inc_exp_html, unsafe_allow_html=True)
         
         fixed_assets_val = df_assets['value'].sum() if not df_assets.empty else 0.0
-        bank_balances = {"ਨਕਦ (Cash)": 0.0, "Kotak Bank": 0.0, "Punjab & Sind Bank": 0.0}
+        bank_balances = {"ਨਕਦ (Cash)": 0.0, "Kotak Bank Regular": 0.0, "Kotak Bank Corpus Fund": 0.0, "Punjab & Sind Bank": 0.0}
         for bank in BANK_ACCOUNTS:
             b_in = df_don[(df_don['bank_account'] == bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don.get('add_to_mirror', False) == True)]['amount'].sum() if not df_don.empty else 0
             b_in += df_ledg[df_ledg['bank_name'] == bank]['credit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'credit' in df_ledg.columns else 0
@@ -648,6 +658,27 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         full_html += f"""<div style="width:100%;"><div class="bs-box"><h4>Liabilities</h4><p>Funds & Liab: {other_liab_val:,.2f}</p><p>Surplus: {surplus:,.2f}</p><hr><p><b>Total: {total_liabilities:,.2f}</b></p></div><div class="bs-box"><h4>Assets</h4><p>Fixed Assets: {fixed_assets_val:,.2f}</p><p>Bank/Cash: {sum(bank_balances.values()):,.2f}</p><hr><p><b>Total: {total_assets:,.2f}</b></p></div></div>"""
         fin_report = generate_html_report("Financial Statements (ਖਾਤੇ)", full_html)
         with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਫਾਈਨਾਂਸ਼ੀਅਲ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
+
+        if is_admin:
+            st.markdown("---")
+            st.subheader("⚙️ ਸੰਪਤੀ ਅਤੇ ਫੰਡ ਜੋੜੋ (Add Fixed Assets / Funds - Admin Only)")
+            ac1, ac2 = st.columns(2)
+            with ac1:
+                with st.form("add_asset"):
+                    st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ ਜੋੜੋ)**")
+                    a_name = st.text_input("ਸੰਪਤੀ ਦਾ ਨਾਮ (e.g. Building, Furniture)")
+                    a_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
+                    if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
+                        supabase.table("assets").insert({"name": a_name, "value": a_val, "date_added": str(date.today())}).execute()
+                        st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+            with ac2:
+                with st.form("add_liab"):
+                    st.write("**Fund/Liability (ਫੰਡ ਜਾਂ ਉਧਾਰ ਜੋੜੋ)**")
+                    l_name = st.text_input("ਫੰਡ ਦਾ ਨਾਮ (e.g. Corpus Fund, Loan)")
+                    l_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
+                    if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
+                        supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
+                        st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
 
     elif selected_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)":
         st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
@@ -744,9 +775,36 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}", type="primary")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
+
+        if not is_mgmt:
+            st.markdown("---")
+            st.subheader(f"➕ ਹੱਥੀਂ ਐਂਟਰੀ / ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ")
+            t3_col1, t3_col2 = st.columns(2)
+            with t3_col1:
+                with st.form("manual_ledger"):
+                    st.write("ਹੱਥੀਂ ਐਂਟਰੀ ਕਰੋ (Manual Entry)")
+                    m_date = st.date_input("ਮਿਤੀ (Date)")
+                    m_desc = st.text_input("ਵੇਰਵਾ (Description - e.g. Bank Interest)")
+                    m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ (Type)", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
+                    m_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
+                    if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary"):
+                        supabase.table("bank_ledger").insert({"bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"), "description": m_desc, "credit": m_amt if "Credit" in m_type else 0.0, "debit": m_amt if "Debit" in m_type else 0.0, "source": "Manual"}).execute()
+                        st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
+            with t3_col2:
+                st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
+                stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'], key="bank_stmt")
+                if stmt_file:
+                    df_stmt = pd.read_excel(stmt_file)
+                    df_stmt.columns = df_stmt.columns.str.lower()
+                    if 'balance' not in df_stmt.columns: st.error("ਐਕਸਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ!")
+                    elif st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ", type="primary"):
+                        ledg_records = [{"bank_name": selected_bank, "txn_date": str(row['date'])[:10], "description": str(row['description']), "credit": float(row.get('credit',0)), "debit": float(row.get('debit',0)), "balance": float(row.get('balance',0)), "source": "Statement Upload"} for _, row in df_stmt.iterrows() if pd.notna(row.get('date')) and pd.notna(row.get('description'))]
+                        if ledg_records:
+                            supabase.table("bank_ledger").insert(ledg_records).execute()
+                            st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
 
     elif selected_mode == "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)":
         st.write("### 📁 ਸਾਰੀਆਂ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ (Creditors & Debtors)")
@@ -785,9 +843,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
 elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)":
     st.header("📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ ਅਤੇ ਰਸੀਦ ਕਿਤਾਬਾਂ")
     modes = ["📦 ਸਟਾਕ (Inventory)", "🎓 ਵਿਦਿਆਰਥੀ (Students)", "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"]
-    if st.session_state.other_mode not in modes: st.session_state.other_mode = modes[0]
-    selected_mode = st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, index=modes.index(st.session_state.other_mode), horizontal=True)
-    st.session_state.other_mode = selected_mode
+    st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, key="other_mode", horizontal=True)
+    selected_mode = st.session_state.other_mode
     st.markdown("---")
 
     if selected_mode == "📦 ਸਟਾਕ (Inventory)":
@@ -854,12 +911,10 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
 elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)":
     st.header("⚙️ ਐਡਮਿਨ, ਬਲਕ ਅੱਪਲੋਡ ਅਤੇ ਡਿਲੀਟ ਸਿਸਟਮ")
     modes = ["📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
-    if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
-    selected_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
-    st.session_state.admin_mode = selected_mode
+    st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, key="admin_mode", horizontal=True)
+    selected_mode = st.session_state.admin_mode
     st.markdown("---")
 
-    # --- 4.1 BULK EXCEL UPLOAD ---
     if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)":
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Old Donations via Excel)")
         st.info("ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ Supabase ਡਾਟਾਬੇਸ ਵਿੱਚ ਅੱਪਲੋਡ ਕਰੋ।")
@@ -875,7 +930,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ
                 supabase.table("donations").insert(df_upload.to_dict(orient='records')).execute()
                 st.success("✅ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
 
-    # --- 4.2 DELETE MANAGER ---
     elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)":
         t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
         if is_admin:
