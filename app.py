@@ -32,46 +32,48 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS FOR PROFESSIONAL UI (ਯੂਜ਼ਰ ਇੰਟਰਫੇਸ ਡਿਜ਼ਾਈਨ)
+# CUSTOM CSS (DARK/LIGHT MODE ADAPTIVE UI)
 # ==========================================
 st.markdown("""
     <style>
-        /* Sidebar Menu Font Size */
-        [data-testid="stSidebar"] [data-testid="stRadio"] p {
-            font-size: 19px !important;
-            font-weight: 700 !important;
-            padding-bottom: 8px;
-            color: #1E3A8A;
+        /* Sidebar Menu Font Size - Adaptive color based on theme */
+        [data-testid="stSidebar"] div[role="radiogroup"] label p {
+            font-size: 18px !important;
+            font-weight: 600 !important;
+            padding-bottom: 5px;
         }
         
         /* All Input Labels (ਦਾਨ, ਖਰਚੇ ਫਾਰਮ ਆਦਿ) */
-        label p, div[data-testid="stWidgetLabel"] p {
+        div[data-testid="stWidgetLabel"] p {
             font-size: 16px !important;
             font-weight: 600 !important;
-            color: #2C3E50 !important;
         }
         
-        /* Button styling for better visibility */
-        [data-testid="stButton"] button {
-            font-size: 16px !important;
-            font-weight: bold !important;
-            border-radius: 6px;
+        /* Adjusting excessively large headers */
+        h2 {
+            font-size: 26px !important;
+            font-weight: 700 !important;
+            padding-bottom: 5px !important;
         }
-        [data-testid="stFormSubmitButton"] button {
-            background-color: #1E3A8A !important;
-            color: white !important;
-            font-size: 18px !important;
-            padding: 10px 20px !important;
+        h3 {
+            font-size: 20px !important;
+            font-weight: 600 !important;
         }
         
         /* Metric text size (ਬੈਲੇਂਸ ਦਿਖਾਉਣ ਲਈ) */
         [data-testid="stMetricLabel"] p {
-            font-size: 18px !important;
+            font-size: 16px !important;
             font-weight: bold !important;
         }
         [data-testid="stMetricValue"] {
-            font-size: 28px !important;
-            color: #D92B2B !important;
+            font-size: 26px !important;
+        }
+        
+        /* Styling the form submit buttons lightly for emphasis */
+        [data-testid="stBaseButton-primary"] {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            padding: 5px 20px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -104,12 +106,12 @@ def generate_html_report(title, df):
         <meta charset="UTF-8">
         <title>{title}</title>
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; }}
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; background-color: #fff; }}
             .header {{ text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; }}
             .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 5px; }}
             .report-title {{ font-size: 18px; font-weight: bold; color: #D92B2B; margin-top: 10px; }}
             .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
-            .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; }}
+            .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
             .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
             @media print {{ body {{ padding: 0; }} }}
         </style>
@@ -132,7 +134,7 @@ def generate_html_report(title, df):
         f.write(html_content)
     return filename
 
-# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ (RECEIPT DESIGN - ADJUSTED FONTS) ---
+# --- ਰਸੀਦ ਡਿਜ਼ਾਈਨ (RECEIPT DESIGN) ---
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of):
     logo_base64 = get_base64_image("logo.png")
     img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
@@ -152,7 +154,6 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
-            /* Font adjustments here */
             .title-pa {{ font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
             .title-en {{ font-size: 18px; font-weight: bold; color: #4A1B15; margin: 5px 0 8px 0; }}
             .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
@@ -240,7 +241,7 @@ if not st.session_state.logged_in:
         with st.form("login_form"):
             username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
             password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
-            if st.form_submit_button("ਲਾਗਇਨ (Login)"):
+            if st.form_submit_button("ਲਾਗਇਨ (Login)", type="primary"):
                 if username_input in USERS and USERS[username_input] == password_input:
                     st.session_state.logged_in = True
                     st.session_state.is_admin = (username_input == "admin")
@@ -249,7 +250,7 @@ if not st.session_state.logged_in:
                     st.error("ਗਲਤ ਪਾਸਵਰਡ! (Incorrect Password!)")
     st.stop()
 
-# --- SIDEBAR NAVIGATION (ਖੱਬੇ ਪਾਸੇ ਦਾ ਮੀਨੂ) ---
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.title("👤 ਪ੍ਰੋਫਾਈਲ (Profile)")
     st.success("✅ ਐਡਮਿਨ ਮੋਡ (Admin Mode)" if st.session_state.is_admin else "✅ ਕਰਮਚਾਰੀ ਮੋਡ (Staff Mode)")
@@ -305,7 +306,7 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
         st.markdown("---")
         add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਜੋੜੋ (Add to Bank Mirror Ledger)", value=True, help="Uncheck if this is already uploaded via Bank Statement.")
         
-        submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ (Save & Generate Receipt)")
+        submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ (Save & Generate Receipt)", type="primary")
         
     if submitted and donor_name:
         formatted_date = receipt_date.strftime("%Y-%m-%d")
@@ -386,7 +387,7 @@ elif selected_tab == "📉 ਖਰਚੇ (Expenses)":
         st.markdown("---")
         add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Mirror Ledger)", value=True)
         
-        if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)") and desc:
+        if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
             supabase.table("expenses").insert({
                 "description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"),
                 "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp
@@ -512,7 +513,7 @@ elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
             m_desc = st.text_input("ਵੇਰਵਾ (Description - e.g. Bank Interest)")
             m_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ (Type)", ["ਕ੍ਰੈਡਿਟ / ਆਏ (Credit)", "ਡੈਬਿਟ / ਕੱਟੇ (Debit)"])
             m_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
-            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ (Save Entry)"):
+            if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ (Save Entry)", type="primary"):
                 credit_val = m_amt if "Credit" in m_type else 0.0
                 debit_val = m_amt if "Debit" in m_type else 0.0
                 supabase.table("bank_ledger").insert({
@@ -533,7 +534,7 @@ elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
                 if 'balance' not in df_stmt.columns:
                     st.error("ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ 'Balance' ਕਾਲਮ ਨਹੀਂ ਹੈ! (Balance column missing!)")
                 else:
-                    if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement)"):
+                    if st.button("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement)", type="primary"):
                         ledg_records = []
                         for _, row in df_stmt.iterrows():
                             if pd.isna(row.get('date')) or pd.isna(row.get('description')):
@@ -576,7 +577,7 @@ elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
                 c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
                 c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
                 c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
-                submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)")
+                submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)", type="primary")
                 
         if submitted_conv and c_name:
             data_conv, _ = supabase.table("donations").insert({
@@ -612,7 +613,7 @@ elif selected_tab == "📦 ਸਟਾਕ (Stock)":
             unit = st.selectbox("ਇਕਾਈ (Unit)", ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)"])
             stock_action = st.radio("ਐਕਸ਼ਨ (Action)", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add Stock)", "ਸਮਾਨ ਵਰਤਿਆ (Remove Stock)"])
             
-            if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Update Stock)") and item_name:
+            if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Update Stock)", type="primary") and item_name:
                 current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
                 if res.data:
@@ -644,7 +645,7 @@ elif selected_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
         stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone Number)")
         stu_course = st.selectbox("ਕਲਾਸ (Course)", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ (Computer Class)", "ਸਿਲਾਈ ਸੈਂਟਰ (Tailoring Center)"])
         join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ (Join Date)", value=date.today())
-        if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ (Save Record)") and stu_name:
+        if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ (Save Record)", type="primary") and stu_name:
             supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ (Ongoing)"}).execute()
             st.success("✅ ਵਿਦਿਆਰਥੀ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ! (Student Record Saved)")
 
@@ -681,7 +682,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                     if 'add_to_mirror' not in df_upload.columns:
                         df_upload['add_to_mirror'] = True
                     st.write(df_upload.head())
-                    if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)"):
+                    if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload to Database)", type="primary"):
                         df_upload['balance'] = df_upload['balance'].fillna(0)
                         df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
                         records = df_upload.to_dict(orient='records')
@@ -714,7 +715,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                 data = st.session_state['del_stock_data']
                 st.info(f"📦 **ਸਟਾਕ ਦਾ ਵੇਰਵਾ (Stock Details):**\n\n**ਨਾਮ (Name):** {data['item_name']}\n\n**ਮਾਤਰਾ (Qty):** {data['quantity']} {data['unit']}\n\n**ਆਖਰੀ ਅਪਡੇਟ (Last Updated):** {data['last_updated']}")
                 st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure you want to delete?)")
-                if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
+                if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)", type="primary"):
                     supabase.table("stock").delete().eq("item_name", del_item).execute()
                     st.success(f"✅ ਸਟਾਕ '{del_item}' ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
                     st.session_state.pop('del_stock_data', None)
@@ -754,7 +755,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                     st.info(f"🎓 **ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ (Student):** {data.get('name')}\n\n**ਕੋਰਸ (Course):** {data.get('course')}\n\n**ਦਾਖਲਾ ਮਿਤੀ (Join Date):** {data.get('join_date')}")
                 
                 st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? (Are you sure you want to delete?)")
-                if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)"):
+                if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Yes, Confirm Delete)", type="primary"):
                     supabase.table(table_map[del_type]).delete().eq("id", del_id).execute()
                     st.success(f"✅ ID #{del_id} ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ! (Deleted Successfully)")
                     st.session_state.pop('del_entry_data', None)
