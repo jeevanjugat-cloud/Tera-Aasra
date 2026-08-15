@@ -14,7 +14,6 @@ NGO_TAGLINE_PB = "ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (�
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
 
 # --- CATEGORIES & ACCOUNTS ---
-# Updated Bank accounts as per CA Audit Report
 BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
@@ -290,7 +289,13 @@ with st.sidebar:
     if is_admin or is_staff:
         menu_options.append("⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)")
         
-    st.radio("ਚੁਣੋ (Select)", menu_options, key="current_tab", label_visibility="collapsed")
+    try:
+        current_idx = menu_options.index(st.session_state.current_tab)
+    except ValueError:
+        current_idx = 0
+
+    selected_tab = st.radio("ਚੁਣੋ (Select)", menu_options, index=current_idx, label_visibility="collapsed")
+    st.session_state.current_tab = selected_tab
 
 # --- PROFESSIONAL HEADER ON ALL PAGES ---
 logo_path = "logo.png"
@@ -392,8 +397,9 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", 
         "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ (Reprint / Resend WhatsApp)"
     ]
-    st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Action):", modes, key="entry_mode", horizontal=True)
-    selected_mode = st.session_state.entry_mode
+    if st.session_state.entry_mode not in modes: st.session_state.entry_mode = modes[0]
+    selected_mode = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Action):", modes, index=modes.index(st.session_state.entry_mode), horizontal=True)
+    st.session_state.entry_mode = selected_mode
     st.markdown("---")
 
     if selected_mode == "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)":
@@ -493,7 +499,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl", type="primary")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
@@ -589,8 +595,9 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)", 
         "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
     ]
-    st.radio("ਖਾਤਾ ਚੁਣੋ:", modes, key="acc_mode", horizontal=True)
-    selected_mode = st.session_state.acc_mode
+    if st.session_state.acc_mode not in modes: st.session_state.acc_mode = modes[0]
+    selected_mode = st.radio("ਖਾਤਾ ਚੁਣੋ:", modes, index=modes.index(st.session_state.acc_mode), horizontal=True)
+    st.session_state.acc_mode = selected_mode
     st.markdown("---")
 
     don_data = supabase.table("donations").select("*").execute().data or []
@@ -775,7 +782,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}", type="primary")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
@@ -843,8 +850,9 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
 elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)":
     st.header("📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ ਅਤੇ ਰਸੀਦ ਕਿਤਾਬਾਂ")
     modes = ["📦 ਸਟਾਕ (Inventory)", "🎓 ਵਿਦਿਆਰਥੀ (Students)", "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"]
-    st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, key="other_mode", horizontal=True)
-    selected_mode = st.session_state.other_mode
+    if st.session_state.other_mode not in modes: st.session_state.other_mode = modes[0]
+    selected_mode = st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, index=modes.index(st.session_state.other_mode), horizontal=True)
+    st.session_state.other_mode = selected_mode
     st.markdown("---")
 
     if selected_mode == "📦 ਸਟਾਕ (Inventory)":
@@ -911,8 +919,9 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
 elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)":
     st.header("⚙️ ਐਡਮਿਨ, ਬਲਕ ਅੱਪਲੋਡ ਅਤੇ ਡਿਲੀਟ ਸਿਸਟਮ")
     modes = ["📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
-    st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, key="admin_mode", horizontal=True)
-    selected_mode = st.session_state.admin_mode
+    if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
+    selected_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
+    st.session_state.admin_mode = selected_mode
     st.markdown("---")
 
     if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)":
