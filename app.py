@@ -154,6 +154,7 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
             .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
             .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
+            /* Font adjustments here */
             .title-pa {{ font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
             .title-en {{ font-size: 18px; font-weight: bold; color: #4A1B15; margin: 5px 0 8px 0; }}
             .sub-title-pa {{ font-size: 15px; color: #D92B2B; font-weight: bold; margin: 2px 0; }}
@@ -266,7 +267,8 @@ with st.sidebar:
         "📉 ਖਰਚੇ (Expenses)", 
         "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)",
         "📦 ਸਟਾਕ (Stock)", 
-        "🎓 ਵਿਦਿਆਰਥੀ (Students)"
+        "🎓 ਵਿਦਿਆਰਥੀ (Students)",
+        "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)"
     ]
     if st.session_state.is_admin:
         menu_options.append("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)")
@@ -351,7 +353,7 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
     st.markdown("---")
     st.subheader("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਪ੍ਰਿੰਟ ਕਰੋ (Reprint Old Receipt)")
     search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ ਭਰੋ (Enter Receipt No.)", min_value=1, step=1)
-    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ (Find Receipt)"):
+    if st.button("🔍 ਰਸੀਦ ਲੱਭੋ (Find Receipt)", type="primary"):
         res = supabase.table("donations").select("*").eq("id", search_id).execute()
         if res.data:
             record = res.data[0]
@@ -561,7 +563,7 @@ elif selected_tab == "🏦 ਮਿਰਰ ਬੈਂਕ (Mirror Banks)":
     col_conv1, col_conv2 = st.columns(2)
     with col_conv1:
         ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
-        if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)"):
+        if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)", type="primary"):
             res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
             if res.data and res.data[0]['credit'] > 0:
                 st.session_state['convert_ledger_id'] = ledger_id
@@ -661,7 +663,25 @@ elif selected_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
             st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Student List)", data=file.read(), file_name=report_file_stu, mime="text/html")
 
 # ==========================================
-# 6. ADMIN TOOLS (ਐਡਮਿਨ ਟੂਲਸ)
+# 6. EXCEL REPORTS (ਐਕਸਲ ਰਿਪੋਰਟਾਂ)
+# ==========================================
+elif selected_tab == "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)":
+    st.header("📊 ਐਕਸਲ ਰਿਪੋਰਟ ਡਾਊਨਲੋਡ ਕਰੋ (Download Excel Reports)")
+    st.info("ਸਾਰੇ ਡਾਟੇ ਦਾ ਮੁਕੰਮਲ ਬੈਕਅੱਪ ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਡਾਊਨਲੋਡ ਕਰੋ। (Download complete backup in Excel)")
+    
+    if st.button("📊 ਰਿਪੋਰਟ ਤਿਆਰ ਕਰੋ (Generate Excel Report)", type="primary"):
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            pd.DataFrame(supabase.table("donations").select("*").execute().data or []).to_excel(writer, sheet_name='Donations', index=False)
+            pd.DataFrame(supabase.table("expenses").select("*").execute().data or []).to_excel(writer, sheet_name='Expenses', index=False)
+            pd.DataFrame(supabase.table("bank_ledger").select("*").execute().data or []).to_excel(writer, sheet_name='Bank Ledger', index=False)
+            pd.DataFrame(supabase.table("stock").select("*").execute().data or []).to_excel(writer, sheet_name='Stock', index=False)
+            pd.DataFrame(supabase.table("students").select("*").execute().data or []).to_excel(writer, sheet_name='Students', index=False)
+        
+        st.download_button("📥 ਐਕਸਲ ਡਾਊਨਲੋਡ ਕਰੋ (Download Excel)", data=buffer.getvalue(), file_name=f"NGO_Backup_{datetime.now().strftime('%d-%m-%Y')}.xlsx")
+
+# ==========================================
+# 7. ADMIN TOOLS (ਐਡਮਿਨ ਟੂਲਸ)
 # ==========================================
 elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
     st.header("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Controls)")
@@ -699,7 +719,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
 
         if del_type == "ਸਟਾਕ (Stock)":
             del_item = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ (Enter Item Name) - ਜਿਵੇਂ ਸਟਾਕ ਲਿਸਟ ਵਿੱਚ ਲਿਖਿਆ ਹੈ")
-            if st.button("🔍 ਸਟਾਕ ਲੱਭੋ (Find Stock)"):
+            if st.button("🔍 ਸਟਾਕ ਲੱਭੋ (Find Stock)", type="primary"):
                 if del_item:
                     res = supabase.table("stock").select("*").eq("item_name", del_item).execute()
                     if res.data:
@@ -728,7 +748,7 @@ elif selected_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
                 "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger",
                 "ਵਿਦਿਆਰਥੀ (Student)": "students"
             }
-            if st.button(f"🔍 ਐਂਟਰੀ ਲੱਭੋ (Find Entry)"):
+            if st.button(f"🔍 ਐਂਟਰੀ ਲੱਭੋ (Find Entry)", type="primary"):
                 if del_id > 0:
                     res = supabase.table(table_map[del_type]).select("*").eq("id", del_id).execute()
                     if res.data:
