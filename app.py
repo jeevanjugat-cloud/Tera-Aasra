@@ -299,7 +299,7 @@ colA, colB, colC = st.columns([1, 4, 1])
 with colB:
     logo_path = "logo.png"
     if os.path.exists(logo_path):
-        st.image(logo_path, width=90, use_column_width=False)
+        st.image(logo_path, width=90)
     st.markdown(f"""
         <div class="main-header-container">
             <div class="main-title">{NGO_NAME_PB}</div>
