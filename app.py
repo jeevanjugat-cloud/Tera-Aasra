@@ -240,7 +240,6 @@ with tab1:
         receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today())
         
         st.markdown("---")
-        # ਨਵਾਂ ਚੈੱਕਬਾਕਸ (To avoid double entry)
         add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ (Bank Ledger) ਵਿੱਚ ਵੀ ਜੋੜੋ", value=True, help="ਜੇਕਰ ਇਹ ਐਂਟਰੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਰਾਹੀਂ ਪਹਿਲਾਂ ਹੀ ਅੱਪਲੋਡ ਹੋ ਚੁੱਕੀ ਹੈ, ਤਾਂ ਇਸਨੂੰ Uncheck ਕਰ ਦਿਓ ਤਾਂ ਜੋ ਬੈਲੇਂਸ ਡਬਲ ਨਾ ਹੋਵੇ।")
         
         submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
@@ -487,10 +486,9 @@ with tab3:
             except Exception as e:
                 st.error(f"ਫਾਈਲ ਗਲਤ ਹੈ। ਐਰਰ: {e}")
 
-    # ਨਵਾਂ ਫੀਚਰ: ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਕੱਟੋ
     st.markdown("---")
     st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
-    st.info("ਜੇਕਰ ਕੋਈ ਪੈਸਾ ਬੈਂਕ ਸਟੇਟਮੈਂਟ (Ledger) ਵਿੱਚ ਆਇਆ ਹੈ ਅਤੇ ਤੁਸੀਂ ਉਸਦੀ ਰਸੀਦ ਕੱਟਣੀ ਹੈ, ਤਾਂ ਇੱਥੇ ਉਸ ਐਂਟਰੀ ਦਾ ID ਭਰੋ। ਸਿਸਟਮ ਇਸਨੂੰ ਦਾਨ ਵਿੱਚ ਬਦਲ ਦੇਵੇਗਾ ਅਤੇ ਬੈਲੇਂਸ ਡਬਲ ਨਹੀਂ ਕਰੇਗਾ।")
+    st.info("ਜੇਕਰ ਕੋਈ ਪੈਸਾ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਵਿੱਚ ਆਇਆ ਹੈ ਅਤੇ ਤੁਸੀਂ ਉਸਦੀ ਰਸੀਦ ਕੱਟਣੀ ਹੈ, ਤਾਂ ਇੱਥੇ ਉਸ ਐਂਟਰੀ ਦਾ ID ਭਰੋ।")
     
     col_conv1, col_conv2 = st.columns(2)
     with col_conv1:
@@ -501,7 +499,7 @@ with tab3:
                 st.session_state['convert_ledger_id'] = ledger_id
                 st.session_state['convert_ledger_data'] = res.data[0]
             else:
-                st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit/ਜਮ੍ਹਾਂ) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+                st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
 
     if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
         ldata = st.session_state['convert_ledger_data']
@@ -511,7 +509,6 @@ with tab3:
                 c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
                 c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)")
                 c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
-                
                 submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ")
                 
         if submitted_conv and c_name:
@@ -519,7 +516,7 @@ with tab3:
                 "name": c_name, "phone": c_phone, "amount": ldata['credit'],
                 "date": ldata['txn_date'], "payment_mode": "Bank Transfer",
                 "donation_type": "ਪੈਸੇ (Monetary)", "bank_account": ldata['bank_name'],
-                "on_account_of": c_acct, "add_to_mirror": False  # To avoid double counting!
+                "on_account_of": c_acct, "add_to_mirror": False
             }).execute()
             
             rec_id = data_conv[1][0]['id']
@@ -621,25 +618,64 @@ with tab6:
 
         if del_type == "ਸਟਾਕ (Stock)":
             del_item = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ (Item Name) - ਜਿਵੇਂ ਸਟਾਕ ਲਿਸਟ ਵਿੱਚ ਲਿਖਿਆ ਹੈ")
-            if st.button("ਸਟਾਕ ਡਿਲੀਟ ਕਰੋ"):
+            if st.button("🔍 ਸਟਾਕ ਲੱਭੋ (Find Stock)"):
                 if del_item:
-                    supabase.table("stock").delete().eq("item_name", del_item).execute()
-                    st.success(f"ਸਟਾਕ '{del_item}' ਡਿਲੀਟ ਹੋ ਗਿਆ!")
-                    st.rerun()
+                    res = supabase.table("stock").select("*").eq("item_name", del_item).execute()
+                    if res.data:
+                        st.session_state['del_stock_data'] = res.data[0]
+                        st.session_state['del_stock_name'] = del_item
+                    else:
+                        st.error("❌ ਇਹ ਵਸਤੂ ਸਟਾਕ ਵਿੱਚ ਨਹੀਂ ਮਿਲੀ।")
+                        st.session_state.pop('del_stock_data', None)
                 else:
-                    st.error("ਕਿਰਪਾ ਕਰਕੇ ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ।")
+                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਨਾਮ ਭਰੋ।")
+            
+            if 'del_stock_data' in st.session_state and st.session_state.get('del_stock_name') == del_item:
+                data = st.session_state['del_stock_data']
+                st.info(f"📦 **ਸਟਾਕ ਦਾ ਵੇਰਵਾ:**\n\n**ਨਾਮ:** {data['item_name']}\n\n**ਮਾਤਰਾ:** {data['quantity']} {data['unit']}\n\n**ਆਖਰੀ ਅਪਡੇਟ:** {data['last_updated']}")
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")
+                if st.button("🛑 ਹਾਂ, ਡਿਲੀਟ ਕਰੋ (Confirm Delete)"):
+                    supabase.table("stock").delete().eq("item_name", del_item).execute()
+                    st.success(f"✅ ਸਟਾਕ '{del_item}' ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ!")
+                    st.session_state.pop('del_stock_data', None)
+                    st.rerun()
         else:
             del_id = st.number_input("ਐਂਟਰੀ ਦਾ ID ਨੰਬਰ ਭਰੋ (Entry ID)", min_value=0, step=1)
-            if st.button(f"{del_type} ਡਿਲੀਟ ਕਰੋ"):
-                table_map = {
-                    "ਦਾਨ (Donation)": "donations",
-                    "ਖਰਚਾ (Expense)": "expenses",
-                    "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger",
-                    "ਵਿਦਿਆਰਥੀ (Student)": "students"
-                }
+            table_map = {
+                "ਦਾਨ (Donation)": "donations",
+                "ਖਰਚਾ (Expense)": "expenses",
+                "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger",
+                "ਵਿਦਿਆਰਥੀ (Student)": "students"
+            }
+            if st.button(f"🔍 ਐਂਟਰੀ ਲੱਭੋ (Find Entry)"):
                 if del_id > 0:
-                    supabase.table(table_map[del_type]).delete().eq("id", del_id).execute()
-                    st.success(f"ID #{del_id} ਡਿਲੀਟ ਹੋ ਗਿਆ!")
-                    st.rerun()
+                    res = supabase.table(table_map[del_type]).select("*").eq("id", del_id).execute()
+                    if res.data:
+                        st.session_state['del_entry_data'] = res.data[0]
+                        st.session_state['del_entry_id'] = del_id
+                        st.session_state['del_entry_type'] = del_type
+                    else:
+                        st.error("❌ ਇਸ ID ਦੀ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+                        st.session_state.pop('del_entry_data', None)
                 else:
-                    st.error("ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ID ਭਰੋ।")
+                    st.warning("ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ ID ਭਰੋ।")
+            
+            if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_id') == del_id and st.session_state.get('del_entry_type') == del_type:
+                data = st.session_state['del_entry_data']
+                st.write("### 📄 ਐਂਟਰੀ ਦਾ ਵੇਰਵਾ (Entry Details):")
+                
+                if del_type == "ਦਾਨ (Donation)":
+                    st.info(f"🙏 **ਦਾਨੀ ਦਾ ਨਾਮ:** {data.get('name')}\n\n**ਰਕਮ:** ₹{data.get('amount')}\n\n**ਮਿਤੀ:** {data.get('date')}\n\n**ਕਿਸ ਮੱਦ ਲਈ:** {data.get('on_account_of')}")
+                elif del_type == "ਖਰਚਾ (Expense)":
+                    st.info(f"📉 **ਵੇਰਵਾ:** {data.get('description')}\n\n**ਰਕਮ:** ₹{data.get('amount')}\n\n**ਕੈਟਾਗਰੀ:** {data.get('category')}\n\n**ਮਿਤੀ:** {data.get('date')}")
+                elif del_type == "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)":
+                    st.info(f"🏦 **ਬੈਂਕ:** {data.get('bank_name')}\n\n**ਵੇਰਵਾ:** {data.get('description')}\n\n**Credit (ਆਏ):** ₹{data.get('credit')}\n\n**Debit (ਕੱਟੇ):** ₹{data.get('debit')}\n\n**ਮਿਤੀ:** {data.get('txn_date')}")
+                elif del_type == "ਵਿਦਿਆਰਥੀ (Student)":
+                    st.info(f"🎓 **ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ:** {data.get('name')}\n\n**ਕੋਰਸ:** {data.get('course')}\n\n**ਦਾਖਲਾ ਮਿਤੀ:** {data.get('join_date')}")
+                
+                st.warning("⚠️ ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਇਸ ਐਂਟਰੀ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?")
+                if st.button("🛑 ਹਾਂ, ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Confirm Delete)"):
+                    supabase.table(table_map[del_type]).delete().eq("id", del_id).execute()
+                    st.success(f"✅ ID #{del_id} ਸਫਲਤਾਪੂਰਵਕ ਡਿਲੀਟ ਹੋ ਗਿਆ!")
+                    st.session_state.pop('del_entry_data', None)
+                    st.rerun()
