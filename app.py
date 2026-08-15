@@ -5,7 +5,6 @@ import urllib.parse
 import io
 import base64
 import os
-import time  # <-- NEW: To show success messages properly before refreshing
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
@@ -42,23 +41,46 @@ st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha 
 # ==========================================
 st.markdown("""
     <style>
+        /* Hide Streamlit Deploy/GitHub Menu */
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
         footer {visibility: hidden;}
         .stAppDeployButton {display:none !important;}
 
+        /* Sidebar Menu Font Size */
         [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 18px !important; font-weight: 600 !important; padding-bottom: 5px; }
+        
+        /* All Input Labels */
         div[data-testid="stWidgetLabel"] p { font-size: 16px !important; font-weight: 600 !important; }
         h2 { font-size: 26px !important; font-weight: 700 !important; padding-bottom: 5px !important; }
         h3 { font-size: 20px !important; font-weight: 600 !important; }
+        
+        /* Metric text size */
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         [data-testid="stBaseButton-primary"] { font-size: 16px !important; font-weight: bold !important; padding: 5px 20px !important; }
         
+        /* Balance Sheet specific styles */
         .bs-box { border: 2px solid #1E3A8A; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: rgba(30, 58, 138, 0.05); }
         .bs-header { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; border-bottom: 2px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 15px; }
         .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
         .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #D92B2B; border-top: 1px solid #333; padding-top: 8px; margin-top: 10px; }
+        
+        /* Custom WhatsApp Button Style */
+        .whatsapp-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #25D366;
+            color: white !important;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 5px;
+            border: 1px solid #128C7E;
+        }
+        .whatsapp-btn:hover { background-color: #128C7E; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -243,7 +265,8 @@ if selected_tab == "💸 ਦਾਨ (Donations)":
                     receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today())
                     
                 st.markdown("---")
-                add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਜੋੜੋ (Add to Bank Mirror Ledger)", value=True)
+                # DEFAULT FALSE FOR DONATION MIRROR LEDGER
+                add_to_mirror = st.checkbox("✅ ਇਸ ਐਂਟਰੀ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਜੋੜੋ (Add to Bank Mirror Ledger)", value=False)
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ (Save & Generate Receipt)", type="primary")
                 
             if submitted and donor_name:
@@ -353,7 +376,8 @@ elif selected_tab == "📉 ਖਰਚੇ (Expenses)":
             bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ? (From which Bank?)", BANK_ACCOUNTS)
             exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
             st.markdown("---")
-            add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Mirror Ledger)", value=True)
+            # DEFAULT FALSE FOR EXPENSE MIRROR LEDGER
+            add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Mirror Ledger)", value=False)
             if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
                 supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
                 st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved!)")
@@ -450,7 +474,7 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                 m_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
                 if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("bank_ledger").insert({"bank_name": selected_bank, "txn_date": m_date.strftime("%Y-%m-%d"), "description": m_desc, "credit": m_amt if "Credit" in m_type else 0.0, "debit": m_amt if "Debit" in m_type else 0.0, "source": "Manual"}).execute()
-                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
+                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!"); st.rerun()
         with t3_col2:
             st.write("ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਕਰੋ (Upload Statement Excel)")
             stmt_file = st.file_uploader(f"Upload {selected_bank} Statement", type=['xlsx', 'xls'], key="bank_stmt")
@@ -462,7 +486,7 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                     ledg_records = [{"bank_name": selected_bank, "txn_date": str(row['date'])[:10], "description": str(row['description']), "credit": float(row.get('credit',0)), "debit": float(row.get('debit',0)), "balance": float(row.get('balance',0)), "source": "Statement Upload"} for _, row in df_stmt.iterrows() if pd.notna(row.get('date')) and pd.notna(row.get('description'))]
                     if ledg_records:
                         supabase.table("bank_ledger").insert(ledg_records).execute()
-                        st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
+                        st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); st.rerun()
 
         st.markdown("---")
         st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
@@ -501,7 +525,7 @@ elif selected_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)":
                 
                 col_c1, col_c2 = st.columns([1, 3])
                 with col_c1:
-                    with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print Receipt)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
+                    with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{rec_id}")
                 with col_c2:
                     if c_phone:
                         msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
@@ -594,7 +618,7 @@ elif selected_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)":
                 a_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
                 if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("assets").insert({"name": a_name, "value": a_val, "date_added": str(date.today())}).execute()
-                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); st.rerun()
         with ac2:
             with st.form("add_liab"):
                 st.write("**Fund/Liability (ਫੰਡ ਜਾਂ ਉਧਾਰ ਜੋੜੋ)**")
@@ -602,7 +626,7 @@ elif selected_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)":
                 l_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
                 if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                     supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
-                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+                    st.success("ਸੇਵ ਹੋ ਗਿਆ!"); st.rerun()
 
 # ==========================================
 # 5. STOCK
@@ -685,6 +709,7 @@ elif selected_tab == "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)
 # 8. DELETE SYSTEM (ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ)
 # ==========================================
 elif selected_tab == "🗑️ ਡਿਲੀਟ (Delete)":
+    import time
     st.header("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Management)")
     t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students"}
     
