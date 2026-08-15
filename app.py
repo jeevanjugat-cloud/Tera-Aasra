@@ -279,9 +279,7 @@ st.markdown("---")
 # 0. HOME PAGE DASHBOARD (LARGE CENTERED CARDS)
 # ==========================================
 if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
-    st.markdown(f"<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 10px;'>{NGO_NAME_PB}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='text-align: center; color: #D92B2B; margin-bottom: 25px;'>{NGO_TAGLINE_PB}</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 19px; margin-bottom: 30px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold; color: #1E3A8A; margin-bottom: 25px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
     with c1:
