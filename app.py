@@ -55,7 +55,6 @@ st.markdown("""
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         
-        /* Professional Header Layout */
         .pro-header-flex {
             display: flex;
             align-items: center;
@@ -95,7 +94,6 @@ st.markdown("""
             margin: 0;
         }
 
-        /* Larger Home Page Buttons */
         div.stButton > button {
             font-size: 18px !important;
             font-weight: bold !important;
@@ -293,11 +291,13 @@ with st.sidebar:
         "💸 ਦਾਨ (Donations)", 
         "📉 ਖਰਚੇ (Expenses)", 
         "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)",
+        "📁 ਪਾਰਟੀਆਂ/ਖਾਤੇ (Creditors & Debtors)", 
+        "💳 ਚੈੱਕ ਮੈਨੇਜਮੈਂਟ (Cheque BRS)", 
         "⚖️ ਖਾਤੇ (P&L & Balance Sheet)", 
         "📦 ਸਟਾਕ (Stock)", 
         "🎓 ਵਿਦਿਆਰਥੀ (Students)",
         "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)",
-        "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)"
+        "📊 ਐਕਸਲ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (CA / Excel Reports)"
     ]
     if is_admin or is_staff:
         menu_options.append("🗑️ ਡਿਲੀਟ (Delete)")
@@ -347,35 +347,34 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
         if st.button("💸 ਦਾਨ ਪ੍ਰਬੰਧਨ (Donations)", use_container_width=True, type="primary"):
             st.session_state.current_tab = "💸 ਦਾਨ (Donations)"
             st.rerun()
-        if st.button("⚖️ ਵਿੱਤੀ ਖਾਤੇ (P&L & Balance Sheet)", use_container_width=True):
-            st.session_state.current_tab = "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
+        if st.button("📁 ਪਾਰਟੀਆਂ (Creditors & Debtors)", use_container_width=True):
+            st.session_state.current_tab = "📁 ਪਾਰਟੀਆਂ/ਖਾਤੇ (Creditors & Debtors)"
             st.rerun()
-        if st.button("📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)", use_container_width=True):
-            st.session_state.current_tab = "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"
+        if st.button("⚖️ ਵਿੱਤੀ ਖਾਤੇ (Balance Sheet)", use_container_width=True):
+            st.session_state.current_tab = "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
             st.rerun()
 
     with c2:
         if st.button("📉 ਖਰਚੇ ਦਰਜ ਕਰੋ (Expenses)", use_container_width=True, type="primary"):
             st.session_state.current_tab = "📉 ਖਰਚੇ (Expenses)"
             st.rerun()
+        if st.button("💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque BRS)", use_container_width=True):
+            st.session_state.current_tab = "💳 ਚੈੱਕ ਮੈਨੇਜਮੈਂਟ (Cheque BRS)"
+            st.rerun()
         if st.button("📦 ਸਟਾਕ ਭੰਡਾਰ (Stock Management)", use_container_width=True):
             st.session_state.current_tab = "📦 ਸਟਾਕ (Stock)"
-            st.rerun()
-        if st.button("📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)", use_container_width=True):
-            st.session_state.current_tab = "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)"
             st.rerun()
 
     with c3:
         if st.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)", use_container_width=True, type="primary"):
             st.session_state.current_tab = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Ledger)"
             st.rerun()
-        if st.button("🎓 ਵਿਦਿਆਰਥੀ ਰਿਕਾਰਡ (Students)", use_container_width=True):
-            st.session_state.current_tab = "🎓 ਵਿਦਿਆਰਥੀ (Students)"
+        if st.button("📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)", use_container_width=True):
+            st.session_state.current_tab = "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"
             st.rerun()
-        if is_admin or is_staff:
-            if st.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", use_container_width=True):
-                st.session_state.current_tab = "🗑️ ਡਿਲੀਟ (Delete)"
-                st.rerun()
+        if st.button("📊 CA & ਐਕਸਲ ਰਿਪੋਰਟਾਂ (CA Reports)", use_container_width=True):
+            st.session_state.current_tab = "📊 ਐਕਸਲ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (CA / Excel Reports)"
+            st.rerun()
 
 # ==========================================
 # 1. DONATIONS
@@ -569,7 +568,6 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
     don_data = supabase.table("donations").select("*").execute().data or []
     exp_data = supabase.table("expenses").select("*").execute().data or []
     
-    # Safe retrieval for bank_ledger table in case it's missing or empty
     try:
         ledger_res = supabase.table("bank_ledger").select("*").execute()
         ledger_data = ledger_res.data if ledger_res and ledger_res.data else []
@@ -662,69 +660,91 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
                         supabase.table("bank_ledger").insert(ledg_records).execute()
                         st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
 
-        st.markdown("---")
-        st.subheader("🖨️ ਬੈਂਕ ਐਂਟਰੀ ਤੋਂ ਰਸੀਦ ਬਣਾਓ (Convert Bank Credit to Receipt)")
-        col_conv1, col_conv2 = st.columns(2)
-        with col_conv1:
-            ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
-            if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)", type="primary"):
-                try:
-                    res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
-                    if res.data and res.data[0]['credit'] > 0:
-                        st.session_state['convert_ledger_id'] = ledger_id
-                        st.session_state['convert_ledger_data'] = res.data[0]
-                    else:
-                        st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
-                except Exception:
-                    st.error("❌ ਬੈਂਕ ਲੈਜ਼ਰ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
-
-        if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
-            ldata = st.session_state['convert_ledger_data']
-            with col_conv2:
-                st.success(f"**ਐਂਟਰੀ ਮਿਲ ਗਈ:**\nਮਿਤੀ: {ldata['txn_date']}\nਰਕਮ: ₹{ldata['credit']}\nਵੇਰਵਾ: {ldata['description']}")
-                with st.form("convert_bank_receipt"):
-                    c_rec_no = st.number_input("ਰਸੀਦ ਨੰਬਰ (Printed Receipt Serial No.)", min_value=1, step=1)
-                    c_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)")
-                    c_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)")
-                    c_acct = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (On Account of)")
-                    submitted_conv = st.form_submit_button("ਇਸਦੀ ਰਸੀਦ ਬਣਾਓ (Generate Receipt)", type="primary")
-                    
-            if submitted_conv and c_name:
-                books_c = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
-                m_book = None
-                for b in books_c:
-                    if int(b['start_no']) <= int(c_rec_no) <= int(b['end_no']):
-                        m_book = b
-                        break
-                ex_rec = supabase.table("donations").select("*").eq("id", int(c_rec_no)).execute().data
+# ==========================================
+# 4. PARTIES (Creditors & Debtors) - NEW ADVANCED TAB
+# ==========================================
+elif st.session_state.current_tab == "📁 ਪਾਰਟੀਆਂ/ਖਾਤੇ (Creditors & Debtors)":
+    st.header("📁 ਪਾਰਟੀਆਂ ਅਤੇ ਖਾਤੇ (Creditors & Debtors Management)")
+    st.info("ਇੱਥੇ ਤੁਸੀਂ ਵੈਂਡਰਾਂ (Creditors) ਅਤੇ ਜਿਨ੍ਹਾਂ ਤੋਂ ਪੈਸੇ ਲੈਣੇ ਹਨ (Debtors) ਦਾ ਪੂਰਾ ਖਾਤਾ ਰੱਖ ਸਕਦੇ ਹੋ।")
+    
+    p_tab1, p_tab2 = st.tabs(["➕ ਨਵੀਂ ਪਾਰਟੀ / ਖਾਤਾ ਜੋੜੋ", "📋 ਸਾਰੀਆਂ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ (Ledger View)"])
+    
+    with p_tab1:
+        if not is_mgmt:
+            with st.form("party_form", clear_on_submit=True):
+                p_name = st.text_input("ਪਾਰਟੀ / ਵੈਂਡਰ ਦਾ ਨਾਮ (Party Name)")
+                p_type = st.selectbox("ਖਾਤੇ ਦੀ ਕਿਸਮ (Account Type)", ["Sundry Creditor (ਦੇਣਦਾਰ - ਪੈਸੇ ਦੇਣੇ ਹਨ)", "Sundry Debtor (ਪਾਉਣਦਾਰ - ਪੈਸੇ ਲੈਣੇ ਹਨ)"])
+                p_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone Number)")
+                p_address = st.text_input("ਪਤਾ (Address)")
+                p_amount = st.number_input("ਸ਼ੁਰੂਆਤੀ ਬੈਲੇਂਸ (Opening Balance ₹)", min_value=0.0)
                 
-                if not m_book:
-                    st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ {c_rec_no} ਕਿਸੇ ਵੀ ਜਾਰੀ ਕੀਤੀ ਗਈ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
-                elif ex_rec:
-                    st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ {c_rec_no} ਪਹਿਲਾਂ ਹੀ ਵਰਤੀ ਜਾ ਚੁੱਕੀ ਹੈ!")
-                else:
-                    col_name = m_book['collector_name']
-                    data_conv, _ = supabase.table("donations").insert({
-                        "id": int(c_rec_no), "name": c_name, "phone": c_phone, "amount": ldata['credit'],
-                        "date": ldata['txn_date'], "payment_mode": "Bank Transfer",
-                        "donation_type": "ਪੈਸੇ (Monetary)", "bank_account": ldata['bank_name'],
-                        "on_account_of": c_acct, "add_to_mirror": False, "collector_name": col_name
+                if st.form_submit_button("ਪਾਰਟੀ ਸੇਵ ਕਰੋ (Save Party)", type="primary") and p_name:
+                    supabase.table("parties").insert({
+                        "name": p_name, "party_type": p_type, "phone": p_phone, 
+                        "address": p_address, "opening_balance": p_amount, "created_at": str(date.today())
                     }).execute()
-                    
-                    h_file = generate_html_receipt(int(c_rec_no), c_name, c_phone, ldata['credit'], ldata['txn_date'], "Bank Transfer", "ਪੈਸੇ (Monetary)", "", ldata['bank_name'], c_acct, col_name)
-                    st.success(f"✅ ਰਸੀਦ #{c_rec_no} ਤਿਆਰ ਹੈ! (ਕਲੈਕਟਰ: {col_name})")
-                    
-                    col_c1, col_c2 = st.columns([1, 3])
-                    with col_c1:
-                        with open(h_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}")
-                    with col_c2:
-                        if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
-                            url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
-                            st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
+                    st.success(f"✅ ਪਾਰਟੀ '{p_name}' ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈ!")
+                    time.sleep(1); st.rerun()
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
+            
+    with p_tab2:
+        try:
+            parties_res = supabase.table("parties").select("*").execute()
+            parties_data = parties_res.data if parties_res and parties_res.data else []
+        except Exception:
+            parties_data = []
+            
+        if parties_data:
+            df_parties = pd.DataFrame(parties_data)
+            st.dataframe(df_parties[['id', 'name', 'party_type', 'phone', 'address', 'opening_balance']], use_container_width=True)
+        else:
+            st.info("ਹਾਲੇ ਕੋਈ ਪਾਰਟੀ ਦਰਜ ਨਹੀਂ ਹੈ। (ਕਿਰਪਾ ਕਰਕੇ Supabase ਵਿੱਚ 'parties' ਟੇਬਲ ਬਣਾਓ ਜੇਕਰ ਲੋੜ ਹੋਵੇ)")
 
 # ==========================================
-# 4. BALANCE SHEET & P&L
+# 5. CHEQUE MANAGEMENT (BRS) - NEW ADVANCED TAB
+# ==========================================
+elif st.session_state.current_tab == "💳 ਚੈੱਕ ਮੈਨੇਜਮੈਂਟ (Cheque BRS)":
+    st.header("💳 ਚੈੱਕ ਜਾਰੀ ਅਤੇ ਪ੍ਰਾਪਤ ਰਿਕਾਰਡ (Cheque Management & BRS)")
+    st.info("ਇੱਥੇ ਜਾਰੀ ਕੀਤੇ ਗਏ ਚੈੱਕਾਂ (Cheques Issued) ਦਾ ਰਿਕਾਰਡ ਰੱਖਿਆ ਜਾਂਦਾ ਹੈ ਤਾਂ ਜੋ ਆਡਿਟ ਵੇਲੇ ਪਤਾ ਲੱਗ ਸਕੇ ਕਿ ਕਿਹੜਾ ਚੈੱਕ ਅਜੇ ਕਲੀਅਰ ਹੋਣਾ ਬਾਕੀ ਹੈ।")
+    
+    cq_tab1, cq_tab2 = st.tabs(["➕ ਨਵਾਂ ਚੈੱਕ ਦਰਜ ਕਰੋ", "📋 ਚੈੱਕਾਂ ਦੀ ਸੂਚੀ (Unpresented / Cleared)"])
+    
+    with cq_tab1:
+        if not is_mgmt:
+            with st.form("cheque_form", clear_on_submit=True):
+                cq_no = st.text_input("ਚੈੱਕ ਨੰਬਰ (Cheque Number)")
+                cq_bank = st.selectbox("ਬੈਂਕ ਖਾਤਾ (Bank Account)", BANK_ACCOUNTS)
+                cq_party = st.text_input("ਕਿਸ ਨੂੰ ਦਿੱਤਾ/ਲਿਆ (Party Name)")
+                cq_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
+                cq_date = st.date_input("ਚੈੱਕ ਦੀ ਮਿਤੀ (Cheque Date)", value=date.today())
+                cq_status = st.selectbox("ਸਟੇਟਸ (Status)", ["Pending (ਕਲੀਅਰ ਹੋਣਾ ਬਾਕੀ)", "Cleared (ਕਲੀਅਰ ਹੋ ਗਿਆ)", "Cancelled (ਰੱਦ ਕੀਤਾ)"])
+                
+                if st.form_submit_button("ਚੈੱਕ ਸੇਵ ਕਰੋ (Save Cheque)", type="primary") and cq_no:
+                    supabase.table("cheques").insert({
+                        "cheque_no": cq_no, "bank_name": cq_bank, "party_name": cq_party,
+                        "amount": cq_amt, "cheque_date": str(cq_date), "status": cq_status
+                    }).execute()
+                    st.success("✅ ਚੈੱਕ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+                    time.sleep(1); st.rerun()
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
+            
+    with cq_tab2:
+        try:
+            cq_res = supabase.table("cheques").select("*").execute()
+            cq_data = cq_res.data if cq_res and cq_res.data else []
+        except Exception:
+            cq_data = []
+            
+        if cq_data:
+            df_cq = pd.DataFrame(cq_data)
+            st.dataframe(df_cq[['id', 'cheque_no', 'bank_name', 'party_name', 'amount', 'cheque_date', 'status']], use_container_width=True)
+        else:
+            st.info("ਹਾਲੇ ਕੋਈ ਚੈੱਕ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+# ==========================================
+# 6. BALANCE SHEET & P&L
 # ==========================================
 elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)":
     st.header("⚖️ ਵਿੱਤੀ ਖਾਤੇ (Financial Statements)")
@@ -742,7 +762,7 @@ elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
     
     df_don = pd.DataFrame(don_data)
     df_exp = pd.DataFrame(exp_data)
-    df_ledg = pd.DataFrame(ledg_data)
+    df_ledg = pd.DataFrame(ledger_data)
     df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value'])
     df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
     
@@ -825,7 +845,7 @@ elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
                     st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
 
 # ==========================================
-# 5. STOCK
+# 7. STOCK
 # ==========================================
 elif st.session_state.current_tab == "📦 ਸਟਾਕ (Stock)":
     st.header("ਸਟਾਕ / ਭੰਡਾਰ (Stock Management)")
@@ -856,7 +876,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ (Stock)":
             with open(report_file_stock, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
 
 # ==========================================
-# 6. STUDENTS
+# 8. STUDENTS
 # ==========================================
 elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
     st.header("ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ (Student Records)")
@@ -882,7 +902,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
         with open(report_file_stu, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stu, mime="text/html")
 
 # ==========================================
-# 7. RECEIPT BOOKS
+# 9. RECEIPT BOOKS
 # ==========================================
 elif st.session_state.current_tab == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)":
     st.header("📖 ਰਸੀਦ ਕਿਤਾਬਾਂ ਦੀ ਵੰਡ (Receipt Books Issuance)")
@@ -918,35 +938,43 @@ elif st.session_state.current_tab == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (R
         st.dataframe(df_books, use_container_width=True)
 
 # ==========================================
-# 8. EXCEL REPORTS
+# 10. EXCEL & CA REPORTS
 # ==========================================
-elif st.session_state.current_tab == "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ (Excel Reports)":
-    st.header("📊 ਐਕਸਲ ਰਿਪੋਰਟ ਡਾਊਨਲੋਡ ਕਰੋ (Download All Data Backup)")
-    st.info("ਸਾਰੇ ਡਾਟੇ ਦਾ ਮੁਕੰਮਲ ਬੈਕਅੱਪ ਐਕਸਲ ਫਾਈਲ ਵਿੱਚ ਡਾਊਨਲੋਡ ਕਰੋ।")
+elif st.session_state.current_tab == "📊 ਐਕਸਲ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (CA / Excel Reports)":
+    st.header("📊 CA ਅਤੇ ਐਕਸਲ ਬੈਕਅੱਪ ਰਿਪੋਰਟਾਂ (Audit Data Export)")
+    st.info("ਇੱਥੋਂ ਤੁਸੀਂ ਆਪਣੇ CA ਲਈ ਸਾਰੇ ਲੈਜ਼ਰ (ਦਾਨ, ਖਰਚੇ, ਪਾਰਟੀਆਂ, ਚੈੱਕ ਅਤੇ ਬੈਂਕ) ਦੀ ਮੁਕੰਮਲ ਐਕਸਲ ਫਾਈਲ ਡਾਊਨਲੋਡ ਕਰ ਸਕਦੇ ਹੋ।")
     
-    if st.button("📊 ਰਿਪੋਰਟ ਤਿਆਰ ਕਰੋ (Generate Excel Report)", type="primary"):
+    if st.button("📊 CA ਰਿਪੋਰਟ ਤਿਆਰ ਕਰੋ (Generate CA Excel Backup)", type="primary"):
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            pd.DataFrame(supabase.table("donations").select("*").execute().data or []).to_excel(writer, sheet_name='Donations', index=False)
+            pd.DataFrame(supabase.table("donations").select("*").execute().data or []).to_excel(writer, sheet_name='Donations_Receipts', index=False)
             pd.DataFrame(supabase.table("expenses").select("*").execute().data or []).to_excel(writer, sheet_name='Expenses', index=False)
             try:
-                pd.DataFrame(supabase.table("bank_ledger").select("*").execute().data or []).to_excel(writer, sheet_name='Bank Ledger', index=False)
+                pd.DataFrame(supabase.table("bank_ledger").select("*").execute().data or []).to_excel(writer, sheet_name='Bank_Ledger', index=False)
+            except Exception:
+                pass
+            try:
+                pd.DataFrame(supabase.table("parties").select("*").execute().data or []).to_excel(writer, sheet_name='Creditors_Debtors', index=False)
+            except Exception:
+                pass
+            try:
+                pd.DataFrame(supabase.table("cheques").select("*").execute().data or []).to_excel(writer, sheet_name='Cheque_Register', index=False)
             except Exception:
                 pass
             pd.DataFrame(supabase.table("stock").select("*").execute().data or []).to_excel(writer, sheet_name='Stock', index=False)
             pd.DataFrame(supabase.table("students").select("*").execute().data or []).to_excel(writer, sheet_name='Students', index=False)
-            pd.DataFrame(supabase.table("assets").select("*").execute().data or []).to_excel(writer, sheet_name='Fixed Assets', index=False)
-            pd.DataFrame(supabase.table("liabilities").select("*").execute().data or []).to_excel(writer, sheet_name='Liabilities', index=False)
-            pd.DataFrame(supabase.table("receipt_books").select("*").execute().data or []).to_excel(writer, sheet_name='Receipt Books', index=False)
+            pd.DataFrame(supabase.table("assets").select("*").execute().data or []).to_excel(writer, sheet_name='Fixed_Assets', index=False)
+            pd.DataFrame(supabase.table("liabilities").select("*").execute().data or []).to_excel(writer, sheet_name='Liabilities_Funds', index=False)
+            pd.DataFrame(supabase.table("receipt_books").select("*").execute().data or []).to_excel(writer, sheet_name='Receipt_Books', index=False)
         
-        st.download_button("📥 ਐਕਸਲ ਡਾਊਨਲੋਡ ਕਰੋ (Download Backup)", data=buffer.getvalue(), file_name=f"NGO_Backup_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
+        st.download_button("📥 CA ਐਕਸਲ ਬੈਕਅੱਪ ਡਾਊਨਲੋਡ ਕਰੋ (Download CA Audit Excel)", data=buffer.getvalue(), file_name=f"NGO_CA_Audit_Backup_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
 
 # ==========================================
-# 9. DELETE SYSTEM
+# 11. DELETE SYSTEM
 # ==========================================
 elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
     st.header("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Management)")
-    t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
+    t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
     
     if is_admin:
         st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਬੇਨਤੀਆਂ (Pending Requests from Staff)")
@@ -1009,7 +1037,7 @@ elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
             except Exception:
                 st.error("❌ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
             
-    if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type') == del_type:
+    if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type'] == del_type:
         data = st.session_state['del_entry_data']
         record_id = st.session_state['del_entry_id']
         st.write("### 📄 ਐਂਟਰੀ ਦਾ ਵੇਰਵਾ (Entry Details):")
@@ -1018,6 +1046,8 @@ elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
         if del_type == "ਦਾਨ (Donation)": details_str = f"ਨਾਮ: {data.get('name')}, ਰਕਮ: ₹{data.get('amount')}, ਕਲੈਕਟਰ: {data.get('collector_name')}"
         elif del_type == "ਖਰਚਾ (Expense)": details_str = f"ਵੇਰਵਾ: {data.get('description')}, ਰਕਮ: ₹{data.get('amount')}"
         elif del_type == "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": details_str = f"ਬੈਂਕ: {data.get('bank_name')}, ਵੇਰਵਾ: {data.get('description')}"
+        elif del_type == "ਪਾਰਟੀ (Party)": details_str = f"ਨਾਮ: {data.get('name')}, ਕਿਸਮ: {data.get('party_type')}"
+        elif del_type == "ਚੈੱਕ (Cheque)": details_str = f"ਚੈੱਕ ਨੰ: {data.get('cheque_no')}, ਰਕਮ: ₹{data.get('amount')}"
         elif del_type == "ਵਿਦਿਆਰਥੀ (Student)": details_str = f"ਨਾਮ: {data.get('name')}, ਕੋਰਸ: {data.get('course')}"
         elif del_type == "ਸਟਾਕ (Stock)": details_str = f"ਨਾਮ: {data.get('item_name')}, ਮਾਤਰਾ: {data.get('quantity')}"
         elif del_type == "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": details_str = f"ਕਲੈਕਟਰ: {data.get('collector_name')}, ਸੀਰੀਅਲ: {data.get('start_no')} ਤੋਂ {data.get('end_no')}"
@@ -1041,7 +1071,7 @@ elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
                 st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
 
 # ==========================================
-# 10. ADMIN TOOLS
+# 12. ADMIN TOOLS
 # ==========================================
 elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Tools)":
     st.header("⚙️ ਐਡਮਿਨ ਟੂਲਸ (Admin Controls)")
