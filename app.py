@@ -223,7 +223,7 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
                 <div class="row-inline"><div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 15px;">{receipt_no:04d}</span></div><div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div></div>
                 <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span></div>
                 <div style="margin-top: 10px;">ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।</div>
-                <div style="margin-top: 10px;">ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆർ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
+                <div style="margin-top: 10px;">ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆਰ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
             </div>
             <div class="footer-flex">
                 <div class="bank-details-box"><div style="background-color: #333; color: white; padding: 2px 10px; display: inline-block; border-radius: 5px 5px 0 0; margin-bottom: 2px;">BANK A/C DETAILS :</div><br><strong>PUNJAB & SIND BANK</strong> A/c No. <span>06181000012550</span> IFSC : <span>PSIB0000618</span><br><span style="color:#333; font-weight:normal;">Sultanwind Road, Amritsar</span><br><strong>KOTAK MAHINDRA BANK</strong> A/c No. <span>4350934312</span> IFSC : <span>KKBK0004001</span><br><span style="color:#333; font-weight:normal;">East Mohan Nagar, Amritsar</span></div>
@@ -568,7 +568,13 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
     st.header("ਮਿਰਰ ਬੈਂਕ ਖਾਤੇ (Full Mirror Ledger)")
     don_data = supabase.table("donations").select("*").execute().data or []
     exp_data = supabase.table("expenses").select("*").execute().data or []
-    ledger_data = supabase.table("bank_ledger").select("*").execute().data or []
+    
+    # Safe retrieval for bank_ledger table in case it's missing or empty
+    try:
+        ledger_res = supabase.table("bank_ledger").select("*").execute()
+        ledger_data = ledger_res.data if ledger_res and ledger_res.data else []
+    except Exception:
+        ledger_data = []
     
     df_don = pd.DataFrame(don_data)
     df_exp = pd.DataFrame(exp_data)
@@ -588,9 +594,9 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
         df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', False).fillna(False).astype(bool)
         bank_exps = df_exp[(df_exp['bank_account'] == selected_bank) & (df_exp['add_to_mirror'] == True)]
         for _, row in bank_exps.iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
-    if not df_ledg.empty:
+    if not df_ledg.empty and 'bank_name' in df_ledg.columns:
         bank_ledg = df_ledg[df_ledg['bank_name'] == selected_bank]
-        for _, row in bank_ledg.iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['txn_date'], 'Description': row['description'], 'Credit': float(row['credit']), 'Debit': float(row['debit']), 'Source': row['source']})
+        for _, row in bank_ledg.iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
             
     df_compiled = pd.DataFrame(ledger_entries)
     sys_bal = 0.0
@@ -662,12 +668,15 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
         with col_conv1:
             ledger_id = st.number_input("ਬੈਂਕ ਲੈਜ਼ਰ ID ਭਰੋ (Bank Entry ID)", min_value=0, step=1)
             if st.button("🔍 ਬੈਂਕ ਐਂਟਰੀ ਲੱਭੋ (Find Bank Entry)", type="primary"):
-                res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
-                if res.data and res.data[0]['credit'] > 0:
-                    st.session_state['convert_ledger_id'] = ledger_id
-                    st.session_state['convert_ledger_data'] = res.data[0]
-                else:
-                    st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+                try:
+                    res = supabase.table("bank_ledger").select("*").eq("id", ledger_id).execute()
+                    if res.data and res.data[0]['credit'] > 0:
+                        st.session_state['convert_ledger_id'] = ledger_id
+                        st.session_state['convert_ledger_data'] = res.data[0]
+                    else:
+                        st.error("❌ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ ਜਾਂ ਇਹ ਕ੍ਰੈਡਿਟ (Credit) ਐਂਟਰੀ ਨਹੀਂ ਹੈ।")
+                except Exception:
+                    st.error("❌ ਬੈਂਕ ਲੈਜ਼ਰ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
 
         if 'convert_ledger_id' in st.session_state and st.session_state['convert_ledger_id'] == ledger_id:
             ldata = st.session_state['convert_ledger_data']
@@ -722,20 +731,25 @@ elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
     
     don_data = supabase.table("donations").select("*").execute().data or []
     exp_data = supabase.table("expenses").select("*").execute().data or []
-    ledg_data = supabase.table("bank_ledger").select("*").execute().data or []
+    try:
+        ledger_res = supabase.table("bank_ledger").select("*").execute()
+        ledg_data = ledger_res.data if ledger_res and ledger_res.data else []
+    except Exception:
+        ledg_data = []
+        
     assets_data = supabase.table("assets").select("*").execute().data or []
     liab_data = supabase.table("liabilities").select("*").execute().data or []
     
     df_don = pd.DataFrame(don_data)
     df_exp = pd.DataFrame(exp_data)
-    df_ledg = pd.DataFrame(ledger_data)
+    df_ledg = pd.DataFrame(ledg_data)
     df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value'])
     df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
     
     total_income = df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)']['amount'].sum() if not df_don.empty else 0.0
-    total_income += df_ledg['credit'].sum() if not df_ledg.empty else 0.0
+    total_income += df_ledg['credit'].sum() if not df_ledg.empty and 'credit' in df_ledg.columns else 0.0
     total_expense = df_exp['amount'].sum() if not df_exp.empty else 0.0
-    total_expense += df_ledg['debit'].sum() if not df_ledg.empty else 0.0
+    total_expense += df_ledg['debit'].sum() if not df_ledg.empty and 'debit' in df_ledg.columns else 0.0
     
     surplus = total_income - total_expense
     
@@ -755,9 +769,9 @@ elif st.session_state.current_tab == "⚖️ ਖਾਤੇ (P&L & Balance Sheet)"
     
     for bank in BANK_ACCOUNTS:
         b_in = df_don[(df_don['bank_account'] == bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don.get('add_to_mirror', False) == True)]['amount'].sum() if not df_don.empty else 0
-        b_in += df_ledg[df_ledg['bank_name'] == bank]['credit'].sum() if not df_ledg.empty else 0
+        b_in += df_ledg[df_ledg['bank_name'] == bank]['credit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'credit' in df_ledg.columns else 0
         b_out = df_exp[(df_exp['bank_account'] == bank) & (df_exp.get('add_to_mirror', False) == True)]['amount'].sum() if not df_exp.empty else 0
-        b_out += df_ledg[df_ledg['bank_name'] == bank]['debit'].sum() if not df_ledg.empty else 0
+        b_out += df_ledg[df_ledg['bank_name'] == bank]['debit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'debit' in df_ledg.columns else 0
         bank_balances[bank] = b_in - b_out
     
     total_assets = fixed_assets_val + sum(bank_balances.values())
@@ -915,7 +929,10 @@ elif st.session_state.current_tab == "📊 ਐਕਸਲ ਰਿਪੋਰਟਾਂ
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             pd.DataFrame(supabase.table("donations").select("*").execute().data or []).to_excel(writer, sheet_name='Donations', index=False)
             pd.DataFrame(supabase.table("expenses").select("*").execute().data or []).to_excel(writer, sheet_name='Expenses', index=False)
-            pd.DataFrame(supabase.table("bank_ledger").select("*").execute().data or []).to_excel(writer, sheet_name='Bank Ledger', index=False)
+            try:
+                pd.DataFrame(supabase.table("bank_ledger").select("*").execute().data or []).to_excel(writer, sheet_name='Bank Ledger', index=False)
+            except Exception:
+                pass
             pd.DataFrame(supabase.table("stock").select("*").execute().data or []).to_excel(writer, sheet_name='Stock', index=False)
             pd.DataFrame(supabase.table("students").select("*").execute().data or []).to_excel(writer, sheet_name='Students', index=False)
             pd.DataFrame(supabase.table("assets").select("*").execute().data or []).to_excel(writer, sheet_name='Fixed Assets', index=False)
@@ -982,12 +999,15 @@ elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
     else:
         del_id = st.number_input("ਐਂਟਰੀ ਦਾ ID ਭਰੋ (Entry ID)", min_value=0, step=1)
         if st.button("🔍 ਐਂਟਰੀ ਲੱਭੋ (Find)", type="primary"):
-            res = supabase.table(t_map[del_type]).select("*").eq("id", del_id).execute()
-            if res.data:
-                st.session_state['del_entry_data'] = res.data[0]
-                st.session_state['del_entry_id'] = str(del_id)
-                st.session_state['del_entry_type'] = del_type
-            else: st.error("❌ ਨਹੀਂ ਮਿਲੀ।")
+            try:
+                res = supabase.table(t_map[del_type]).select("*").eq("id", del_id).execute()
+                if res.data:
+                    st.session_state['del_entry_data'] = res.data[0]
+                    st.session_state['del_entry_id'] = str(del_id)
+                    st.session_state['del_entry_type'] = del_type
+                else: st.error("❌ ਨਹੀਂ ਮਿਲੀ।")
+            except Exception:
+                st.error("❌ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
             
     if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type') == del_type:
         data = st.session_state['del_entry_data']
