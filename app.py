@@ -21,7 +21,7 @@ EXPENSE_CATEGORIES = [
     "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
-    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀස (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
+    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
     "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"
 ]
 
@@ -39,7 +39,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS (UI DESIGN & CENTERED HEADER)
+# CUSTOM CSS (UI DESIGN & PROFESSIONAL HEADER)
 # ==========================================
 st.markdown("""
     <style>
@@ -55,28 +55,44 @@ st.markdown("""
         [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
         [data-testid="stMetricValue"] { font-size: 26px !important; }
         
-        /* Centered Header Style for All Pages */
-        .main-header-container {
-            text-align: center;
-            width: 100%;
+        /* Professional Header Layout */
+        .pro-header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #F8F1D1 0%, #ffffff 100%);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 2px solid #4A1B15;
             margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        .main-title {
-            font-size: 32px;
+        .pro-logo {
+            width: 85px;
+            height: auto;
+            margin-right: 20px;
+        }
+        .pro-text-box {
+            text-align: center;
+        }
+        .pro-title {
+            font-size: 28px;
             font-weight: bold;
-            color: #1E3A8A;
-            margin-bottom: 5px;
+            color: #4A1B15;
+            margin: 0;
+            letter-spacing: 0.5px;
         }
-        .main-tagline {
-            font-size: 20px;
+        .pro-tagline {
+            font-size: 17px;
             font-weight: bold;
             color: #D92B2B;
-            margin-bottom: 5px;
+            margin: 4px 0;
         }
-        .main-address {
-            font-size: 15px;
-            color: #555;
-            font-weight: 600;
+        .pro-sub {
+            font-size: 13px;
+            font-weight: bold;
+            color: #0F4C81;
+            margin: 0;
         }
 
         /* Larger Home Page Buttons */
@@ -207,7 +223,7 @@ def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mod
                 <div class="row-inline"><div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 15px;">{receipt_no:04d}</span></div><div>ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div></div>
                 <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span></div>
                 <div style="margin-top: 10px;">ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।</div>
-                <div style="margin-top: 10px;">ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆਰ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
+                <div style="margin-top: 10px;">ਕੈਸ਼/ਚੈਕ/ਗੂਗਲ ਪੇ/ਯੂ ਟੀ ਆർ ਨੰ. <span class="field-value" style="display:inline-block; width: 25%;">{payment_mode}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str[:10]}</span></div>
             </div>
             <div class="footer-flex">
                 <div class="bank-details-box"><div style="background-color: #333; color: white; padding: 2px 10px; display: inline-block; border-radius: 5px 5px 0 0; margin-bottom: 2px;">BANK A/C DETAILS :</div><br><strong>PUNJAB & SIND BANK</strong> A/c No. <span>06181000012550</span> IFSC : <span>PSIB0000618</span><br><span style="color:#333; font-weight:normal;">Sultanwind Road, Amritsar</span><br><strong>KOTAK MAHINDRA BANK</strong> A/c No. <span>4350934312</span> IFSC : <span>KKBK0004001</span><br><span style="color:#333; font-weight:normal;">East Mohan Nagar, Amritsar</span></div>
@@ -233,11 +249,13 @@ if 'current_tab' not in st.session_state:
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if os.path.exists("logo.png"): st.image("logo.png", width=150)
+        logo_login_path = "logo.png"
+        if os.path.exists(logo_login_path):
+            st.image(logo_login_path, width=100)
         st.markdown(f"""
-            <div class="main-header-container">
-                <div class="main-title">{NGO_NAME_PB}</div>
-                <div class="main-tagline">{NGO_TAGLINE_PB}</div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #4A1B15; margin: 0; font-size: 24px;">{NGO_NAME_PB}</h2>
+                <p style="color: #D92B2B; font-weight: bold; font-size: 16px; margin: 5px 0;">{NGO_TAGLINE_PB}</p>
             </div>
         """, unsafe_allow_html=True)
         with st.form("login_form"):
@@ -294,19 +312,21 @@ with st.sidebar:
     selected_tab = st.radio("ਚੁਣੋ (Select)", menu_options, index=current_idx, label_visibility="collapsed")
     st.session_state.current_tab = selected_tab
 
-# --- CENTERED HEADER ON ALL PAGES ---
-colA, colB, colC = st.columns([1, 4, 1])
-with colB:
-    logo_path = "logo.png"
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=90)
-    st.markdown(f"""
-        <div class="main-header-container">
-            <div class="main-title">{NGO_NAME_PB}</div>
-            <div class="main-tagline">{NGO_TAGLINE_PB}</div>
-            <div class="main-address">{NGO_ADDRESS_PB}</div>
+# --- PROFESSIONAL HEADER ON ALL PAGES ---
+logo_path = "logo.png"
+logo_base64 = get_base64_image(logo_path)
+logo_img_tag = f'<img src="data:image/png;base64,{logo_base64}" class="pro-logo">' if logo_base64 else ''
+
+st.markdown(f"""
+    <div class="pro-header-flex">
+        {logo_img_tag}
+        <div class="pro-text-box">
+            <div class="pro-title">{NGO_NAME_PB}</div>
+            <div class="pro-tagline">{NGO_TAGLINE_PB}</div>
+            <div class="pro-sub">{NGO_ADDRESS_PB}</div>
         </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
 
 # --- QUICK HOME NAVIGATION BUTTON FOR MOBILE USERS ---
 if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)":
