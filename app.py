@@ -18,7 +18,7 @@ BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
     "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
-    "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
+    "ਭੇਟਾ - ਕੀਰତਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
     "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
@@ -661,7 +661,7 @@ elif st.session_state.current_tab == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Le
                         st.success("✅ ਸਟੇਟਮੈਂਟ ਅੱਪਲੋਡ ਹੋ ਗਈ!"); time.sleep(1); st.rerun()
 
 # ==========================================
-# 4. PARTIES (Creditors & Debtors) - NEW ADVANCED TAB
+# 4. PARTIES (Creditors & Debtors)
 # ==========================================
 elif st.session_state.current_tab == "📁 ਪਾਰਟੀਆਂ/ਖਾਤੇ (Creditors & Debtors)":
     st.header("📁 ਪਾਰਟੀਆਂ ਅਤੇ ਖਾਤੇ (Creditors & Debtors Management)")
@@ -699,10 +699,10 @@ elif st.session_state.current_tab == "📁 ਪਾਰਟੀਆਂ/ਖਾਤੇ (C
             df_parties = pd.DataFrame(parties_data)
             st.dataframe(df_parties[['id', 'name', 'party_type', 'phone', 'address', 'opening_balance']], use_container_width=True)
         else:
-            st.info("ਹਾਲੇ ਕੋਈ ਪਾਰਟੀ ਦਰਜ ਨਹੀਂ ਹੈ। (ਕਿਰਪਾ ਕਰਕੇ Supabase ਵਿੱਚ 'parties' ਟੇਬਲ ਬਣਾਓ ਜੇਕਰ ਲੋੜ ਹੋਵੇ)")
+            st.info("ਹਾਲੇ ਕੋਈ ਪਾਰਟੀ ਦਰਜ ਨਹੀਂ ਹੈ।")
 
 # ==========================================
-# 5. CHEQUE MANAGEMENT (BRS) - NEW ADVANCED TAB
+# 5. CHEQUE MANAGEMENT (BRS)
 # ==========================================
 elif st.session_state.current_tab == "💳 ਚੈੱਕ ਮੈਨੇਜਮੈਂਟ (Cheque BRS)":
     st.header("💳 ਚੈੱਕ ਜਾਰੀ ਅਤੇ ਪ੍ਰਾਪਤ ਰਿਕਾਰਡ (Cheque Management & BRS)")
@@ -1037,7 +1037,7 @@ elif st.session_state.current_tab == "🗑️ ਡਿਲੀਟ (Delete)":
             except Exception:
                 st.error("❌ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
             
-    if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type'] == del_type:
+    if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type') == del_type:
         data = st.session_state['del_entry_data']
         record_id = st.session_state['del_entry_id']
         st.write("### 📄 ਐਂਟਰੀ ਦਾ ਵੇਰਵਾ (Entry Details):")
