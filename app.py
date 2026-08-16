@@ -237,7 +237,7 @@ if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 �
 if 'entry_mode' not in st.session_state: st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
 if 'acc_mode' not in st.session_state: st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
 if 'other_mode' not in st.session_state: st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
-if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
+if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਬੇਨਤੀ (Delete Request)"
 
 # --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
@@ -288,10 +288,9 @@ with st.sidebar:
         "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)",
         "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)",
         "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
+        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)",
+        "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
     ]
-    if is_admin or is_staff:
-        menu_options.append("⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)")
         
     try:
         current_idx = menu_options.index(st.session_state.current_tab)
@@ -384,10 +383,17 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
     if c11.button("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows)", use_container_width=True):
         st.session_state.current_tab = "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
         st.rerun()
-    if (is_admin or is_staff) and c12.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ", use_container_width=True):
-        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"
-        st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
-        st.rerun()
+    
+    if is_admin:
+        if c12.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
+            st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
+            st.rerun()
+    elif is_staff:
+        if c12.button("🗑️ ਡਿਲੀਟ ਬੇਨਤੀ", use_container_width=True):
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
+            st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
+            st.rerun()
 
 # ==========================================
 # 1. SINGLE WINDOW: VOUCHER & RECEIPT ENTRY
@@ -474,15 +480,19 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 rec_no_ik = st.number_input("ਰਸੀਦ ਨੰਬਰ (Printed Receipt No.)", min_value=1, step=1, key="ik_rec")
                 
                 col_k1, col_k2 = st.columns(2)
-                with col_k1: amount_ik = st.number_input("ਅੰਦਾਜ਼ਨ ਕੀਮਤ (Estimated Value ₹ - Optional)", min_value=0.0, key="ik_amt")
+                with col_k1: amount_ik = st.number_input("ਅੰਦਾਜ਼ਨ ਕੀਮਤ (Estimated Value ₹)", min_value=0.0, key="ik_amt")
                 with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), key="ik_date")
                 
                 st.markdown("---")
-                add_to_stock_ik = st.checkbox("✅ ਇਸ ਸਮਾਨ ਨੂੰ ਆਟੋਮੈਟਿਕ ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Auto-add to Stock)", value=False)
+                add_destination = st.radio("ਦਾਨ ਕੀਤੇ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ? (Where to add this item?)", 
+                                           ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], 
+                                           horizontal=True)
+                
+                st.write("*(ਜੇਕਰ ਸਟਾਕ ਜਾਂ ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
                 col_s1, col_s2, col_s3 = st.columns(3)
-                with col_s1: s_item_ik = st.text_input("ਸਟਾਕ ਆਈਟਮ ਦਾ ਨਾਮ (Stock Item Name)", key="s_item_ik")
-                with col_s2: s_qty_ik = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
-                with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
+                with col_s1: s_item_ik = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ (Item/Asset Name)", key="s_item_ik")
+                with col_s2: s_qty_ik = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", min_value=0.0, step=0.5, key="s_qty_ik")
+                with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", STOCK_UNITS, key="s_unit_ik")
                 
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ (Generate In-Kind Receipt)", type="primary")
                 
@@ -507,20 +517,31 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         "add_to_mirror": False, "collector_name": collector_ik
                     }).execute()
                     
-                    # 2. Add to Stock automatically
-                    if add_to_stock_ik and s_item_ik and s_qty_ik > 0:
-                        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # 2. Add to Stock or Fixed Asset automatically
+                    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)" and s_item_ik and s_qty_ik > 0:
                         res_stock = supabase.table("stock").select("*").eq("item_name", s_item_ik).execute()
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
                             old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
                             new_qty = old_qty + s_qty_ik
                             new_val = old_val + amount_ik
-                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_ik, "last_updated": current_date}).eq("item_name", s_item_ik).execute()
+                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_ik, "last_updated": current_datetime}).eq("item_name", s_item_ik).execute()
                         else:
-                            supabase.table("stock").insert({"item_name": s_item_ik, "quantity": s_qty_ik, "estimated_value": round(amount_ik, 2), "unit": s_unit_ik, "last_updated": current_date}).execute()
+                            supabase.table("stock").insert({"item_name": s_item_ik, "quantity": s_qty_ik, "estimated_value": round(amount_ik, 2), "unit": s_unit_ik, "last_updated": current_datetime}).execute()
+                        st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                        
+                    elif add_destination == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)" and s_item_ik:
+                        supabase.table("assets").insert({
+                            "name": s_item_ik,
+                            "value": amount_ik,
+                            "date_added": formatted_date_ik
+                        }).execute()
+                        st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਪੱਕੀ ਸੰਪਤੀ (Fixed Assets) ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                    else:
+                        st.success(f"✅ ਰਸੀਦ #{rec_no_ik} ਤਿਆਰ ਹੈ। (ਕਲੈਕਟਰ: {collector_ik})")
                     
-                    st.success(f"✅ ਰਸੀਦ #{rec_no_ik} ਤਿਆਰ ਹੈ। (ਕਲੈਕਟਰ: {collector_ik})")
+                    # Generate HTML Receipt
                     html_file_ik = generate_html_receipt(int(rec_no_ik), donor_name_ik, donor_phone_ik, amount_ik, formatted_date_ik, "N/A", "ਸਮਾਨ (In-Kind / Ration)", item_details_ik, "N/A", "ਸਮਾਨ ਦਾਨ", collector_ik)
                     
                     col_d1, col_d2 = st.columns([1, 2])
@@ -1028,7 +1049,6 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                 disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'last_updated'] if c in df_stock.columns]
                 st.dataframe(df_stock[disp_cols], use_container_width=True)
                 
-                # Print stock report
                 report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
                 with open(report_file_stock, "r", encoding="utf-8") as file:
                     st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
@@ -1197,15 +1217,20 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
 # ==========================================
 # 6. ADMIN & BULK UPLOAD MANAGEMENT
 # ==========================================
-elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)":
+elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)":
     st.header("⚙️ ਐਡਮਿਨ, ਬਲਕ ਅੱਪਲੋਡ ਅਤੇ ਡਿਲੀਟ ਸਿਸਟਮ")
-    modes = ["📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
+    
+    if is_admin:
+        modes = ["📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
+    else:
+        modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
+        
     if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
     selected_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
     st.session_state.admin_mode = selected_mode
     st.markdown("---")
 
-    if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)":
+    if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Data via Excel)")
         st.info("ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨੀਆਂ, ਵਿਦਿਆਰਥੀਆਂ ਜਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ।")
         
