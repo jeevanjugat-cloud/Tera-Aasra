@@ -39,7 +39,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
 # ==========================================
-# CUSTOM CSS (UI DESIGN & PROFESSIONAL HEADER)
+# CUSTOM CSS (UI DESIGN & DARK MODE FIXES)
 # ==========================================
 st.markdown("""
     <style>
@@ -68,9 +68,9 @@ st.markdown("""
         }
         .pro-logo { width: 85px; height: auto; margin-right: 20px; }
         .pro-text-box { text-align: center; }
-        .pro-title { font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }
-        .pro-tagline { font-size: 17px; font-weight: bold; color: #D92B2B; margin: 4px 0; }
-        .pro-sub { font-size: 13px; font-weight: bold; color: #0F4C81; margin: 0; }
+        .pro-title { font-size: 28px; font-weight: bold; color: #4A1B15 !important; margin: 0; letter-spacing: 0.5px; }
+        .pro-tagline { font-size: 17px; font-weight: bold; color: #D92B2B !important; margin: 4px 0; }
+        .pro-sub { font-size: 13px; font-weight: bold; color: #0F4C81 !important; margin: 0; }
 
         div.stButton > button {
             font-size: 18px !important;
@@ -91,11 +91,12 @@ st.markdown("""
             flex-wrap: wrap;
             gap: 10px;
         }
+        div.row-widget.stRadio p { color: #4A1B15 !important; font-weight: bold !important; }
         
-        .bs-box { border: 2px solid #1E3A8A; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: rgba(30, 58, 138, 0.05); }
-        .bs-header { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; border-bottom: 2px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 15px; }
-        .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
-        .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #D92B2B; border-top: 1px solid #333; padding-top: 8px; margin-top: 10px; }
+        .bs-box { border: 2px solid var(--text-color); border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: transparent; }
+        .bs-header { text-align: center; color: var(--text-color); font-size: 22px; font-weight: bold; border-bottom: 2px solid var(--text-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; color: var(--text-color); }
+        .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #E53935; border-top: 1px solid var(--text-color); padding-top: 8px; margin-top: 10px; }
         
         .whatsapp-btn {
             display: inline-block;
@@ -246,8 +247,8 @@ if not st.session_state.logged_in:
             st.image(logo_login_path, width=100)
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="color: #4A1B15; margin: 0; font-size: 24px;">{NGO_NAME_PB}</h2>
-                <p style="color: #D92B2B; font-weight: bold; font-size: 16px; margin: 5px 0;">{NGO_TAGLINE_PB}</p>
+                <h2 style="color: var(--text-color); margin: 0; font-size: 26px;">{NGO_NAME_PB}</h2>
+                <p style="color: #E53935; font-weight: bold; font-size: 16px; margin: 5px 0;">{NGO_TAGLINE_PB}</p>
             </div>
         """, unsafe_allow_html=True)
         with st.form("login_form"):
@@ -284,7 +285,9 @@ with st.sidebar:
         "🏠 ਹੋਮ ਪੇਜ (Home)",
         "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", 
         "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)",
-        "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"
+        "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)",
+        "🎓 ਵਿਦਿਆਰਥੀ (Students)",
+        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
     ]
     if is_admin or is_staff:
         menu_options.append("⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)")
@@ -324,7 +327,7 @@ if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)":
 # 0. HOME PAGE DASHBOARD (SHORTCUT BUTTONS)
 # ==========================================
 if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
-    st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold; color: #1E3A8A; margin-bottom: 25px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold; color: var(--text-color); margin-bottom: 25px;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
 
     st.markdown("### 📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦਾਂ (Vouchers & Receipts)")
     c1, c2, c3, c4 = st.columns(4)
@@ -364,21 +367,19 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
         st.session_state.acc_mode = "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
         st.rerun()
 
-    st.markdown("### 📦 ਸਟਾਕ, ਕਿਤਾਬਾਂ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Management)")
+    st.markdown("### 📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ, ਵਿਧਵਾ ਰਾਸ਼ਨ ਅਤੇ ਪ੍ਰਬੰਧ (Management)")
     c9, c10, c11, c12 = st.columns(4)
     if c9.button("📦 ਸਟਾਕ ਭੰਡਾਰ (Stock)", use_container_width=True):
         st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"
         st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
         st.rerun()
-    if c10.button("📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Books)", use_container_width=True):
-        st.session_state.current_tab = "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)"
-        st.session_state.other_mode = "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"
+    if c10.button("🎓 ਵਿਦਿਆਰਥੀ (Students)", use_container_width=True):
+        st.session_state.current_tab = "🎓 ਵਿਦਿਆਰਥੀ (Students)"
         st.rerun()
-    if (is_admin or is_staff) and c11.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
-        st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"
-        st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
+    if c11.button("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows)", use_container_width=True):
+        st.session_state.current_tab = "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
         st.rerun()
-    if is_admin and c12.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ", use_container_width=True):
+    if (is_admin or is_staff) and c12.button("🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ", use_container_width=True):
         st.session_state.current_tab = "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)"
         st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
         st.rerun()
@@ -499,7 +500,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl", type="primary")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ።\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
         else:
@@ -602,8 +603,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
 
     don_data = supabase.table("donations").select("*").execute().data or []
     exp_data = supabase.table("expenses").select("*").execute().data or []
-    try:
-        ledg_data = supabase.table("bank_ledger").select("*").execute().data or []
+    try: ledg_data = supabase.table("bank_ledger").select("*").execute().data or []
     except Exception: ledg_data = []
     assets_data = supabase.table("assets").select("*").execute().data or []
     liab_data = supabase.table("liabilities").select("*").execute().data or []
@@ -841,6 +841,11 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 try: pd.DataFrame(supabase.table("cheques").select("*").execute().data or []).to_excel(writer, sheet_name='Cheque_Register', index=False)
                 except Exception: pass
                 pd.DataFrame(supabase.table("stock").select("*").execute().data or []).to_excel(writer, sheet_name='Stock', index=False)
+                pd.DataFrame(supabase.table("students").select("*").execute().data or []).to_excel(writer, sheet_name='Students', index=False)
+                try: pd.DataFrame(supabase.table("widows").select("*").execute().data or []).to_excel(writer, sheet_name='Widows_Ration', index=False)
+                except Exception: pass
+                try: pd.DataFrame(supabase.table("ration_distribution").select("*").execute().data or []).to_excel(writer, sheet_name='Ration_Distribution', index=False)
+                except Exception: pass
                 pd.DataFrame(supabase.table("receipt_books").select("*").execute().data or []).to_excel(writer, sheet_name='Receipt_Books', index=False)
             st.download_button("📥 ਕਲਿੱਕ ਕਰਕੇ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"CA_Audit_Data_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
 
@@ -848,8 +853,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
 # 3. STOCK & RECEIPT BOOKS
 # ==========================================
 elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)":
-    st.header("📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ ਅਤੇ ਰਸੀਦ ਕਿਤਾਬਾਂ")
-    modes = ["📦 ਸਟਾਕ (Inventory)", "🎓 ਵਿਦਿਆਰਥੀ (Students)", "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"]
+    st.header("📦 ਸਟਾਕ ਅਤੇ ਰਸੀਦ ਕਿਤਾਬਾਂ (Stock & Books)")
+    modes = ["📦 ਸਟਾਕ (Inventory)", "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"]
     if st.session_state.other_mode not in modes: st.session_state.other_mode = modes[0]
     selected_mode = st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, index=modes.index(st.session_state.other_mode), horizontal=True)
     st.session_state.other_mode = selected_mode
@@ -876,24 +881,6 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
             stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
             if stock_res.data: st.dataframe(pd.DataFrame(stock_res.data)[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
 
-    elif selected_mode == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            if not is_mgmt:
-                with st.form("student_form", clear_on_submit=True):
-                    st.write("### 🎓 ਨਵਾਂ ਵਿਦਿਆਰਥੀ")
-                    stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ")
-                    stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
-                    stu_course = st.selectbox("ਕਲਾਸ", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
-                    join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ", value=date.today())
-                    if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ", type="primary") and stu_name:
-                        supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
-                        st.success("✅ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
-        with col2:
-            st.write("### 📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ")
-            student_data = supabase.table("students").select("*").execute().data or []
-            if student_data: st.dataframe(pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date']], use_container_width=True)
-
     elif selected_mode == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)":
         if is_admin:
             with st.form("book_issue_form", clear_on_submit=True):
@@ -914,7 +901,136 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
         if books_all: st.dataframe(pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']], use_container_width=True)
 
 # ==========================================
-# 4. ADMIN & BULK UPLOAD MANAGEMENT
+# 4. STUDENTS (Separate Tab)
+# ==========================================
+elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
+    st.header("🎓 ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ (Student Records)")
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        if not is_mgmt:
+            with st.form("student_form", clear_on_submit=True):
+                st.write("### 🎓 ਨਵਾਂ ਵਿਦਿਆਰਥੀ")
+                stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ")
+                stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
+                stu_course = st.selectbox("ਕਲਾਸ", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
+                join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ", value=date.today())
+                if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ", type="primary") and stu_name:
+                    supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ"}).execute()
+                    st.success("✅ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+    with col2:
+        st.write("### 📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ")
+        student_data = supabase.table("students").select("*").execute().data or []
+        if student_data: st.dataframe(pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date']], use_container_width=True)
+
+# ==========================================
+# 5. WIDOWS RATION DATABASE (New Tab)
+# ==========================================
+elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)":
+    st.header("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ ਡਾਟਾਬੇਸ ਅਤੇ ਵੰਡ (Widows Ration & Distribution)")
+    
+    w_tab1, w_tab2, w_tab3 = st.tabs(["➕ ਨਵਾਂ ਪ੍ਰੋਫਾਈਲ ਜੋੜੋ (Add New)", "📋 ਡਾਟਾਬੇਸ ਸੂਚੀ (Database List)", "🛍️ ਰਾਸ਼ਨ ਵੰਡ (Ration Distribution)"])
+    
+    with w_tab1:
+        if not is_mgmt:
+            with st.form("widow_form", clear_on_submit=True):
+                st.write("### 👵 ਨਵਾਂ ਪ੍ਰੋਫਾਈਲ ਦਰਜ ਕਰੋ")
+                w_name = st.text_input("ਨਾਮ (Name)")
+                w_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone)")
+                w_address = st.text_area("ਪਤਾ (Address)")
+                w_members = st.number_input("ਪਰਿਵਾਰਕ ਮੈਂਬਰ (Family Members)", min_value=1, step=1)
+                w_date = st.date_input("ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਮਿਤੀ (Registration Date)", value=date.today())
+                
+                if st.form_submit_button("ਸੇਵ ਕਰੋ (Save Profile)", type="primary") and w_name:
+                    try:
+                        supabase.table("widows").insert({
+                            "name": w_name, "phone": w_phone, "address": w_address, 
+                            "family_members": w_members, "join_date": str(w_date)
+                        }).execute()
+                        st.success(f"✅ '{w_name}' ਦਾ ਪ੍ਰੋਫਾਈਲ ਸੇਵ ਹੋ ਗਿਆ ਹੈ!")
+                    except Exception:
+                        st.error("❌ ਟੇਬਲ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਵਿੱਚ 'widows' ਟੇਬਲ ਬਣਾਓ।")
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
+
+    with w_tab2:
+        st.write("### 📑 ਰਜਿਸਟਰਡ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ")
+        try:
+            widows_data = supabase.table("widows").select("*").execute().data or []
+        except Exception:
+            widows_data = []
+            
+        if widows_data:
+            df_w = pd.DataFrame(widows_data)
+            st.dataframe(df_w[['id', 'name', 'phone', 'address', 'family_members', 'join_date']], use_container_width=True)
+            
+            # Export to Excel
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                df_w.to_excel(writer, index=False)
+            st.download_button("📥 ਡਾਟਾਬੇਸ ਐਕਸਲ ਵਿੱਚ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"Widows_Database_{date.today()}.xlsx")
+        else:
+            st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    with w_tab3:
+        st.write("### 🛍️ ਮਹੀਨਾਵਾਰ ਰਾਸ਼ਨ ਵੰਡ (Monthly Ration Distribution)")
+        try:
+            widows_list = supabase.table("widows").select("name, phone").execute().data or []
+            stock_list = supabase.table("stock").select("item_name, quantity").gt("quantity", 0).execute().data or []
+        except Exception:
+            widows_list, stock_list = [], []
+            
+        if not widows_list:
+            st.warning("⚠️ ਪਹਿਲਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਪ੍ਰੋਫਾਈਲ ਦਰਜ ਕਰੋ।")
+        elif not stock_list:
+            st.warning("⚠️ ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਸਟਾਕ ਅੱਪਡੇਟ ਕਰੋ।")
+        else:
+            if not is_mgmt:
+                w_names = [f"{w['name']} ({w.get('phone','')})" for w in widows_list]
+                s_items = [s['item_name'] for s in stock_list]
+                s_dict = {s['item_name']: s['quantity'] for s in stock_list}
+                
+                with st.form("ration_dist_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        selected_widow = st.selectbox("ਕਿਸ ਨੂੰ ਰਾਸ਼ਨ ਦਿੱਤਾ? (Select Widow)", w_names)
+                        dist_date = st.date_input("ਵੰਡਣ ਦੀ ਮਿਤੀ (Distribution Date)", value=date.today())
+                    with col2:
+                        selected_item = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਦਿੱਤਾ? (Select Item)", s_items)
+                        qty_to_give = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ: {s_dict.get(selected_item, 0)}", min_value=0.5, step=0.5)
+                        
+                    if st.form_submit_button("ਰਾਸ਼ਨ ਵੰਡ ਸੇਵ ਕਰੋ (Save & Update Stock)", type="primary"):
+                        if qty_to_give > s_dict.get(selected_item, 0):
+                            st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {s_dict.get(selected_item, 0)} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                        else:
+                            # 1. Deduct from Stock
+                            new_qty = s_dict.get(selected_item, 0) - qty_to_give
+                            supabase.table("stock").update({"quantity": new_qty}).eq("item_name", selected_item).execute()
+                            
+                            # 2. Insert into Distribution History
+                            widow_just_name = selected_widow.split(" (")[0]
+                            supabase.table("ration_distribution").insert({
+                                "widow_name": widow_just_name,
+                                "item_name": selected_item,
+                                "quantity": qty_to_give,
+                                "distribution_date": str(dist_date)
+                            }).execute()
+                            
+                            st.success(f"✅ {widow_just_name} ਨੂੰ {qty_to_give} {selected_item} ਦੇ ਦਿੱਤਾ ਗਿਆ ਹੈ! ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ।")
+                            time.sleep(1.5); st.rerun()
+                            
+        st.markdown("---")
+        st.write("#### 📑 ਪਿਛਲੀ ਰਾਸ਼ਨ ਵੰਡ ਦਾ ਰਿਕਾਰਡ (Recent Distributions)")
+        try:
+            dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).execute().data or []
+        except Exception:
+            dist_data = []
+        if dist_data:
+            st.dataframe(pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']], use_container_width=True)
+        else:
+            st.info("ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+# ==========================================
+# 6. ADMIN & BULK UPLOAD MANAGEMENT
 # ==========================================
 elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ ਅੱਪਲੋਡ (Admin & Bulk Upload)":
     st.header("⚙️ ਐਡਮਿਨ, ਬਲਕ ਅੱਪਲੋਡ ਅਤੇ ਡਿਲੀਟ ਸਿਸਟਮ")
@@ -925,22 +1041,38 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ
     st.markdown("---")
 
     if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)":
-        st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Old Donations via Excel)")
-        st.info("ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ Supabase ਡਾਟਾਬੇਸ ਵਿੱਚ ਅੱਪਲੋਡ ਕਰੋ।")
-        uploaded_file = st.file_uploader("ਦਾਨ ਦੀ ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
+        st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Data via Excel)")
+        st.info("ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨੀਆਂ, ਵਿਦਿਆਰਥੀਆਂ ਜਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ।")
+        
+        upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)"])
+        uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
+        
         if uploaded_file is not None:
             df_upload = pd.read_excel(uploaded_file)
             df_upload.columns = df_upload.columns.str.lower()
             st.dataframe(df_upload.head(10), use_container_width=True)
-            if 'add_to_mirror' not in df_upload.columns: df_upload['add_to_mirror'] = True
-            if st.button("🚀 ਸਾਰਾ ਡਾਟਾ ਸੇਵ ਕਰੋ (Upload All Records)", type="primary"):
-                if 'balance' in df_upload.columns: df_upload['balance'] = df_upload['balance'].fillna(0)
-                df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
-                supabase.table("donations").insert(df_upload.to_dict(orient='records')).execute()
-                st.success("✅ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
+            
+            if st.button(f"🚀 ਸਾਰਾ ਡਾਟਾ {upload_type} ਵਿੱਚ ਸੇਵ ਕਰੋ (Upload All)", type="primary"):
+                try:
+                    if upload_type == "ਦਾਨ (Donations)":
+                        if 'add_to_mirror' not in df_upload.columns: df_upload['add_to_mirror'] = True
+                        if 'balance' in df_upload.columns: df_upload['balance'] = df_upload['balance'].fillna(0)
+                        df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
+                        supabase.table("donations").insert(df_upload.to_dict(orient='records')).execute()
+                    
+                    elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
+                        supabase.table("students").insert(df_upload.to_dict(orient='records')).execute()
+                        
+                    elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
+                        supabase.table("widows").insert(df_upload.to_dict(orient='records')).execute()
+                        
+                    st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
+                except Exception as e:
+                    st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
 
     elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)":
-        t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
+        t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
+        
         if is_admin:
             st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਬੇਨਤੀਆਂ (Pending Requests from Staff)")
             reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
@@ -964,8 +1096,8 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ
                                 st.success("❌ ਬੇਨਤੀ ਰੱਦ ਕੀਤੀ ਗਈ!"); time.sleep(1.5); st.rerun()
             else: st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
             st.markdown("---")
-            st.subheader("⚡ ਸਿੱਧਾ ਡਿਲੀਟ ਕਰੋ (Direct Admin Delete)")
             
+        st.subheader("⚡ ਡਿਲੀਟ ਐਂਟਰੀ ਲੱਭੋ (Find & Request Delete)")
         if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
             
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
@@ -989,13 +1121,13 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ ਅਤੇ ਬਲਕ
             record_id = st.session_state['del_entry_id']
             st.info(f"ਵੇਰਵਾ: {data}")
             if is_admin:
-                if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ", type="primary"):
+                if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Direct Delete)", type="primary"):
                     try:
                         if del_type == "ਸਟਾਕ (Stock)": supabase.table(t_map[del_type]).delete().eq("item_name", record_id).execute()
                         else: supabase.table(t_map[del_type]).delete().eq("id", int(float(record_id))).execute()
                         st.success("✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
                     except Exception as e: st.error(f"Error: {e}")
             elif is_staff:
-                if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ", type="primary"):
+                if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete)", type="primary"):
                     supabase.table("deletion_requests").insert({"table_name": t_map[del_type], "record_id": str(record_id), "details": str(data), "requested_by": "staff"}).execute()
                     st.success("✅ ਤੁਹਾਡੀ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
