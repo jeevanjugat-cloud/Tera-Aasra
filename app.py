@@ -24,6 +24,7 @@ EXPENSE_CATEGORIES = [
     "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
     "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"
 ]
+STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
 # --- USERS & ROLES ---
 USERS = {
@@ -349,20 +350,24 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
         st.rerun()
 
     st.markdown("### 🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਆਡਿਟ (Accounts & Reports)")
-    c5, c6, c7, c8 = st.columns(4)
-    if c5.button("⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (Balance Sheet)", use_container_width=True):
+    c5, c6, c7, c8, c8a = st.columns(5)
+    if c5.button("⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", use_container_width=True):
         st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
         st.rerun()
-    if c6.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", use_container_width=True):
+    if c6.button("📖 ਮੁੱਖ ਲੈਜ਼ਰ (Daybook)", use_container_width=True):
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.acc_mode = "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)"
+        st.rerun()
+    if c7.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank)", use_container_width=True):
         st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"
         st.rerun()
-    if c7.button("📁 ਪਾਰਟੀਆਂ/ਚੈੱਕ (Creditors)", use_container_width=True):
+    if c8.button("📁 ਪਾਰਟੀਆਂ (Parties)", use_container_width=True):
         st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)"
         st.rerun()
-    if c8.button("📊 CA ਆਡਿਟ ਐਕਸਲ ਬੈਕਅੱਪ", use_container_width=True):
+    if c8a.button("📊 CA ਐਕਸਪੋਰਟ", use_container_width=True):
         st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
         st.rerun()
@@ -465,11 +470,20 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 st.write("### 📦 ਸਮਾਨ ਦਾ ਦਾਨ ਦਰਜ ਕਰੋ")
                 donor_name_ik = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)", key="ik_name")
                 donor_phone_ik = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)", key="ik_phone")
-                item_details_ik = st.text_input("ਸਮਾਨ ਦਾ ਵੇਰਵਾ (Item Details - e.g. 50kg Wheat)", key="ik_item")
+                item_details_ik = st.text_input("ਰਸੀਦ 'ਤੇ ਛਾਪਣ ਲਈ ਸਮਾਨ ਦਾ ਵੇਰਵਾ (Receipt Item Details - e.g. 50kg Wheat)", key="ik_item")
                 rec_no_ik = st.number_input("ਰਸੀਦ ਨੰਬਰ (Printed Receipt No.)", min_value=1, step=1, key="ik_rec")
+                
                 col_k1, col_k2 = st.columns(2)
                 with col_k1: amount_ik = st.number_input("ਅੰਦਾਜ਼ਨ ਕੀਮਤ (Estimated Value ₹ - Optional)", min_value=0.0, key="ik_amt")
                 with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), key="ik_date")
+                
+                st.markdown("---")
+                add_to_stock_ik = st.checkbox("✅ ਇਸ ਸਮਾਨ ਨੂੰ ਆਟੋਮੈਟਿਕ ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Auto-add to Stock)", value=False)
+                col_s1, col_s2, col_s3 = st.columns(3)
+                with col_s1: s_item_ik = st.text_input("ਸਟਾਕ ਆਈਟਮ ਦਾ ਨਾਮ (Stock Item Name)", key="s_item_ik")
+                with col_s2: s_qty_ik = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
+                with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
+                
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ (Generate In-Kind Receipt)", type="primary")
                 
             if submitted_ik and donor_name_ik and item_details_ik:
@@ -484,12 +498,27 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 else:
                     collector_ik = matched_book_ik['collector_name']
                     formatted_date_ik = receipt_date_ik.strftime("%Y-%m-%d")
+                    
+                    # 1. Insert Donation
                     supabase.table("donations").insert({
                         "id": int(rec_no_ik), "name": donor_name_ik, "phone": donor_phone_ik, "amount": amount_ik, 
                         "date": formatted_date_ik, "payment_mode": "N/A", "donation_type": "ਸਮਾਨ (In-Kind / Ration)", 
                         "item_details": item_details_ik, "bank_account": "N/A", "on_account_of": "ਸਮਾਨ ਦਾਨ", 
                         "add_to_mirror": False, "collector_name": collector_ik
                     }).execute()
+                    
+                    # 2. Add to Stock automatically
+                    if add_to_stock_ik and s_item_ik and s_qty_ik > 0:
+                        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        res_stock = supabase.table("stock").select("*").eq("item_name", s_item_ik).execute()
+                        if res_stock.data:
+                            old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
+                            old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
+                            new_qty = old_qty + s_qty_ik
+                            new_val = old_val + amount_ik
+                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_ik, "last_updated": current_date}).eq("item_name", s_item_ik).execute()
+                        else:
+                            supabase.table("stock").insert({"item_name": s_item_ik, "quantity": s_qty_ik, "estimated_value": round(amount_ik, 2), "unit": s_unit_ik, "last_updated": current_date}).execute()
                     
                     st.success(f"✅ ਰਸੀਦ #{rec_no_ik} ਤਿਆਰ ਹੈ। (ਕਲੈਕਟਰ: {collector_ik})")
                     html_file_ik = generate_html_receipt(int(rec_no_ik), donor_name_ik, donor_phone_ik, amount_ik, formatted_date_ik, "N/A", "ਸਮਾਨ (In-Kind / Ration)", item_details_ik, "N/A", "ਸਮਾਨ ਦਾਨ", collector_ik)
@@ -516,8 +545,31 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ? (From which Bank?)", BANK_ACCOUNTS)
                 exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
                 add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Ledger)", value=False)
+                
+                st.markdown("---")
+                add_to_stock_exp = st.checkbox("✅ ਖਰੀਦੇ ਗਏ ਸਮਾਨ ਨੂੰ ਆਟੋਮੈਟਿਕ ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Auto-add to Stock)", value=False)
+                col_es1, col_es2, col_es3 = st.columns(3)
+                with col_es1: s_item_exp = st.text_input("ਸਟਾਕ ਆਈਟਮ ਦਾ ਨਾਮ (Stock Item Name)", key="s_item_exp")
+                with col_es2: s_qty_exp = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
+                with col_es3: s_unit_exp = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_exp")
+                
                 if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
+                    # 1. Insert Expense
                     supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
+                    
+                    # 2. Add to Stock automatically
+                    if add_to_stock_exp and s_item_exp and s_qty_exp > 0:
+                        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        res_stock = supabase.table("stock").select("*").eq("item_name", s_item_exp).execute()
+                        if res_stock.data:
+                            old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
+                            old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
+                            new_qty = old_qty + s_qty_exp
+                            new_val = old_val + exp_amount
+                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_exp, "last_updated": current_date}).eq("item_name", s_item_exp).execute()
+                        else:
+                            supabase.table("stock").insert({"item_name": s_item_exp, "quantity": s_qty_exp, "estimated_value": round(exp_amount, 2), "unit": s_unit_exp, "last_updated": current_date}).execute()
+                    
                     st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved!)")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
@@ -582,7 +634,11 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             if search_donor:
                 df_don = pd.DataFrame(supabase.table("donations").select("*").execute().data or [])
                 if not df_don.empty:
-                    st.dataframe(df_don[df_don['name'].str.contains(search_donor, case=False, na=False)][['id', 'name', 'phone', 'amount', 'date', 'collector_name']], use_container_width=True)
+                    df_searched = df_don[df_don['name'].str.contains(search_donor, case=False, na=False)][['id', 'name', 'phone', 'amount', 'date', 'collector_name']]
+                    st.dataframe(df_searched, use_container_width=True)
+                    if not df_searched.empty:
+                        html_rep = generate_html_report("ਦਾਨੀਆਂ ਦੀ ਖੋਜ ਰਿਪੋਰਟ (Searched Donations)", df_searched.to_html(index=False, border=1, classes='report-table'))
+                        with open(html_rep, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_rep, mime="text/html")
 
 # ==========================================
 # 2. LEDGERS, BANK & CA REPORTS
@@ -592,6 +648,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
     
     modes = [
         "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
+        "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)",
         "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", 
         "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)", 
         "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)"
@@ -686,6 +743,58 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                         supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+
+    elif selected_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
+        st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ (Consolidated Main Daybook)")
+        st.info("ਇਸ ਲੈਜ਼ਰ ਵਿੱਚ ਸਾਰੇ ਬੈਂਕਾਂ ਅਤੇ ਨਕਦ (Cash) ਦੇ ਲੈਣ-ਦੇਣ, ਦਾਨ ਅਤੇ ਖਰਚੇ ਇਕੱਠੇ ਦਿਖਾਏ ਗਏ ਹਨ।")
+        
+        col_d1, col_d2 = st.columns(2)
+        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), key="md_start")
+        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), key="md_end")
+
+        main_entries = []
+        if not df_don.empty:
+            for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
+                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'Donation'})
+        if not df_exp.empty:
+            for _, row in df_exp.iterrows():
+                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']} ({row['category']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'Expense'})
+        if not df_ledg.empty and 'bank_name' in df_ledg.columns:
+            for _, row in df_ledg.iterrows():
+                main_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': row.get('bank_name', 'N/A'), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
+                
+        df_main = pd.DataFrame(main_entries)
+        if not df_main.empty:
+            df_main['Date'] = pd.to_datetime(df_main['Date']).dt.date
+            df_main = df_main.sort_values(by='Date')
+            
+            df_before = df_main[df_main['Date'] < start_date]
+            opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
+            
+            df_period = df_main[(df_main['Date'] >= start_date) & (df_main['Date'] <= end_date)].copy()
+            running_bal = opening_bal
+            balances = []
+            for _, row in df_period.iterrows():
+                running_bal += (row['Credit'] - row['Debit'])
+                balances.append(running_bal)
+            df_period['Running Balance'] = balances
+            
+            closing_bal = opening_bal + df_period['Credit'].sum() - df_period['Debit'].sum()
+            
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("ਓਪਨਿੰਗ ਬੈਲੇਂਸ (Opening)", f"₹ {opening_bal:,.2f}")
+            m2.metric("ਕੁੱਲ ਜਮ੍ਹਾਂ (Total Credit)", f"₹ {df_period['Credit'].sum():,.2f}")
+            m3.metric("ਕੁੱਲ ਖਰਚਾ (Total Debit)", f"₹ {df_period['Debit'].sum():,.2f}")
+            m4.metric("ਕਲੋਜ਼ਿੰਗ ਬੈਲੇਂਸ (Closing)", f"₹ {closing_bal:,.2f}")
+            
+            disp_cols = ['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'Running Balance']
+            st.dataframe(df_period[disp_cols].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), use_container_width=True)
+            
+            report_file_main = generate_html_report("ਮੁੱਖ ਲੈਜ਼ਰ (Consolidated Main Daybook)", df_period[disp_cols].to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_main, "r", encoding="utf-8") as file: 
+                st.download_button("🖨️ ਮੁੱਖ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ (Print Main Ledger)", data=file.read(), file_name=report_file_main, mime="text/html", type="primary")
+        else:
+            st.info("ਇਸ ਸਮੇਂ ਦੌਰਾਨ ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
     elif selected_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)":
         st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
@@ -817,13 +926,21 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         st.write("### 📁 ਸਾਰੀਆਂ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ (Creditors & Debtors)")
         try: parties_data = supabase.table("parties").select("*").execute().data or []
         except Exception: parties_data = []
-        if parties_data: st.dataframe(pd.DataFrame(parties_data)[['id', 'name', 'party_type', 'phone', 'address', 'opening_balance']], use_container_width=True)
+        if parties_data:
+            df_parties = pd.DataFrame(parties_data)[['id', 'name', 'party_type', 'phone', 'address', 'opening_balance']]
+            st.dataframe(df_parties, use_container_width=True)
+            report_file_parties = generate_html_report("ਸਾਰੀਆਂ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ (Parties List)", df_parties.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_parties, "r", encoding="utf-8") as file: st.download_button("🖨️ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_parties, mime="text/html")
         else: st.info("ਹਾਲੇ ਕੋਈ ਪਾਰਟੀ ਦਰਜ ਨਹੀਂ ਹੈ।")
         
         st.write("### 💳 ਸਾਰੇ ਚੈੱਕਾਂ ਦਾ ਰਿਕਾਰਡ (Cheques History)")
         try: cq_data = supabase.table("cheques").select("*").execute().data or []
         except Exception: cq_data = []
-        if cq_data: st.dataframe(pd.DataFrame(cq_data)[['id', 'cheque_no', 'bank_name', 'party_name', 'amount', 'cheque_date', 'status']], use_container_width=True)
+        if cq_data:
+            df_cq = pd.DataFrame(cq_data)[['id', 'cheque_no', 'bank_name', 'party_name', 'amount', 'cheque_date', 'status']]
+            st.dataframe(df_cq, use_container_width=True)
+            report_file_cq = generate_html_report("ਚੈੱਕਾਂ ਦਾ ਰਿਕਾਰਡ (Cheques History)", df_cq.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_cq, "r", encoding="utf-8") as file: st.download_button("🖨️ ਚੈੱਕ ਰਿਕਾਰਡ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_cq, mime="text/html")
         else: st.info("ਹਾਲੇ ਕੋਈ ਚੈੱਕ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
     elif selected_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)":
@@ -865,21 +982,58 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
         with col1:
             if not is_mgmt:
                 with st.form("stock_form", clear_on_submit=True):
-                    st.write("### 📦 ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ")
+                    st.write("### 📦 ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Update Stock)")
                     item_name = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ (Item Name)")
                     qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=0.0, step=0.5)
-                    unit = st.selectbox("ਇਕਾਈ (Unit)", ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)"])
+                    unit = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS)
+                    est_val = st.number_input("ਅੰਦਾਜ਼ਨ ਕੁੱਲ ਕੀਮਤ (Estimated Total Value ₹ - Optional)", min_value=0.0)
                     stock_action = st.radio("ਐਕਸ਼ਨ (Action)", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add Stock)", "ਸਮਾਨ ਵਰਤਿਆ (Remove Stock)"])
-                    if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ", type="primary") and item_name:
+                    
+                    if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Save Stock)", type="primary") and item_name:
                         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
-                        if res.data: supabase.table("stock").update({"quantity": res.data[0]['quantity'] + qty if "Add" in stock_action else max(0, res.data[0]['quantity'] - qty), "last_updated": current_date}).eq("item_name", item_name).execute()
-                        else: supabase.table("stock").insert({"item_name": item_name, "quantity": qty if "Add" in stock_action else 0, "unit": unit, "last_updated": current_date}).execute()
-                        st.success(f"✅ ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
+                        if res.data:
+                            old_qty = float(res.data[0].get('quantity', 0) or 0)
+                            old_val = float(res.data[0].get('estimated_value', 0) or 0)
+                            if "Add" in stock_action:
+                                new_qty = old_qty + qty
+                                new_val = old_val + est_val
+                            else:
+                                new_qty = max(0.0, old_qty - qty)
+                                new_val = max(0.0, old_val - est_val) if est_val > 0 else (old_val * (new_qty / old_qty) if old_qty > 0 else 0.0)
+                            
+                            supabase.table("stock").update({
+                                "quantity": new_qty,
+                                "estimated_value": round(new_val, 2),
+                                "unit": unit,
+                                "last_updated": current_date
+                            }).eq("item_name", item_name).execute()
+                        else:
+                            new_qty = qty if "Add" in stock_action else 0.0
+                            new_val = est_val if "Add" in stock_action else 0.0
+                            supabase.table("stock").insert({
+                                "item_name": item_name,
+                                "quantity": new_qty,
+                                "estimated_value": round(new_val, 2),
+                                "unit": unit,
+                                "last_updated": current_date
+                            }).execute()
+                        st.success(f"✅ '{item_name}' ਦਾ ਸਟਾਕ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
+                        time.sleep(1.2); st.rerun()
         with col2:
-            st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ")
+            st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ (Current Stock Inventory)")
             stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
-            if stock_res.data: st.dataframe(pd.DataFrame(stock_res.data)[['item_name', 'quantity', 'unit', 'last_updated']], use_container_width=True)
+            if stock_res.data:
+                df_stock = pd.DataFrame(stock_res.data)
+                disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'last_updated'] if c in df_stock.columns]
+                st.dataframe(df_stock[disp_cols], use_container_width=True)
+                
+                # Print stock report
+                report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
+                with open(report_file_stock, "r", encoding="utf-8") as file:
+                    st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
+            else:
+                st.info("ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
     elif selected_mode == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)":
         if is_admin:
@@ -898,7 +1052,11 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                         st.success(f"✅ ਕਿਤਾਬ ਜਾਰੀ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!")
         st.write("### 📑 ਜਾਰੀ ਕੀਤੀਆਂ ਗਈਆਂ ਕਿਤਾਬਾਂ")
         books_all = supabase.table("receipt_books").select("*").execute().data or []
-        if books_all: st.dataframe(pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']], use_container_width=True)
+        if books_all:
+            df_books = pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']]
+            st.dataframe(df_books, use_container_width=True)
+            report_file_books = generate_html_report("ਜਾਰੀ ਕੀਤੀਆਂ ਰਸੀਦ ਕਿਤਾਬਾਂ (Issued Receipt Books)", df_books.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_books, "r", encoding="utf-8") as file: st.download_button("🖨️ ਕਿਤਾਬਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_books, mime="text/html")
 
 # ==========================================
 # 4. STUDENTS (Separate Tab)
@@ -920,7 +1078,11 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
     with col2:
         st.write("### 📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ")
         student_data = supabase.table("students").select("*").execute().data or []
-        if student_data: st.dataframe(pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date']], use_container_width=True)
+        if student_data:
+            df_stu = pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date']]
+            st.dataframe(df_stu, use_container_width=True)
+            report_file_stu = generate_html_report("ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Students List)", df_stu.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_stu, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stu, mime="text/html")
 
 # ==========================================
 # 5. WIDOWS RATION DATABASE (New Tab)
@@ -954,20 +1116,15 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
 
     with w_tab2:
         st.write("### 📑 ਰਜਿਸਟਰਡ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ")
-        try:
-            widows_data = supabase.table("widows").select("*").execute().data or []
-        except Exception:
-            widows_data = []
+        try: widows_data = supabase.table("widows").select("*").execute().data or []
+        except Exception: widows_data = []
             
         if widows_data:
-            df_w = pd.DataFrame(widows_data)
-            st.dataframe(df_w[['id', 'name', 'phone', 'address', 'family_members', 'join_date']], use_container_width=True)
+            df_w = pd.DataFrame(widows_data)[['id', 'name', 'phone', 'address', 'family_members', 'join_date']]
+            st.dataframe(df_w, use_container_width=True)
             
-            # Export to Excel
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df_w.to_excel(writer, index=False)
-            st.download_button("📥 ਡਾਟਾਬੇਸ ਐਕਸਲ ਵਿੱਚ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"Widows_Database_{date.today()}.xlsx")
+            report_file_w = generate_html_report("ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ (Widows Database)", df_w.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_w, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_w, mime="text/html")
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
@@ -975,7 +1132,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
         st.write("### 🛍️ ਮਹੀਨਾਵਾਰ ਰਾਸ਼ਨ ਵੰਡ (Monthly Ration Distribution)")
         try:
             widows_list = supabase.table("widows").select("name, phone").execute().data or []
-            stock_list = supabase.table("stock").select("item_name, quantity").gt("quantity", 0).execute().data or []
+            stock_list = supabase.table("stock").select("item_name, quantity, estimated_value").gt("quantity", 0).execute().data or []
         except Exception:
             widows_list, stock_list = [], []
             
@@ -987,7 +1144,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
             if not is_mgmt:
                 w_names = [f"{w['name']} ({w.get('phone','')})" for w in widows_list]
                 s_items = [s['item_name'] for s in stock_list]
-                s_dict = {s['item_name']: s['quantity'] for s in stock_list}
+                s_dict = {s['item_name']: float(s.get('quantity', 0) or 0) for s in stock_list}
                 
                 with st.form("ration_dist_form"):
                     col1, col2 = st.columns(2)
@@ -999,14 +1156,21 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                         qty_to_give = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ: {s_dict.get(selected_item, 0)}", min_value=0.5, step=0.5)
                         
                     if st.form_submit_button("ਰਾਸ਼ਨ ਵੰਡ ਸੇਵ ਕਰੋ (Save & Update Stock)", type="primary"):
-                        if qty_to_give > s_dict.get(selected_item, 0):
-                            st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {s_dict.get(selected_item, 0)} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                        old_qty = s_dict.get(selected_item, 0)
+                        if qty_to_give > old_qty:
+                            st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {old_qty} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
                         else:
-                            # 1. Deduct from Stock
-                            new_qty = s_dict.get(selected_item, 0) - qty_to_give
-                            supabase.table("stock").update({"quantity": new_qty}).eq("item_name", selected_item).execute()
+                            new_qty = max(0.0, old_qty - qty_to_give)
+                            curr_stock = supabase.table("stock").select("*").eq("item_name", selected_item).execute().data
+                            if curr_stock:
+                                curr_val = float(curr_stock[0].get('estimated_value', 0) or 0)
+                                new_val = (curr_val * (new_qty / old_qty)) if old_qty > 0 else 0.0
+                                supabase.table("stock").update({
+                                    "quantity": new_qty, 
+                                    "estimated_value": round(new_val, 2),
+                                    "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                }).eq("item_name", selected_item).execute()
                             
-                            # 2. Insert into Distribution History
                             widow_just_name = selected_widow.split(" (")[0]
                             supabase.table("ration_distribution").insert({
                                 "widow_name": widow_just_name,
@@ -1020,12 +1184,13 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                             
         st.markdown("---")
         st.write("#### 📑 ਪਿਛਲੀ ਰਾਸ਼ਨ ਵੰਡ ਦਾ ਰਿਕਾਰਡ (Recent Distributions)")
-        try:
-            dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).execute().data or []
-        except Exception:
-            dist_data = []
+        try: dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).execute().data or []
+        except Exception: dist_data = []
         if dist_data:
-            st.dataframe(pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']], use_container_width=True)
+            df_dist = pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']]
+            st.dataframe(df_dist, use_container_width=True)
+            report_file_dist = generate_html_report("ਰਾਸ਼ਨ ਵੰਡ ਰਿਕਾਰਡ (Ration Distribution)", df_dist.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_dist, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵੰਡ ਰਿਕਾਰਡ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_dist, mime="text/html")
         else:
             st.info("ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
