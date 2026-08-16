@@ -715,10 +715,11 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         fixed_assets_val = df_assets['value'].sum() if not df_assets.empty else 0.0
         bank_balances = {"ਨਕਦ (Cash)": 0.0, "Kotak Bank Regular": 0.0, "Kotak Bank Corpus Fund": 0.0, "Punjab & Sind Bank": 0.0}
         for bank in BANK_ACCOUNTS:
-            b_in = df_don[(df_don['bank_account'] == bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don.get('add_to_mirror', False) == True)]['amount'].sum() if not df_don.empty else 0
-            b_in += df_ledg[df_ledg['bank_name'] == bank]['credit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'credit' in df_ledg.columns else 0
-            b_out = df_exp[(df_exp['bank_account'] == bank) & (df_exp.get('add_to_mirror', False) == True)]['amount'].sum() if not df_exp.empty else 0
-            b_out += df_ledg[df_ledg['bank_name'] == bank]['debit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'debit' in df_ledg.columns else 0
+            b_list = [bank, "Kotak Bank"] if bank == "Kotak Bank Regular" else [bank]
+            b_in = df_don[(df_don['bank_account'].isin(b_list)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don.get('add_to_mirror', False) == True)]['amount'].sum() if not df_don.empty else 0
+            b_in += df_ledg[df_ledg['bank_name'].isin(b_list)]['credit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'credit' in df_ledg.columns else 0
+            b_out = df_exp[(df_exp['bank_account'].isin(b_list)) & (df_exp.get('add_to_mirror', False) == True)]['amount'].sum() if not df_exp.empty else 0
+            b_out += df_ledg[df_ledg['bank_name'].isin(b_list)]['debit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'debit' in df_ledg.columns else 0
             bank_balances[bank] = b_in - b_out
         
         total_assets = fixed_assets_val + sum(bank_balances.values())
@@ -824,15 +825,17 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1))
         with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today())
 
+        search_banks = [selected_bank, "Kotak Bank"] if selected_bank == "Kotak Bank Regular" else [selected_bank]
+
         ledger_entries = []
         if not df_don.empty:
             df_don['add_to_mirror'] = df_don.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            for _, row in df_don[(df_don['bank_account'].isin(search_banks)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
         if not df_exp.empty:
             df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_exp[(df_exp['bank_account'] == selected_bank) & (df_exp['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
+            for _, row in df_exp[(df_exp['bank_account'].isin(search_banks)) & (df_exp['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
         if not df_ledg.empty and 'bank_name' in df_ledg.columns:
-            for _, row in df_ledg[df_ledg['bank_name'] == selected_bank].iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
+            for _, row in df_ledg[df_ledg['bank_name'].isin(search_banks)].iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
                 
         df_compiled = pd.DataFrame(ledger_entries)
         sys_bal = 0.0
