@@ -1306,10 +1306,12 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
             if filter_date:
                 date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", [])
                 
-        try:
-            raw_data = supabase.table(table_name).select("*").execute().data or []
-        except Exception:
-            raw_data = []
+        with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ... (Loading Data...)"):
+            try:
+                raw_data = supabase.table(table_name).select("*").execute().data or []
+            except Exception as e:
+                st.error(f"❌ ਡਾਟਾ ਲਿਆਉਣ ਵਿੱਚ ਐਰਰ: {e}")
+                raw_data = []
             
         if raw_data:
             df_del = pd.DataFrame(raw_data)
@@ -1334,23 +1336,25 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     df_del = df_del.drop(columns=['__temp_date'])
             
             if not df_del.empty:
-                st.write("---")
-                select_all = st.checkbox("✅ ਹੇਠਾਂ ਦਿੱਤੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)")
+                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ (Found {len(df_del)} entries).")
+                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)")
+                
                 df_del.insert(0, "Select", select_all)
+                # Reset index to avoid data_editor duplication errors
+                df_del = df_del.reset_index(drop=True)
                 
                 edited_df = st.data_editor(
                     df_del,
-                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=False)},
+                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=select_all)},
                     disabled=[c for c in df_del.columns if c != "Select"],
                     hide_index=True,
-                    use_container_width=True,
-                    key=f"editor_{table_name}"
+                    use_container_width=True
                 )
                 
                 selected_rows = edited_df[edited_df["Select"] == True]
                 
                 if not selected_rows.empty:
-                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ।")
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ। (Selected {len(selected_rows)})")
                     if is_admin:
                         if st.button("🛑 ਚੁਣੀਆਂ ਹੋਈਆਂ ਨੂੰ ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
                             for _, row in selected_rows.iterrows():
@@ -1371,6 +1375,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                                 }).execute()
                             st.success(f"✅ {len(selected_rows)} ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
             else:
-                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entries match your filter)")
         else:
-            st.info("ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ।")
+            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ। (Table is empty)")
