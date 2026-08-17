@@ -6,6 +6,7 @@ import io
 import base64
 import os
 import time
+import json
 from supabase import create_client, Client
 
 # --- ਸਭਾ ਦੇ ਵੇਰਵੇ (NGO DETAILS) ---
@@ -242,7 +243,7 @@ if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 �
 if 'entry_mode' not in st.session_state: st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
 if 'acc_mode' not in st.session_state: st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
 if 'other_mode' not in st.session_state: st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
-if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਬੇਨਤੀ (Delete Request)"
+if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)"
 
 # --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
@@ -293,9 +294,11 @@ with st.sidebar:
         "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)",
         "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)",
         "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)",
-        "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
+        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
     ]
+    
+    if is_admin or is_staff:
+        menu_options.append("⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)")
         
     try:
         current_idx = menu_options.index(st.session_state.current_tab)
@@ -391,13 +394,13 @@ if st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
     
     if is_admin:
         if c12.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
-            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"
             st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
             st.rerun()
     elif is_staff:
         if c12.button("🗑️ ਡਿਲੀਟ ਬੇਨਤੀ", use_container_width=True):
-            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
-            st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"
+            st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)"
             st.rerun()
 
 # ==========================================
@@ -476,15 +479,15 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             try:
                 recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("id", desc=True).limit(10).execute().data
                 if recents: 
-                    df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'amount', 'bank_account', 'collector_name']]
+                    df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name']]
                     df_rec.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ:**")
                     
                     edited_df = st.data_editor(
                         df_rec,
                         column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
-                        disabled=['id', 'date', 'name', 'amount', 'bank_account', 'collector_name'],
+                        disabled=['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name'],
                         hide_index=True,
                         use_container_width=True,
                         key="editor_recent_monetary"
@@ -493,7 +496,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
                     
                     if selected_ids:
-                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ")
                         for sid in selected_ids:
                             row_data = next(r for r in recents if r['id'] == sid)
                             h_file = generate_html_receipt(
@@ -521,7 +524,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 else: 
                     st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
             except Exception as e: 
-                st.error(f"Error: {e}")
+                pass
 
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
@@ -615,15 +618,15 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             try:
                 recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("id", desc=True).limit(10).execute().data
                 if recent_ik: 
-                    df_ik = pd.DataFrame(recent_ik)[['id', 'date', 'name', 'item_details', 'amount']]
+                    df_ik = pd.DataFrame(recent_ik)[['id', 'date', 'name', 'phone', 'item_details', 'amount']]
                     df_ik.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ:**")
                     
                     edited_ik = st.data_editor(
                         df_ik,
                         column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
-                        disabled=['id', 'date', 'name', 'item_details', 'amount'],
+                        disabled=['id', 'date', 'name', 'phone', 'item_details', 'amount'],
                         hide_index=True,
                         use_container_width=True,
                         key="editor_recent_inkind"
@@ -632,7 +635,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     selected_ik_ids = edited_ik[edited_ik["Select"] == True]['id'].tolist()
                     
                     if selected_ik_ids:
-                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ")
                         for sid in selected_ik_ids:
                             sel_data_ik = next(r for r in recent_ik if r['id'] == sid)
                             h_file_recent_ik = generate_html_receipt(
@@ -660,7 +663,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 else: 
                     st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
             except Exception as e: 
-                st.error(f"Error: {e}")
+                pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -1399,13 +1402,13 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
 # ==========================================
 # 6. ADMIN & BULK UPLOAD MANAGEMENT
 # ==========================================
-elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)":
-    st.header("⚙️ ਐਡਮਿਨ, ਬਲਕ ਅੱਪਲੋਡ ਅਤੇ ਡਿਲੀਟ ਸਿਸਟਮ")
+elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)":
+    st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
     
     if is_admin:
-        modes = ["📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
+        modes = ["📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
     else:
-        modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
+        modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
         
     if st.session_state.admin_mode not in modes: 
         st.session_state.admin_mode = modes[0]
@@ -1414,7 +1417,16 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
     st.session_state.admin_mode = selected_mode
     st.markdown("---")
 
-    if selected_mode == "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
+    t_map = {
+        "ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", 
+        "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", 
+        "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", 
+        "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", 
+        "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", 
+        "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"
+    }
+
+    if selected_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Data via Excel)")
         st.info("ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨੀਆਂ, ਵਿਦਿਆਰਥੀਆਂ ਜਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ।")
         
@@ -1444,87 +1456,62 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                 except Exception as e:
                     st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
 
-    elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)":
-        t_map = {
-            "ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", 
-            "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", 
-            "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", 
-            "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", 
-            "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", 
-            "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"
-        }
-        
+    elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
         if is_admin:
-            st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਬੇਨਤੀਆਂ (Pending Requests from Staff)")
-            try:
-                reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
-            except Exception:
-                reqs = []
+            st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਡਿਲੀਟ ਬੇਨਤੀਆਂ")
+            try: reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
+            except Exception: reqs = []
                 
             if reqs:
                 st.dataframe(pd.DataFrame(reqs)[['id', 'table_name', 'record_id', 'details', 'created_at']], hide_index=True, use_container_width=True)
                 
                 req_choices = [f"ID: {r['id']} ({r['table_name']})" for r in reqs]
-                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request to Action)", req_choices)
+                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request to Action)", req_choices, key="sel_del_req")
                 req_id = int(selected_req_str.split(" ")[1])
                 
                 col_a, col_r = st.columns(2)
                 with col_a:
-                    if st.button("✅ ਬੇਨਤੀ ਮਨਜ਼ੂਰ (Approve & Delete)", type="primary"):
+                    if st.button("✅ ਡਿਲੀਟ ਮਨਜ਼ੂਰ (Approve & Delete)", type="primary"):
                         target_req = next((r for r in reqs if int(r['id']) == req_id), None)
                         if target_req:
                             try:
-                                if target_req['table_name'] == "stock": 
-                                    supabase.table(target_req['table_name']).delete().eq("item_name", str(target_req['record_id'])).execute()
-                                else: 
-                                    supabase.table(target_req['table_name']).delete().eq("id", int(float(target_req['record_id']))).execute()
+                                if target_req['table_name'] == "stock": supabase.table(target_req['table_name']).delete().eq("item_name", str(target_req['record_id'])).execute()
+                                else: supabase.table(target_req['table_name']).delete().eq("id", int(float(target_req['record_id']))).execute()
                                 supabase.table("deletion_requests").update({"status": "Approved"}).eq("id", req_id).execute()
                                 st.success("✅ ਐਂਟਰੀ ਪੱਕੇ ਤੌਰ 'ਤੇ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
                             except Exception as e: st.error(f"Error: {e}")
                 with col_r:
-                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject Request)", type="primary"):
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
                         supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
                         st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
-            else: 
-                st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
+            else: st.info("ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
             st.markdown("---")
             
-        st.subheader("⚡ ਡਿਲੀਟ ਕਰਨ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ (Find & Select Entries to Delete)")
-        if is_staff: 
-            st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
+        st.subheader("⚡ ਡਿਲੀਟ ਕਰਨ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ")
+        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
             
-        del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
+        del_type = st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚੋਂ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?", list(t_map.keys()), key="del_cat")
         table_name = t_map[del_type]
         
-        # Filters (Without Form)
         col_f1, col_f2 = st.columns(2)
-        with col_f1: 
-            search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ (Search by Name or Description)")
+        with col_f1: search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ", key="del_srch")
         with col_f2: 
-            filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ (Filter by Date Range)")
-            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", []) if filter_date else []
+            filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ", key="del_chk_dt")
+            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="del_dt") if filter_date else []
 
-        # Fetch Data
-        with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ... (Loading Data...)"):
-            try:
-                raw_data = supabase.table(table_name).select("*").execute().data or []
-            except Exception as e:
-                st.error(f"❌ ਡਾਟਾ ਲਿਆਉਣ ਵਿੱਚ ਐਰਰ: {e}")
-                raw_data = []
+        with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ..."):
+            try: raw_data = supabase.table(table_name).select("*").execute().data or []
+            except Exception as e: raw_data = []
 
         if raw_data:
             df_del = pd.DataFrame(raw_data)
-            
-            # Name Filter
             if search_name:
                 search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_del.columns]
                 if search_cols:
                     mask = df_del[search_cols[0]].astype(str).str.contains(search_name, case=False, na=False)
-                    for c in search_cols[1:]:
-                        mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
+                    for c in search_cols[1:]: mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
                     df_del = df_del[mask]
                     
-            # Date Filter
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
@@ -1535,36 +1522,31 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     df_del = df_del.drop(columns=['__temp_date'])
                     
             if not df_del.empty:
-                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ। (Found {len(df_del)} entries)")
-                
-                # Make all columns string to avoid rendering bugs in data_editor
-                for col in df_del.columns:
-                    df_del[col] = df_del[col].fillna("").astype(str)
-                
+                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ।")
+                for col in df_del.columns: df_del[col] = df_del[col].fillna("").astype(str)
                 df_del.insert(0, "Select", False)
                 df_del = df_del.reset_index(drop=True)
                 
-                editor_key = f"del_editor_{table_name}_{search_name}_{filter_date}"
                 edited_df = st.data_editor(
                     df_del,
                     column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=False)},
                     disabled=[c for c in df_del.columns if c != "Select"],
                     hide_index=True,
                     use_container_width=True,
-                    key=editor_key
+                    key=f"editor_delete_{table_name}"
                 )
                 
                 selected_rows = edited_df[edited_df["Select"] == True]
                 
                 if not selected_rows.empty:
-                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ। (Selected {len(selected_rows)})")
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ।")
                     if is_admin:
                         if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
                             for _, row in selected_rows.iterrows():
                                 rec_id = row['item_name'] if table_name == "stock" else int(float(row['id']))
                                 col_name = "item_name" if table_name == "stock" else "id"
                                 supabase.table(table_name).delete().eq(col_name, rec_id).execute()
-                            st.success(f"✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
+                            st.success("✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
                     elif is_staff:
                         if st.button("📩 ਬੇਨਤੀ ਭੇਜੋ (Request Delete)", type="primary"):
                             for _, row in selected_rows.iterrows():
@@ -1577,7 +1559,129 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                                     "requested_by": "staff"
                                 }).execute()
                             st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+            else: st.info("ਖੋਜ ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+        else: st.info("ਟੇਬਲ ਖਾਲੀ ਹੈ।")
+
+    elif selected_mode == "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)":
+        if is_admin:
+            st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਸੋਧ (Edit) ਬੇਨਤੀਆਂ")
+            try: reqs_edit = supabase.table("edit_requests").select("*").eq("status", "Pending").execute().data
+            except Exception: reqs_edit = []
+            
+            if reqs_edit:
+                df_reqs = pd.DataFrame(reqs_edit)[['id', 'table_name', 'record_id', 'changes', 'created_at']]
+                st.dataframe(df_reqs, hide_index=True, use_container_width=True)
+                
+                req_choices = [f"ID: {r['id']} ({r['table_name']} - Rec: {r['record_id']})" for r in reqs_edit]
+                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Edit Request)", req_choices, key="sel_edit_req")
+                req_id = int(selected_req_str.split(" ")[1])
+                
+                col_ea, col_er = st.columns(2)
+                with col_ea:
+                    if st.button("✅ ਸੋਧ ਮਨਜ਼ੂਰ ਕਰੋ (Approve & Update)", type="primary"):
+                        target_req = next((r for r in reqs_edit if int(r['id']) == req_id), None)
+                        if target_req:
+                            try:
+                                changes_dict = json.loads(target_req['changes'])
+                                rec_id = target_req['record_id'] if target_req['table_name'] == "stock" else int(float(target_req['record_id']))
+                                col_name = "item_name" if target_req['table_name'] == "stock" else "id"
+                                
+                                supabase.table(target_req['table_name']).update(changes_dict).eq(col_name, rec_id).execute()
+                                supabase.table("edit_requests").update({"status": "Approved"}).eq("id", req_id).execute()
+                                st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+                            except Exception as e: st.error(f"Error: {e}")
+                with col_er:
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
+                        supabase.table("edit_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
+                        st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else:
-                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entries match your filter)")
-        else:
-            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ। (Table is empty)")
+                st.info("ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
+            st.markdown("---")
+            
+        st.subheader("⚡ ਸੋਧਣ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ ਅਤੇ ਬਦਲੋ (Edit Entries)")
+        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਅਪਡੇਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
+        
+        edit_type = st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ? (Select Category)", list(t_map.keys()), key="edit_cat")
+        table_name = t_map[edit_type]
+        
+        col_f1, col_f2 = st.columns(2)
+        with col_f1: search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ", key="edit_srch")
+        with col_f2: 
+            filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ", key="edit_chk_dt")
+            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="edit_dt") if filter_date else []
+            
+        with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ..."):
+            try: raw_data = supabase.table(table_name).select("*").execute().data or []
+            except Exception as e: raw_data = []
+            
+        if raw_data:
+            df_edit = pd.DataFrame(raw_data)
+            if search_name:
+                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_edit.columns]
+                if search_cols:
+                    mask = df_edit[search_cols[0]].astype(str).str.contains(search_name, case=False, na=False)
+                    for c in search_cols[1:]: mask = mask | df_edit[c].astype(str).str.contains(search_name, case=False, na=False)
+                    df_edit = df_edit[mask]
+            if filter_date and len(date_range) == 2:
+                d_start, d_end = date_range
+                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_edit.columns]
+                if date_cols:
+                    d_col = date_cols[0]
+                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], errors='coerce').dt.date
+                    df_edit = df_edit[(df_edit['__temp_date'] >= d_start) & (df_edit['__temp_date'] <= d_end)]
+                    df_edit = df_edit.drop(columns=['__temp_date'])
+                    
+            if not df_edit.empty:
+                st.success("✅ ਹੇਠਾਂ ਦਿੱਤੇ ਟੇਬਲ ਵਿੱਚ ਸਿੱਧਾ ਕਲਿੱਕ ਕਰਕੇ ਬਦਲਾਅ ਕਰੋ (Double click a cell to edit):")
+                df_edit = df_edit.reset_index(drop=True)
+                df_edit = df_edit.where(pd.notnull(df_edit), None)
+                disabled_cols = ['id'] if 'id' in df_edit.columns else []
+                
+                edited_df = st.data_editor(
+                    df_edit,
+                    hide_index=True,
+                    disabled=disabled_cols,
+                    use_container_width=True,
+                    key=f"editor_edit_{table_name}"
+                )
+                
+                changed_rows = []
+                orig_records = df_edit.to_dict('records')
+                edited_records = edited_df.to_dict('records')
+                
+                for i in range(len(orig_records)):
+                    orig = orig_records[i]
+                    ed = edited_records[i]
+                    changes = {}
+                    for k in ed.keys():
+                        orig_val = orig[k]
+                        ed_val = ed[k]
+                        if pd.isna(orig_val): orig_val = None
+                        if pd.isna(ed_val): ed_val = None
+                        if str(orig_val) != str(ed_val): 
+                            changes[k] = ed_val
+                    
+                    if changes:
+                        record_id = orig['item_name'] if table_name == 'stock' else orig['id']
+                        changed_rows.append((record_id, changes))
+                        
+                if changed_rows:
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(changed_rows)} ਐਂਟਰੀਆਂ ਵਿੱਚ ਬਦਲਾਅ ਕੀਤੇ ਹਨ।")
+                    if is_admin:
+                        if st.button("💾 ਬਦਲਾਅ ਸੇਵ ਕਰੋ (Update Directly)", type="primary"):
+                            for rec_id, changes in changed_rows:
+                                col_name = "item_name" if table_name == "stock" else "id"
+                                supabase.table(table_name).update(changes).eq(col_name, rec_id).execute()
+                            st.success("✅ ਡਾਟਾਬੇਸ ਅਪਡੇਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
+                    elif is_staff:
+                        if st.button("📩 ਐਡਮਿਨ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Edit Approval)", type="primary"):
+                            for rec_id, changes in changed_rows:
+                                supabase.table("edit_requests").insert({
+                                    "table_name": table_name,
+                                    "record_id": str(rec_id),
+                                    "changes": json.dumps(changes),
+                                    "status": "Pending",
+                                    "requested_by": "staff"
+                                }).execute()
+                            st.success("✅ ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
+            else: st.info("ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
