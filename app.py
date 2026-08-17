@@ -237,7 +237,7 @@ if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 �
 if 'entry_mode' not in st.session_state: st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
 if 'acc_mode' not in st.session_state: st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
 if 'other_mode' not in st.session_state: st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
-if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਬੇਨਤੀ (Delete Request)"
+if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
 
 # --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
@@ -288,9 +288,12 @@ with st.sidebar:
         "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)",
         "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)",
         "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)",
-        "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
+        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
     ]
+    
+    # Hide Admin/Delete tab from management, show only to Admin and Staff
+    if is_admin or is_staff:
+        menu_options.append("⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)")
         
     try:
         current_idx = menu_options.index(st.session_state.current_tab)
@@ -1228,7 +1231,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
     else:
         modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"]
         
-    if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
+    if st.session_state.admin_mode not in modes: 
+        st.session_state.admin_mode = modes[0]
+        
     selected_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
     st.session_state.admin_mode = selected_mode
     st.markdown("---")
@@ -1264,11 +1269,22 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
 
     elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)":
-        t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"}
+        t_map = {
+            "ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", 
+            "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", 
+            "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", 
+            "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", 
+            "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", 
+            "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books"
+        }
         
         if is_admin:
             st.subheader("🔔 ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਬੇਨਤੀਆਂ (Pending Requests from Staff)")
-            reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
+            try:
+                reqs = supabase.table("deletion_requests").select("*").eq("status", "Pending").execute().data
+            except Exception:
+                reqs = []
+                
             if reqs:
                 st.dataframe(pd.DataFrame(reqs)[['id', 'table_name', 'record_id', 'details', 'created_at']], use_container_width=True)
                 with st.form("approve_reject_form"):
@@ -1287,36 +1303,37 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                             else:
                                 supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
                                 st.success("❌ ਬੇਨਤੀ ਰੱਦ ਕੀਤੀ ਗਈ!"); time.sleep(1.5); st.rerun()
-            else: st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
+            else: 
+                st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
             st.markdown("---")
             
         st.subheader("⚡ ਡਿਲੀਟ ਕਰਨ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ (Find & Select Entries to Delete)")
-        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
+        if is_staff: 
+            st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
             
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
         table_name = t_map[del_type]
         
-        # Filters for searching
+        # Filters
         col_f1, col_f2 = st.columns(2)
         with col_f1: 
             search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ (Search by Name or Description)")
         with col_f2: 
             filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ (Filter by Date Range)")
-            date_range = []
-            if filter_date:
-                date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", [])
-                
+            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", []) if filter_date else []
+
+        # Fetch Data
         with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ... (Loading Data...)"):
             try:
                 raw_data = supabase.table(table_name).select("*").execute().data or []
             except Exception as e:
                 st.error(f"❌ ਡਾਟਾ ਲਿਆਉਣ ਵਿੱਚ ਐਰਰ: {e}")
                 raw_data = []
-            
+
         if raw_data:
             df_del = pd.DataFrame(raw_data)
             
-            # Apply Name Filter
+            # Name Filter
             if search_name:
                 search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_del.columns]
                 if search_cols:
@@ -1325,7 +1342,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                         mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
                     df_del = df_del[mask]
                     
-            # Apply Date Filter
+            # Date Filter
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
@@ -1334,45 +1351,42 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce').dt.date
                     df_del = df_del[(df_del['__temp_date'] >= d_start) & (df_del['__temp_date'] <= d_end)]
                     df_del = df_del.drop(columns=['__temp_date'])
-            
+                    
             if not df_del.empty:
-                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ (Found {len(df_del)} entries).")
-                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)", value=False)
+                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ।")
+                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All)", value=False)
                 
-                # Convert to string to avoid Data Editor crashes
                 for col in df_del.columns:
                     df_del[col] = df_del[col].fillna("").astype(str)
                     
                 df_del.insert(0, "Select", select_all)
-                # Reset index to avoid data_editor duplication errors
                 df_del = df_del.reset_index(drop=True)
                 
-                # Secure Form for Checkboxes (Prevents UI Reset)
                 with st.form(f"delete_form_{table_name}"):
                     edited_df = st.data_editor(
                         df_del,
-                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)")},
+                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=select_all)},
                         disabled=[c for c in df_del.columns if c != "Select"],
                         hide_index=True,
                         use_container_width=True
                     )
                     
                     if is_admin:
-                        del_btn = st.form_submit_button("🛑 ਚੁਣੀਆਂ ਹੋਈਆਂ ਨੂੰ ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary")
+                        del_btn = st.form_submit_button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary")
                     else:
-                        del_btn = st.form_submit_button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete for Selected)", type="primary")
+                        del_btn = st.form_submit_button("📩 ਬੇਨਤੀ ਭੇਜੋ (Request Delete)", type="primary")
                         
                     if del_btn:
                         selected_rows = edited_df[edited_df["Select"] == True]
                         if selected_rows.empty:
-                            st.error("❌ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਚੁਣੀ ਗਈ! (No entry selected)")
+                            st.error("❌ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਚੁਣੀ ਗਈ!")
                         else:
                             if is_admin:
                                 for _, row in selected_rows.iterrows():
                                     rec_id = row['item_name'] if table_name == "stock" else int(float(row['id']))
                                     col_name = "item_name" if table_name == "stock" else "id"
                                     supabase.table(table_name).delete().eq(col_name, rec_id).execute()
-                                st.success(f"✅ {len(selected_rows)} ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਹੋ ਗਈਆਂ!"); time.sleep(1.5); st.rerun()
+                                st.success(f"✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
                             elif is_staff:
                                 for _, row in selected_rows.iterrows():
                                     rec_id = row['item_name'] if table_name == "stock" else str(row['id'])
@@ -1383,8 +1397,8 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                                         "details": str(row_dict), 
                                         "requested_by": "staff"
                                     }).execute()
-                                st.success(f"✅ {len(selected_rows)} ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
+                                st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else:
-                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entries match your filter)")
+                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
         else:
-            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ। (Table is empty)")
+            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ।")
