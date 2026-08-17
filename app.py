@@ -26,16 +26,16 @@ EXPENSE_CATEGORIES = [
 ]
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
-# ==========================================
-# SECURE CREDENTIALS (STREAMLIT SECRETS)
-# ==========================================
-try:
-    USERS = st.secrets["USERS"]
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-except KeyError:
-    st.error("⚠️ ਐਰਰ: Streamlit Secrets ਸੈੱਟ ਨਹੀਂ ਹਨ! ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Streamlit Cloud ਦੀਆਂ Settings > Secrets ਵਿੱਚ ਡਾਟਾਬੇਸ ਦੀ Key ਅਤੇ ਪਾਸਵਰਡ ਪਾਓ।")
-    st.stop()
+# --- USERS & ROLES ---
+USERS = {
+    "admin": {"password": "Japnik@3315", "role": "admin"},
+    "staff": {"password": "12345", "role": "staff"},
+    "management": {"password": "view@123", "role": "management"}
+}
+
+# --- SUPABASE ਕਨੈਕਸ਼ਨ ---
+SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
@@ -237,7 +237,7 @@ if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 �
 if 'entry_mode' not in st.session_state: st.session_state.entry_mode = "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"
 if 'acc_mode' not in st.session_state: st.session_state.acc_mode = "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"
 if 'other_mode' not in st.session_state: st.session_state.other_mode = "📦 ਸਟਾਕ (Inventory)"
-if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete Manager)"
+if 'admin_mode' not in st.session_state: st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਬੇਨਤੀ (Delete Request)"
 
 # --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
@@ -288,12 +288,9 @@ with st.sidebar:
         "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)",
         "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)",
         "🎓 ਵਿਦਿਆਰਥੀ (Students)",
-        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)"
+        "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)",
+        "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)"
     ]
-    
-    # Hide Admin/Delete tab from management, show only to Admin and Staff
-    if is_admin or is_staff:
-        menu_options.append("⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Admin & Delete)")
         
     try:
         current_idx = menu_options.index(st.session_state.current_tab)
@@ -1354,50 +1351,47 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     
             if not df_del.empty:
                 st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ।")
-                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All)", value=False)
                 
+                # Make all columns string to avoid rendering/selection bugs
                 for col in df_del.columns:
                     df_del[col] = df_del[col].fillna("").astype(str)
                     
-                df_del.insert(0, "Select", select_all)
+                df_del.insert(0, "Select", False)
                 df_del = df_del.reset_index(drop=True)
                 
-                with st.form(f"delete_form_{table_name}"):
-                    edited_df = st.data_editor(
-                        df_del,
-                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=select_all)},
-                        disabled=[c for c in df_del.columns if c != "Select"],
-                        hide_index=True,
-                        use_container_width=True
-                    )
-                    
+                # Render Data Editor WITHOUT st.form so it never disappears!
+                edited_df = st.data_editor(
+                    df_del,
+                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
+                    disabled=[c for c in df_del.columns if c != "Select"],
+                    hide_index=True,
+                    use_container_width=True,
+                    key=f"data_editor_{table_name}"
+                )
+                
+                selected_rows = edited_df[edited_df["Select"] == True]
+                
+                if not selected_rows.empty:
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ।")
                     if is_admin:
-                        del_btn = st.form_submit_button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary")
-                    else:
-                        del_btn = st.form_submit_button("📩 ਬੇਨਤੀ ਭੇਜੋ (Request Delete)", type="primary")
-                        
-                    if del_btn:
-                        selected_rows = edited_df[edited_df["Select"] == True]
-                        if selected_rows.empty:
-                            st.error("❌ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਚੁਣੀ ਗਈ!")
-                        else:
-                            if is_admin:
-                                for _, row in selected_rows.iterrows():
-                                    rec_id = row['item_name'] if table_name == "stock" else int(float(row['id']))
-                                    col_name = "item_name" if table_name == "stock" else "id"
-                                    supabase.table(table_name).delete().eq(col_name, rec_id).execute()
-                                st.success(f"✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
-                            elif is_staff:
-                                for _, row in selected_rows.iterrows():
-                                    rec_id = row['item_name'] if table_name == "stock" else str(row['id'])
-                                    row_dict = row.drop('Select').to_dict()
-                                    supabase.table("deletion_requests").insert({
-                                        "table_name": table_name, 
-                                        "record_id": str(rec_id), 
-                                        "details": str(row_dict), 
-                                        "requested_by": "staff"
-                                    }).execute()
-                                st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+                        if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
+                            for _, row in selected_rows.iterrows():
+                                rec_id = row['item_name'] if table_name == "stock" else int(float(row['id']))
+                                col_name = "item_name" if table_name == "stock" else "id"
+                                supabase.table(table_name).delete().eq(col_name, rec_id).execute()
+                            st.success(f"✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
+                    elif is_staff:
+                        if st.button("📩 ਬੇਨਤੀ ਭੇਜੋ (Request Delete)", type="primary"):
+                            for _, row in selected_rows.iterrows():
+                                rec_id = row['item_name'] if table_name == "stock" else str(row['id'])
+                                row_dict = row.drop('Select').to_dict()
+                                supabase.table("deletion_requests").insert({
+                                    "table_name": table_name, 
+                                    "record_id": str(rec_id), 
+                                    "details": str(row_dict), 
+                                    "requested_by": "staff"
+                                }).execute()
+                            st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else:
                 st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
         else:
