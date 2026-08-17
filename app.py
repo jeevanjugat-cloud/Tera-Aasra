@@ -466,7 +466,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
                         else:
-                            st.info("ℹ️ ਦਾਨੀ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਨਾ ਹੋਣ ਕਾਰਨ WhatsApp ਲਿੰਕ পণ্ডিত ਨਹੀਂ ਬਣਿਆ।")
+                            st.info("ℹ️ ਦਾਨੀ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਨਾ ਹੋਣ ਕਾਰਨ WhatsApp ਲਿੰਕ ਨਹੀਂ ਬਣਿਆ।")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -1290,37 +1290,87 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
             else: st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
             st.markdown("---")
             
-        st.subheader("⚡ ਡਿਲੀਟ ਐਂਟਰੀ ਲੱਭੋ (Find & Request Delete)")
+        st.subheader("⚡ ਡਿਲੀਟ ਕਰਨ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ (Find & Select Entries to Delete)")
         if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਡਿਲੀਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
             
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
-        if del_type == "ਸਟਾਕ (Stock)":
-            del_item = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ ਭਰੋ (Enter Item Name)")
-            if st.button("🔍 ਲੱਭੋ", type="primary"):
-                res = supabase.table("stock").select("*").eq("item_name", del_item).execute()
-                if res.data: st.session_state['del_entry_data'] = res.data[0]; st.session_state['del_entry_id'] = del_item; st.session_state['del_entry_type'] = del_type
-                else: st.error("❌ ਨਹੀਂ ਮਿਲੀ।")
-        else:
-            del_id = st.number_input("ਐਂਟਰੀ ਦਾ ID ਭਰੋ (Entry ID)", min_value=0, step=1)
-            if st.button("🔍 ਲੱਭੋ", type="primary"):
-                try:
-                    res = supabase.table(t_map[del_type]).select("*").eq("id", del_id).execute()
-                    if res.data: st.session_state['del_entry_data'] = res.data[0]; st.session_state['del_entry_id'] = str(del_id); st.session_state['del_entry_type'] = del_type
-                    else: st.error("❌ ਨਹੀਂ ਮਿਲੀ।")
-                except Exception: st.error("❌ ਟੇਬਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।")
+        table_name = t_map[del_type]
+        
+        # Filters for searching
+        col_f1, col_f2 = st.columns(2)
+        with col_f1: 
+            search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ (Search by Name or Description)")
+        with col_f2: 
+            filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ (Filter by Date Range)")
+            date_range = []
+            if filter_date:
+                date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", [])
                 
-        if 'del_entry_data' in st.session_state and st.session_state.get('del_entry_type') == del_type:
-            data = st.session_state['del_entry_data']
-            record_id = st.session_state['del_entry_id']
-            st.info(f"ਵੇਰਵਾ: {data}")
-            if is_admin:
-                if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Direct Delete)", type="primary"):
-                    try:
-                        if del_type == "ਸਟਾਕ (Stock)": supabase.table(t_map[del_type]).delete().eq("item_name", record_id).execute()
-                        else: supabase.table(t_map[del_type]).delete().eq("id", int(float(record_id))).execute()
-                        st.success("✅ ਡਿਲੀਟ ਹੋ ਗਿਆ!"); st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
-                    except Exception as e: st.error(f"Error: {e}")
-            elif is_staff:
-                if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete)", type="primary"):
-                    supabase.table("deletion_requests").insert({"table_name": t_map[del_type], "record_id": str(record_id), "details": str(data), "requested_by": "staff"}).execute()
-                    st.success("✅ ਤੁਹਾਡੀ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); st.session_state.pop('del_entry_data', None); time.sleep(1.5); st.rerun()
+        try:
+            raw_data = supabase.table(table_name).select("*").execute().data or []
+        except Exception:
+            raw_data = []
+            
+        if raw_data:
+            df_del = pd.DataFrame(raw_data)
+            
+            # Apply Name Filter
+            if search_name:
+                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_del.columns]
+                if search_cols:
+                    mask = df_del[search_cols[0]].astype(str).str.contains(search_name, case=False, na=False)
+                    for c in search_cols[1:]:
+                        mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
+                    df_del = df_del[mask]
+                    
+            # Apply Date Filter
+            if filter_date and len(date_range) == 2:
+                d_start, d_end = date_range
+                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
+                if date_cols:
+                    d_col = date_cols[0]
+                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce').dt.date
+                    df_del = df_del[(df_del['__temp_date'] >= d_start) & (df_del['__temp_date'] <= d_end)]
+                    df_del = df_del.drop(columns=['__temp_date'])
+            
+            if not df_del.empty:
+                st.write("---")
+                select_all = st.checkbox("✅ ਹੇਠਾਂ ਦਿੱਤੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)")
+                df_del.insert(0, "Select", select_all)
+                
+                edited_df = st.data_editor(
+                    df_del,
+                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=False)},
+                    disabled=[c for c in df_del.columns if c != "Select"],
+                    hide_index=True,
+                    use_container_width=True,
+                    key=f"editor_{table_name}"
+                )
+                
+                selected_rows = edited_df[edited_df["Select"] == True]
+                
+                if not selected_rows.empty:
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ।")
+                    if is_admin:
+                        if st.button("🛑 ਚੁਣੀਆਂ ਹੋਈਆਂ ਨੂੰ ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
+                            for _, row in selected_rows.iterrows():
+                                rec_id = row['item_name'] if table_name == "stock" else row['id']
+                                col_name = "item_name" if table_name == "stock" else "id"
+                                supabase.table(table_name).delete().eq(col_name, rec_id).execute()
+                            st.success(f"✅ {len(selected_rows)} ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਹੋ ਗਈਆਂ!"); time.sleep(1.5); st.rerun()
+                    elif is_staff:
+                        if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete for Selected)", type="primary"):
+                            for _, row in selected_rows.iterrows():
+                                rec_id = row['item_name'] if table_name == "stock" else row['id']
+                                row_dict = row.drop('Select').to_dict()
+                                supabase.table("deletion_requests").insert({
+                                    "table_name": table_name, 
+                                    "record_id": str(rec_id), 
+                                    "details": str(row_dict), 
+                                    "requested_by": "staff"
+                                }).execute()
+                            st.success(f"✅ {len(selected_rows)} ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
+            else:
+                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+        else:
+            st.info("ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ।")
