@@ -26,16 +26,16 @@ EXPENSE_CATEGORIES = [
 ]
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
-# --- USERS & ROLES ---
-USERS = {
-    "admin": {"password": "Japnik@3315", "role": "admin"},
-    "staff": {"password": "12345", "role": "staff"},
-    "management": {"password": "view@123", "role": "management"}
-}
-
-# --- SUPABASE ਕਨੈਕਸ਼ਨ ---
-SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
+# ==========================================
+# SECURE CREDENTIALS (STREAMLIT SECRETS)
+# ==========================================
+try:
+    USERS = st.secrets["USERS"]
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except KeyError:
+    st.error("⚠️ ਐਰਰ: Streamlit Secrets ਸੈੱਟ ਨਹੀਂ ਹਨ! ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Streamlit Cloud ਦੀਆਂ Settings > Secrets ਵਿੱਚ ਡਾਟਾਬੇਸ ਦੀ Key ਅਤੇ ਪਾਸਵਰਡ ਪਾਓ।")
+    st.stop()
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
@@ -465,8 +465,15 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{amount}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {rec_no_input}, ਕਲੈਕਟਰ: {collector}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
-                        else:
-                            st.info("ℹ️ ਦਾਨੀ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਨਾ ਹੋਣ ਕਾਰਨ WhatsApp ਲਿੰਕ ਨਹੀਂ ਬਣਿਆ।")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਤੁਹਾਡੀਆਂ ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Donations)")
+            try:
+                recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("id", desc=True).limit(5).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'date', 'name', 'amount', 'bank_account', 'collector_name']], hide_index=True, use_container_width=True)
+                else: st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            except: pass
+
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -553,6 +560,14 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent In-Kind)")
+            try:
+                recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("id", desc=True).limit(5).execute().data
+                if recent_ik: st.dataframe(pd.DataFrame(recent_ik)[['id', 'date', 'name', 'item_details', 'amount']], hide_index=True, use_container_width=True)
+                else: st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -592,6 +607,14 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             supabase.table("stock").insert({"item_name": s_item_exp, "quantity": s_qty_exp, "estimated_value": round(exp_amount, 2), "unit": s_unit_exp, "last_updated": current_date}).execute()
                     
                     st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved!)")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੇ ਖਰਚੇ (Recent Expenses)")
+            try:
+                recents = supabase.table("expenses").select("*").order("id", desc=True).limit(5).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'date', 'description', 'amount', 'category', 'bank_account']], hide_index=True, use_container_width=True)
+                else: st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -607,6 +630,14 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 if st.form_submit_button("ਪਾਰਟੀ ਸੇਵ ਕਰੋ (Save Party)", type="primary") and p_name:
                     supabase.table("parties").insert({"name": p_name, "party_type": p_type, "phone": p_phone, "address": p_address, "opening_balance": p_amount, "created_at": str(date.today())}).execute()
                     st.success(f"✅ ਪਾਰਟੀ '{p_name}' ਸੇਵ ਹੋ ਗਈ!")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਪਾਰਟੀਆਂ (Recent Parties)")
+            try:
+                recents = supabase.table("parties").select("*").order("id", desc=True).limit(5).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'name', 'party_type', 'opening_balance']], hide_index=True, use_container_width=True)
+                else: st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -623,6 +654,14 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 if st.form_submit_button("ਚੈੱਕ ਸੇਵ ਕਰੋ (Save Cheque)", type="primary") and cq_no:
                     supabase.table("cheques").insert({"cheque_no": cq_no, "bank_name": cq_bank, "party_name": cq_party, "amount": cq_amt, "cheque_date": str(cq_date), "status": cq_status}).execute()
                     st.success("✅ ਚੈੱਕ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੇ ਚੈੱਕ (Recent Cheques)")
+            try:
+                recents = supabase.table("cheques").select("*").order("id", desc=True).limit(5).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount', 'status']], hide_index=True, use_container_width=True)
+                else: st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -656,7 +695,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 df_don = pd.DataFrame(supabase.table("donations").select("*").execute().data or [])
                 if not df_don.empty:
                     df_searched = df_don[df_don['name'].str.contains(search_donor, case=False, na=False)][['id', 'name', 'phone', 'amount', 'date', 'collector_name']]
-                    st.dataframe(df_searched, use_container_width=True)
+                    st.dataframe(df_searched, hide_index=True, use_container_width=True)
                     if not df_searched.empty:
                         html_rep = generate_html_report("ਦਾਨੀਆਂ ਦੀ ਖੋਜ ਰਿਪੋਰਟ (Searched Donations)", df_searched.to_html(index=False, border=1, classes='report-table'))
                         with open(html_rep, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_rep, mime="text/html")
@@ -810,7 +849,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             m4.metric("ਕਲੋਜ਼ਿੰਗ ਬੈਲੇਂਸ (Closing)", f"₹ {closing_bal:,.2f}")
             
             disp_cols = ['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'Running Balance']
-            st.dataframe(df_period[disp_cols].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), use_container_width=True)
+            st.dataframe(df_period[disp_cols].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), hide_index=True, use_container_width=True)
             
             report_file_main = generate_html_report("ਮੁੱਖ ਲੈਜ਼ਰ (Consolidated Main Daybook)", df_period[disp_cols].to_html(index=False, border=1, classes='report-table'))
             with open(report_file_main, "r", encoding="utf-8") as file: 
@@ -859,7 +898,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             m2.metric("ਕੁੱਲ ਜਮ੍ਹਾਂ (Total Credit)", f"₹ {df_period['Credit'].sum():,.2f}")
             m3.metric("ਕੁੱਲ ਖਰਚਾ (Total Debit)", f"₹ {df_period['Debit'].sum():,.2f}")
             m4.metric("ਕਲੋਜ਼ਿੰਗ ਬੈਲੇਂਸ (Closing)", f"₹ {closing_bal:,.2f}")
-            st.dataframe(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'Running Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), use_container_width=True)
+            st.dataframe(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'Running Balance']].style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), hide_index=True, use_container_width=True)
             
             report_file_bank = generate_html_report(f"Bank Statement - {selected_bank}", df_period[['Date', 'Description', 'Source', 'Credit', 'Debit', 'Running Balance']].to_html(index=False, border=1, classes='report-table'))
             with open(report_file_bank, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸਟੇਟਮੈਂਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_bank, mime="text/html")
@@ -952,7 +991,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         except Exception: parties_data = []
         if parties_data:
             df_parties = pd.DataFrame(parties_data)[['id', 'name', 'party_type', 'phone', 'address', 'opening_balance']]
-            st.dataframe(df_parties, use_container_width=True)
+            st.dataframe(df_parties, hide_index=True, use_container_width=True)
             report_file_parties = generate_html_report("ਸਾਰੀਆਂ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ (Parties List)", df_parties.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_parties, "r", encoding="utf-8") as file: st.download_button("🖨️ ਪਾਰਟੀਆਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_parties, mime="text/html")
         else: st.info("ਹਾਲੇ ਕੋਈ ਪਾਰਟੀ ਦਰਜ ਨਹੀਂ ਹੈ।")
@@ -962,7 +1001,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         except Exception: cq_data = []
         if cq_data:
             df_cq = pd.DataFrame(cq_data)[['id', 'cheque_no', 'bank_name', 'party_name', 'amount', 'cheque_date', 'status']]
-            st.dataframe(df_cq, use_container_width=True)
+            st.dataframe(df_cq, hide_index=True, use_container_width=True)
             report_file_cq = generate_html_report("ਚੈੱਕਾਂ ਦਾ ਰਿਕਾਰਡ (Cheques History)", df_cq.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_cq, "r", encoding="utf-8") as file: st.download_button("🖨️ ਚੈੱਕ ਰਿਕਾਰਡ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_cq, mime="text/html")
         else: st.info("ਹਾਲੇ ਕੋਈ ਚੈੱਕ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
@@ -1050,7 +1089,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
             if stock_res.data:
                 df_stock = pd.DataFrame(stock_res.data)
                 disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'last_updated'] if c in df_stock.columns]
-                st.dataframe(df_stock[disp_cols], use_container_width=True)
+                st.dataframe(df_stock[disp_cols], hide_index=True, use_container_width=True)
                 
                 report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
                 with open(report_file_stock, "r", encoding="utf-8") as file:
@@ -1077,7 +1116,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
         books_all = supabase.table("receipt_books").select("*").execute().data or []
         if books_all:
             df_books = pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']]
-            st.dataframe(df_books, use_container_width=True)
+            st.dataframe(df_books, hide_index=True, use_container_width=True)
             report_file_books = generate_html_report("ਜਾਰੀ ਕੀਤੀਆਂ ਰਸੀਦ ਕਿਤਾਬਾਂ (Issued Receipt Books)", df_books.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_books, "r", encoding="utf-8") as file: st.download_button("🖨️ ਕਿਤਾਬਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_books, mime="text/html")
 
@@ -1103,7 +1142,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
         student_data = supabase.table("students").select("*").execute().data or []
         if student_data:
             df_stu = pd.DataFrame(student_data)[['name', 'phone', 'course', 'join_date']]
-            st.dataframe(df_stu, use_container_width=True)
+            st.dataframe(df_stu, hide_index=True, use_container_width=True)
             report_file_stu = generate_html_report("ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Students List)", df_stu.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_stu, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵਿਦਿਆਰਥੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stu, mime="text/html")
 
@@ -1144,7 +1183,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
             
         if widows_data:
             df_w = pd.DataFrame(widows_data)[['id', 'name', 'phone', 'address', 'family_members', 'join_date']]
-            st.dataframe(df_w, use_container_width=True)
+            st.dataframe(df_w, hide_index=True, use_container_width=True)
             
             report_file_w = generate_html_report("ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ (Widows Database)", df_w.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_w, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_w, mime="text/html")
@@ -1211,7 +1250,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
         except Exception: dist_data = []
         if dist_data:
             df_dist = pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']]
-            st.dataframe(df_dist, use_container_width=True)
+            st.dataframe(df_dist, hide_index=True, use_container_width=True)
             report_file_dist = generate_html_report("ਰਾਸ਼ਨ ਵੰਡ ਰਿਕਾਰਡ (Ration Distribution)", df_dist.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_dist, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵੰਡ ਰਿਕਾਰਡ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_dist, mime="text/html")
         else:
@@ -1283,7 +1322,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                 reqs = []
                 
             if reqs:
-                st.dataframe(pd.DataFrame(reqs)[['id', 'table_name', 'record_id', 'details', 'created_at']], use_container_width=True)
+                st.dataframe(pd.DataFrame(reqs)[['id', 'table_name', 'record_id', 'details', 'created_at']], hide_index=True, use_container_width=True)
                 with st.form("approve_reject_form"):
                     req_id = st.number_input("ਬੇਨਤੀ ID ਭਰੋ", min_value=0, step=1)
                     action = st.radio("ਐਕਸ਼ਨ", ["✅ ਮਨਜ਼ੂਰ (Approve & Delete)", "❌ ਰੱਦ ਕਰੋ (Reject)"])
@@ -1311,7 +1350,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
         table_name = t_map[del_type]
         
-        # Filters
+        # Filters (Without Form)
         col_f1, col_f2 = st.columns(2)
         with col_f1: 
             search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ (Search by Name or Description)")
@@ -1330,7 +1369,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
         if raw_data:
             df_del = pd.DataFrame(raw_data)
             
-            # Name Filter
+            # Apply Name Filter
             if search_name:
                 search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_del.columns]
                 if search_cols:
@@ -1339,7 +1378,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                         mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
                     df_del = df_del[mask]
                     
-            # Date Filter
+            # Apply Date Filter
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
@@ -1350,29 +1389,29 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                     df_del = df_del.drop(columns=['__temp_date'])
                     
             if not df_del.empty:
-                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ।")
+                st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ। (Found {len(df_del)} entries)")
                 
-                # Make all columns string to avoid rendering/selection bugs
+                # Make all columns string to avoid rendering/selection bugs in data_editor
                 for col in df_del.columns:
                     df_del[col] = df_del[col].fillna("").astype(str)
-                    
+                
+                # OUTSIDE THE FORM SO IT DOES NOT DISAPPEAR
                 df_del.insert(0, "Select", False)
                 df_del = df_del.reset_index(drop=True)
                 
-                # Render Data Editor WITHOUT st.form so it never disappears!
                 edited_df = st.data_editor(
                     df_del,
-                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
+                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=False)},
                     disabled=[c for c in df_del.columns if c != "Select"],
                     hide_index=True,
                     use_container_width=True,
-                    key=f"data_editor_{table_name}"
+                    key=f"data_editor_delete_{table_name}"
                 )
                 
                 selected_rows = edited_df[edited_df["Select"] == True]
                 
                 if not selected_rows.empty:
-                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ।")
+                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ। (Selected {len(selected_rows)})")
                     if is_admin:
                         if st.button("🛑 ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
                             for _, row in selected_rows.iterrows():
@@ -1393,6 +1432,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                                 }).execute()
                             st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else:
-                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
+                st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entries match your filter)")
         else:
-            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ।")
+            st.info("ਇਸ ਟੇਬਲ ਵਿੱਚ ਕੋਈ ਡਾਟਾ ਨਹੀਂ ਹੈ। (Table is empty)")
