@@ -26,16 +26,16 @@ EXPENSE_CATEGORIES = [
 ]
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
-# --- USERS & ROLES ---
-USERS = {
-    "admin": {"password": "Japnik@3315", "role": "admin"},
-    "staff": {"password": "12345", "role": "staff"},
-    "management": {"password": "view@123", "role": "management"}
-}
-
-# --- SUPABASE ਕਨੈਕਸ਼ਨ ---
-SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
+# ==========================================
+# SECURE CREDENTIALS (STREAMLIT SECRETS)
+# ==========================================
+try:
+    USERS = st.secrets["USERS"]
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except KeyError:
+    st.error("⚠️ ਐਰਰ: Streamlit Secrets ਸੈੱਟ ਨਹੀਂ ਹਨ! ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Streamlit Cloud ਦੀਆਂ Settings > Secrets ਵਿੱਚ ਡਾਟਾਬੇਸ ਦੀ Key ਅਤੇ ਪਾਸਵਰਡ ਪਾਓ।")
+    st.stop()
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
@@ -466,7 +466,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             url = f"https://wa.me/{donor_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
                         else:
-                            st.info("ℹ️ ਦਾਨੀ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਨਾ ਹੋਣ ਕਾਰਨ WhatsApp ਲਿੰਕ ਨਹੀਂ ਬਣਿਆ।")
+                            st.info("ℹ️ ਦਾਨੀ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਨਾ ਹੋਣ ਕਾਰਨ WhatsApp ਲਿੰਕ পণ্ডিত ਨਹੀਂ ਬਣਿਆ।")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
