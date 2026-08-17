@@ -28,20 +28,15 @@ EXPENSE_CATEGORIES = [
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
 # ==========================================
-# SECURE CREDENTIALS (WITH FALLBACK FOR SAFETY)
+# 🔒 SECURE CREDENTIALS (NO PASSWORDS IN CODE!)
 # ==========================================
 try:
     USERS = st.secrets["USERS"]
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except Exception:
-    USERS = {
-        "admin": {"password": "Japnik@3315", "role": "admin"},
-        "staff": {"password": "12345", "role": "staff"},
-        "management": {"password": "view@123", "role": "management"}
-    }
-    SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
-    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
+    st.error("⚠️ ਸੁਰੱਖਿਆ ਐਰਰ (Security Alert): ਡਾਟਾਬੇਸ ਅਤੇ ਪਾਸਵਰਡ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਹਨ! ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Streamlit Cloud ਦੀ Settings > Secrets ਵਿੱਚ ਜਾ ਕੇ ਆਪਣੇ ਪਾਸਵਰਡ ਸੇਵ ਕਰੋ।")
+    st.stop()
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
@@ -482,7 +477,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name']]
                     df_rec.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ:**")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
                     
                     edited_df = st.data_editor(
                         df_rec,
@@ -496,7 +491,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
                     
                     if selected_ids:
-                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ")
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
                         for sid in selected_ids:
                             row_data = next(r for r in recents if r['id'] == sid)
                             h_file = generate_html_receipt(
@@ -1481,7 +1476,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                                 st.success("✅ ਐਂਟਰੀ ਪੱਕੇ ਤੌਰ 'ਤੇ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
                             except Exception as e: st.error(f"Error: {e}")
                 with col_r:
-                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)", type="primary"):
                         supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
                         st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else: st.info("ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
@@ -1523,7 +1518,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                     
             if not df_del.empty:
                 st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ।")
-                for col in df_del.columns: df_del[col] = df_del[col].fillna("").astype(str)
                 df_del.insert(0, "Select", False)
                 df_del = df_del.reset_index(drop=True)
                 
@@ -1591,7 +1585,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                                 st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
                             except Exception as e: st.error(f"Error: {e}")
                 with col_er:
-                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)", type="primary"):
                         supabase.table("edit_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
                         st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else:
@@ -1635,7 +1629,10 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 st.success("✅ ਹੇਠਾਂ ਦਿੱਤੇ ਟੇਬਲ ਵਿੱਚ ਸਿੱਧਾ ਕਲਿੱਕ ਕਰਕੇ ਬਦਲਾਅ ਕਰੋ (Double click a cell to edit):")
                 df_edit = df_edit.reset_index(drop=True)
                 df_edit = df_edit.where(pd.notnull(df_edit), None)
-                disabled_cols = ['id'] if 'id' in df_edit.columns else []
+                
+                # Primary Key Lock (ID cannot be edited to protect Database)
+                pk_col = 'item_name' if table_name == 'stock' else 'id'
+                disabled_cols = [pk_col] if pk_col in df_edit.columns else []
                 
                 edited_df = st.data_editor(
                     df_edit,
