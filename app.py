@@ -1337,43 +1337,53 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
             
             if not df_del.empty:
                 st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ (Found {len(df_del)} entries).")
-                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)")
+                select_all = st.checkbox("✅ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਚੁਣੋ (Select All Filtered)", value=False)
                 
+                # Convert to string to avoid Data Editor crashes
+                for col in df_del.columns:
+                    df_del[col] = df_del[col].fillna("").astype(str)
+                    
                 df_del.insert(0, "Select", select_all)
                 # Reset index to avoid data_editor duplication errors
                 df_del = df_del.reset_index(drop=True)
                 
-                edited_df = st.data_editor(
-                    df_del,
-                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=select_all)},
-                    disabled=[c for c in df_del.columns if c != "Select"],
-                    hide_index=True,
-                    use_container_width=True
-                )
-                
-                selected_rows = edited_df[edited_df["Select"] == True]
-                
-                if not selected_rows.empty:
-                    st.warning(f"⚠️ ਤੁਸੀਂ {len(selected_rows)} ਐਂਟਰੀਆਂ ਚੁਣੀਆਂ ਹਨ। (Selected {len(selected_rows)})")
+                # Secure Form for Checkboxes (Prevents UI Reset)
+                with st.form(f"delete_form_{table_name}"):
+                    edited_df = st.data_editor(
+                        df_del,
+                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)")},
+                        disabled=[c for c in df_del.columns if c != "Select"],
+                        hide_index=True,
+                        use_container_width=True
+                    )
+                    
                     if is_admin:
-                        if st.button("🛑 ਚੁਣੀਆਂ ਹੋਈਆਂ ਨੂੰ ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary"):
-                            for _, row in selected_rows.iterrows():
-                                rec_id = row['item_name'] if table_name == "stock" else row['id']
-                                col_name = "item_name" if table_name == "stock" else "id"
-                                supabase.table(table_name).delete().eq(col_name, rec_id).execute()
-                            st.success(f"✅ {len(selected_rows)} ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਹੋ ਗਈਆਂ!"); time.sleep(1.5); st.rerun()
-                    elif is_staff:
-                        if st.button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete for Selected)", type="primary"):
-                            for _, row in selected_rows.iterrows():
-                                rec_id = row['item_name'] if table_name == "stock" else row['id']
-                                row_dict = row.drop('Select').to_dict()
-                                supabase.table("deletion_requests").insert({
-                                    "table_name": table_name, 
-                                    "record_id": str(rec_id), 
-                                    "details": str(row_dict), 
-                                    "requested_by": "staff"
-                                }).execute()
-                            st.success(f"✅ {len(selected_rows)} ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
+                        del_btn = st.form_submit_button("🛑 ਚੁਣੀਆਂ ਹੋਈਆਂ ਨੂੰ ਪੱਕਾ ਡਿਲੀਟ ਕਰੋ (Delete Selected)", type="primary")
+                    else:
+                        del_btn = st.form_submit_button("📩 ਐਡਮਿਨ ਨੂੰ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ (Request Delete for Selected)", type="primary")
+                        
+                    if del_btn:
+                        selected_rows = edited_df[edited_df["Select"] == True]
+                        if selected_rows.empty:
+                            st.error("❌ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਚੁਣੀ ਗਈ! (No entry selected)")
+                        else:
+                            if is_admin:
+                                for _, row in selected_rows.iterrows():
+                                    rec_id = row['item_name'] if table_name == "stock" else int(float(row['id']))
+                                    col_name = "item_name" if table_name == "stock" else "id"
+                                    supabase.table(table_name).delete().eq(col_name, rec_id).execute()
+                                st.success(f"✅ {len(selected_rows)} ਐਂਟਰੀਆਂ ਡਿਲੀਟ ਹੋ ਗਈਆਂ!"); time.sleep(1.5); st.rerun()
+                            elif is_staff:
+                                for _, row in selected_rows.iterrows():
+                                    rec_id = row['item_name'] if table_name == "stock" else str(row['id'])
+                                    row_dict = row.drop('Select').to_dict()
+                                    supabase.table("deletion_requests").insert({
+                                        "table_name": table_name, 
+                                        "record_id": str(rec_id), 
+                                        "details": str(row_dict), 
+                                        "requested_by": "staff"
+                                    }).execute()
+                                st.success(f"✅ {len(selected_rows)} ਬੇਨਤੀਆਂ ਭੇਜ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ!"); time.sleep(1.5); st.rerun()
             else:
                 st.info("ਖੋਜ (Search) ਅਨੁਸਾਰ ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ। (No entries match your filter)")
         else:
