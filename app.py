@@ -474,31 +474,54 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.markdown("---")
             st.write("#### 🕒 ਤੁਹਾਡੀਆਂ ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Donations)")
             try:
-                recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("id", desc=True).limit(5).execute().data
+                recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("id", desc=True).limit(10).execute().data
                 if recents: 
-                    st.dataframe(pd.DataFrame(recents)[['id', 'date', 'name', 'amount', 'bank_account', 'collector_name']], hide_index=True, use_container_width=True)
+                    df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'amount', 'bank_account', 'collector_name']]
+                    df_rec.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰੋ (Print / WhatsApp):**")
-                    rec_options = {f"ਰਸੀਦ #{r['id']} - {r['name']} (₹{r['amount']})": r for r in recents}
-                    selected_rec_key = st.selectbox("ਐਂਟਰੀ ਚੁਣੋ (Select Entry)", list(rec_options.keys()), label_visibility="collapsed", key="sel_mon_rec")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
                     
-                    if selected_rec_key:
-                        sel_data = rec_options[selected_rec_key]
-                        h_file_recent = generate_html_receipt(sel_data['id'], sel_data.get('name',''), sel_data.get('phone',''), sel_data.get('amount',0), sel_data.get('date',''), sel_data.get('payment_mode','N/A'), sel_data.get('donation_type','ਪੈਸੇ (Monetary)'), sel_data.get('item_details',''), sel_data.get('bank_account','N/A'), sel_data.get('on_account_of',''), sel_data.get('collector_name', ''))
-                        
-                        c_pr1, c_pr2 = st.columns([1, 2])
-                        with c_pr1:
-                            with open(h_file_recent, "r", encoding="utf-8") as file:
-                                st.download_button("🖨️ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=h_file_recent, mime="text/html", key=f"p_mon_{sel_data['id']}")
-                        with c_pr2:
-                            if sel_data.get('phone'):
-                                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {sel_data['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{sel_data['amount']}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {sel_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
-                                url = f"https://wa.me/{sel_data['phone']}?text={urllib.parse.quote(msg)}"
-                                st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 8px 15px; font-size: 15px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
+                    edited_df = st.data_editor(
+                        df_rec,
+                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
+                        disabled=['id', 'date', 'name', 'amount', 'bank_account', 'collector_name'],
+                        hide_index=True,
+                        use_container_width=True,
+                        key="editor_recent_monetary"
+                    )
+                    
+                    selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
+                    
+                    if selected_ids:
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
+                        for sid in selected_ids:
+                            row_data = next(r for r in recents if r['id'] == sid)
+                            h_file = generate_html_receipt(
+                                row_data['id'], row_data.get('name',''), row_data.get('phone',''), 
+                                float(row_data.get('amount',0) or 0), row_data.get('date',''), 
+                                row_data.get('payment_mode','N/A'), "ਪੈਸੇ (Monetary)", "", 
+                                row_data.get('bank_account','N/A'), row_data.get('on_account_of',''), 
+                                row_data.get('collector_name', '')
+                            )
+                            
+                            c1, c2, c3 = st.columns([2, 1, 1])
+                            with c1:
+                                st.markdown(f"**ਰਸੀਦ #{row_data['id']}** - {row_data.get('name','')} (₹{row_data.get('amount',0)})")
+                            with c2:
+                                with open(h_file, "r", encoding="utf-8") as f:
+                                    st.download_button("🖨️ Print", data=f.read(), file_name=h_file, mime="text/html", key=f"dl_mon_{sid}")
+                            with c3:
+                                phone = str(row_data.get('phone', '')).strip()
+                                if phone and phone.lower() not in ['nan', 'none', '']:
+                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {row_data.get('name','')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                                    url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+                                    st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 5px 15px; font-size: 14px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
+                                else:
+                                    st.caption("ਨੰਬਰ ਨਹੀਂ ਹੈ")
                 else: 
                     st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
             except Exception as e: 
-                pass
+                st.error(f"Error: {e}")
 
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
@@ -590,31 +613,54 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.markdown("---")
             st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent In-Kind)")
             try:
-                recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("id", desc=True).limit(5).execute().data
+                recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("id", desc=True).limit(10).execute().data
                 if recent_ik: 
-                    st.dataframe(pd.DataFrame(recent_ik)[['id', 'date', 'name', 'item_details', 'amount']], hide_index=True, use_container_width=True)
+                    df_ik = pd.DataFrame(recent_ik)[['id', 'date', 'name', 'item_details', 'amount']]
+                    df_ik.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰੋ (Print / WhatsApp):**")
-                    rec_options_ik = {f"ਰਸੀਦ #{r['id']} - {r['name']} ({r['item_details']})": r for r in recent_ik}
-                    selected_rec_key_ik = st.selectbox("ਐਂਟਰੀ ਚੁਣੋ (Select Entry)", list(rec_options_ik.keys()), label_visibility="collapsed", key="sel_recent_ik")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
                     
-                    if selected_rec_key_ik:
-                        sel_data_ik = rec_options_ik[selected_rec_key_ik]
-                        h_file_recent_ik = generate_html_receipt(sel_data_ik['id'], sel_data_ik.get('name',''), sel_data_ik.get('phone',''), sel_data_ik.get('amount',0), sel_data_ik.get('date',''), sel_data_ik.get('payment_mode','N/A'), sel_data_ik.get('donation_type','ਸਮਾਨ (In-Kind / Ration)'), sel_data_ik.get('item_details',''), sel_data_ik.get('bank_account','N/A'), sel_data_ik.get('on_account_of',''), sel_data_ik.get('collector_name', ''))
-                        
-                        c_pr1_ik, c_pr2_ik = st.columns([1, 2])
-                        with c_pr1_ik:
-                            with open(h_file_recent_ik, "r", encoding="utf-8") as file:
-                                st.download_button("🖨️ ਪ੍ਰਿੰਟ ਕਰੋ (Print)", data=file.read(), file_name=h_file_recent_ik, mime="text/html", key=f"p_ik_{sel_data_ik['id']}")
-                        with c_pr2_ik:
-                            if sel_data_ik.get('phone'):
-                                msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {sel_data_ik['name']} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{sel_data_ik['item_details']}' (ਰਸੀਦ ਨੰ: {sel_data_ik['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
-                                url = f"https://wa.me/{sel_data_ik['phone']}?text={urllib.parse.quote(msg)}"
-                                st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 8px 15px; font-size: 15px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
+                    edited_ik = st.data_editor(
+                        df_ik,
+                        column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)},
+                        disabled=['id', 'date', 'name', 'item_details', 'amount'],
+                        hide_index=True,
+                        use_container_width=True,
+                        key="editor_recent_inkind"
+                    )
+                    
+                    selected_ik_ids = edited_ik[edited_ik["Select"] == True]['id'].tolist()
+                    
+                    if selected_ik_ids:
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
+                        for sid in selected_ik_ids:
+                            sel_data_ik = next(r for r in recent_ik if r['id'] == sid)
+                            h_file_recent_ik = generate_html_receipt(
+                                sel_data_ik['id'], sel_data_ik.get('name',''), sel_data_ik.get('phone',''), 
+                                float(sel_data_ik.get('amount',0) or 0), sel_data_ik.get('date',''), 
+                                sel_data_ik.get('payment_mode','N/A'), "ਸਮਾਨ (In-Kind / Ration)", 
+                                sel_data_ik.get('item_details',''), sel_data_ik.get('bank_account','N/A'), 
+                                sel_data_ik.get('on_account_of',''), sel_data_ik.get('collector_name', '')
+                            )
+                            
+                            c1, c2, c3 = st.columns([2, 1, 1])
+                            with c1:
+                                st.markdown(f"**ਰਸੀਦ #{sel_data_ik['id']}** - {sel_data_ik.get('name','')} ({sel_data_ik.get('item_details','')})")
+                            with c2:
+                                with open(h_file_recent_ik, "r", encoding="utf-8") as file:
+                                    st.download_button("🖨️ Print", data=file.read(), file_name=h_file_recent_ik, mime="text/html", key=f"p_ik_{sel_data_ik['id']}")
+                            with c3:
+                                phone = str(sel_data_ik.get('phone', '')).strip()
+                                if phone and phone.lower() not in ['nan', 'none', '']:
+                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {sel_data_ik.get('name','')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{sel_data_ik.get('item_details','')}' (ਰਸੀਦ ਨੰ: {sel_data_ik['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                                    url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+                                    st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 5px 15px; font-size: 14px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
+                                else:
+                                    st.caption("ਨੰਬਰ ਨਹੀਂ ਹੈ")
                 else: 
                     st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
             except Exception as e: 
-                pass
+                st.error(f"Error: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -729,11 +775,14 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         with open(html_file_rep, "r", encoding="utf-8") as file:
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=html_file_rep, mime="text/html", key="reprint_btn", type="primary")
                     with c_p2:
-                        if rec.get('phone'):
+                        phone = str(rec.get('phone', '')).strip()
+                        if phone and phone.lower() not in ['nan', 'none', '']:
                             amt_str = f"₹{rec.get('amount',0)}/- ਦਾ ਦਾਨ" if rec.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{rec.get('item_details')}'"
                             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {rec.get('name')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_str} (ਰਸੀਦ ਨੰ: {search_id}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
-                            url = f"https://wa.me/{rec.get('phone')}?text={urllib.parse.quote(msg)}"
+                            url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Resend via WhatsApp)</a>', unsafe_allow_html=True)
+                        else:
+                            st.error("ਦਾਨੀ ਦਾ ਨੰਬਰ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
                 else:
                     st.error("❌ ਇਸ ਨੰਬਰ ਦੀ ਕੋਈ ਰਸੀਦ ਨਹੀਂ ਮਿਲੀ।")
         with col_search2:
@@ -741,11 +790,55 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             if search_donor:
                 df_don = pd.DataFrame(supabase.table("donations").select("*").execute().data or [])
                 if not df_don.empty:
-                    df_searched = df_don[df_don['name'].str.contains(search_donor, case=False, na=False)][['id', 'name', 'phone', 'amount', 'date', 'collector_name']]
-                    st.dataframe(df_searched, hide_index=True, use_container_width=True)
-                    if not df_searched.empty:
-                        html_rep = generate_html_report("ਦਾਨੀਆਂ ਦੀ ਖੋਜ ਰਿਪੋਰਟ (Searched Donations)", df_searched.to_html(index=False, border=1, classes='report-table'))
-                        with open(html_rep, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_rep, mime="text/html")
+                    matches = df_don[df_don['name'].str.contains(search_donor, case=False, na=False)]
+                    if not matches.empty:
+                        df_disp = matches[['id', 'date', 'name', 'phone', 'amount', 'donation_type', 'collector_name']].copy()
+                        df_disp.insert(0, "Select", False)
+                        df_disp = df_disp.reset_index(drop=True)
+                        
+                        st.write("**🖨️ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਲਈ ਟਿੱਕ ਲਗਾਓ:**")
+                        edited_srch = st.data_editor(
+                            df_disp,
+                            column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ")},
+                            disabled=['id', 'date', 'name', 'phone', 'amount', 'donation_type', 'collector_name'],
+                            hide_index=True,
+                            use_container_width=True,
+                            key="editor_search_donor"
+                        )
+                        
+                        sel_ids = edited_srch[edited_srch["Select"] == True]['id'].tolist()
+                        if sel_ids:
+                            st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ")
+                            for sid in sel_ids:
+                                row_data = next(r for r in matches.to_dict('records') if r['id'] == sid)
+                                h_file = generate_html_receipt(
+                                    row_data['id'], row_data.get('name',''), row_data.get('phone',''), 
+                                    float(row_data.get('amount',0) or 0), row_data.get('date',''), 
+                                    row_data.get('payment_mode','N/A'), row_data.get('donation_type','ਪੈਸੇ (Monetary)'), 
+                                    row_data.get('item_details',''), row_data.get('bank_account','N/A'), 
+                                    row_data.get('on_account_of',''), row_data.get('collector_name', '')
+                                )
+                                
+                                c1, c2, c3 = st.columns([2, 1, 1])
+                                with c1:
+                                    st.markdown(f"**ਰਸੀਦ #{row_data['id']}** - {row_data.get('name','')}")
+                                with c2:
+                                    with open(h_file, "r", encoding="utf-8") as f:
+                                        st.download_button("🖨️ Print", data=f.read(), file_name=h_file, mime="text/html", key=f"dl_srch_{sid}")
+                                with c3:
+                                    phone = str(row_data.get('phone', '')).strip()
+                                    if phone and phone.lower() not in ['nan', 'none', '']:
+                                        amt_str = f"₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ" if row_data.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{row_data.get('item_details')}'"
+                                        msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {row_data.get('name')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_str} (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                                        url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+                                        st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 5px 15px; font-size: 14px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
+                                    else:
+                                        st.caption("ਨੰਬਰ ਨਹੀਂ ਹੈ")
+                        
+                        html_rep = generate_html_report("ਦਾਨੀਆਂ ਦੀ ਖੋਜ ਰਿਪੋਰਟ (Searched Donations)", matches.to_html(index=False, border=1, classes='report-table'))
+                        with open(html_rep, "r", encoding="utf-8") as file: st.download_button("🖨️ ਪੂਰੀ ਖੋਜ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_rep, mime="text/html")
+                    else:
+                        st.info("ਕੋਈ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ।")
 
 # ==========================================
 # 2. LEDGERS, BANK & CA REPORTS
@@ -1403,6 +1496,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
         del_type = st.selectbox("ਕੀ ਡਿਲੀਟ ਕਰਨਾ ਹੈ? (Select Category)", list(t_map.keys()))
         table_name = t_map[del_type]
         
+        # Filters (Without Form)
         col_f1, col_f2 = st.columns(2)
         with col_f1: 
             search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ (Search by Name or Description)")
@@ -1410,6 +1504,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
             filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ (Filter by Date Range)")
             date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ (Date Range)", []) if filter_date else []
 
+        # Fetch Data
         with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ... (Loading Data...)"):
             try:
                 raw_data = supabase.table(table_name).select("*").execute().data or []
@@ -1420,6 +1515,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
         if raw_data:
             df_del = pd.DataFrame(raw_data)
             
+            # Name Filter
             if search_name:
                 search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name'] if c in df_del.columns]
                 if search_cols:
@@ -1428,6 +1524,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                         mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
                     df_del = df_del[mask]
                     
+            # Date Filter
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
@@ -1440,6 +1537,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
             if not df_del.empty:
                 st.success(f"✅ ਕੁੱਲ {len(df_del)} ਐਂਟਰੀਆਂ ਮਿਲੀਆਂ ਹਨ। (Found {len(df_del)} entries)")
                 
+                # Make all columns string to avoid rendering bugs in data_editor
                 for col in df_del.columns:
                     df_del[col] = df_del[col].fillna("").astype(str)
                 
@@ -1449,7 +1547,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ/ਡਿਲੀਟ ਮ
                 editor_key = f"del_editor_{table_name}_{search_name}_{filter_date}"
                 edited_df = st.data_editor(
                     df_del,
-                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)")},
+                    column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ (Select)", default=False)},
                     disabled=[c for c in df_del.columns if c != "Select"],
                     hide_index=True,
                     use_container_width=True,
