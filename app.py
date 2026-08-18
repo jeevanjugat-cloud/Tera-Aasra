@@ -29,7 +29,7 @@ EXPENSE_CATEGORIES = [
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
 # ==========================================
-# CREDENTIALS (NOW WITH 5 EMPLOYEE LOGINS)
+# CREDENTIALS (DIRECTLY IN CODE)
 # ==========================================
 USERS = {
     "admin": {"password": "Japnik@3315", "role": "admin"},
@@ -124,6 +124,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Helper function to compress and convert image to base64
 def compress_image(uploaded_file, max_size=(150, 150)):
     if uploaded_file is not None:
         try:
@@ -402,13 +403,14 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
     att_e_tab1, att_e_tab2 = st.tabs(["⏱️ ਅੱਜ ਦੀ ਹਾਜ਼ਰੀ (Punch In/Out)", "📝 ਛੁੱਟੀ/ਪੁਰਾਣੀ ਹਾਜ਼ਰੀ ਬੇਨਤੀ (Leave Request)"])
     
     with att_e_tab1:
-        try: staff_list = supabase.table("staff_profiles").select("name, role").execute().data or []
+        # SAFELY fetch ALL data (prevents crash if columns missing)
+        try: staff_list = supabase.table("staff_profiles").select("*").execute().data or []
         except Exception: staff_list = []
         
         if not staff_list:
             st.warning("⚠️ ਐਡਮਿਨ ਨੇ ਹਾਲੇ ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ ਨਹੀਂ ਬਣਾਏ ਹਨ।")
         else:
-            staff_names = [f"{s['name']} ({s['role']})" for s in staff_list]
+            staff_names = [f"{s.get('name', 'Unknown')} ({s.get('role', '')})" for s in staff_list]
             selected_punch_staff = st.selectbox("ਆਪਣਾ ਨਾਮ ਚੁਣੋ (Select Your Name)", ["-- ਚੁਣੋ (Select) --"] + staff_names, key="emp_punch")
             
             if selected_punch_staff != "-- ਚੁਣੋ (Select) --":
@@ -430,15 +432,15 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
                         time.sleep(1.5); st.rerun()
                 else:
                     rec = today_record[0]
-                    st.success(f"✅ Punch IN Time: {rec['in_time']}")
-                    if not rec.get('out_time') or rec['out_time'] == "":
+                    st.success(f"✅ Punch IN Time: {rec.get('in_time', '')}")
+                    if not rec.get('out_time') or rec.get('out_time') == "":
                         st.warning(f"ਤੁਹਾਡਾ ਜਾਣ ਦਾ ਸਮਾਂ ਹਾਲੇ ਨਹੀਂ ਲੱਗਿਆ। (Time: {current_time})")
                         if st.button("🔴 Punch OUT (ਜਾਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
                             supabase.table("attendance").update({"out_time": current_time}).eq("id", rec['id']).execute()
                             st.success(f"✅ ਜਾਣ ਦਾ ਸਮਾਂ ਲੱਗ ਗਿਆ ਹੈ!")
                             time.sleep(1.5); st.rerun()
                     else:
-                        st.error(f"🔴 Punch OUT Time: {rec['out_time']}")
+                        st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
                         st.info("🌟 ਅੱਜ ਦੀ ਤੁਹਾਡੀ ਡਿਊਟੀ ਪੂਰੀ ਹੋ ਗਈ ਹੈ।")
 
                 st.markdown("---")
@@ -446,7 +448,9 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
                 try:
                     my_att = supabase.table("attendance").select("*").eq("staff_name", clean_name).order("date", desc=True).limit(10).execute().data or []
                     if my_att:
-                        st.dataframe(pd.DataFrame(my_att)[['date', 'in_time', 'out_time', 'status']], hide_index=True, use_container_width=True)
+                        df_my_att = pd.DataFrame(my_att)
+                        display_my_att = [c for c in ['date', 'in_time', 'out_time', 'status'] if c in df_my_att.columns]
+                        st.dataframe(df_my_att[display_my_att], hide_index=True, use_container_width=True)
                     else:
                         st.info("ਕੋਈ ਪੁਰਾਣੀ ਹਾਜ਼ਰੀ ਨਹੀਂ ਮਿਲੀ।")
                 except Exception: pass
@@ -455,7 +459,7 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
         st.write("### 📝 ਛੁੱਟੀ ਜਾਂ ਪੁਰਾਣੀ ਹਾਜ਼ਰੀ ਦੀ ਬੇਨਤੀ (Leave Request)")
         if staff_list:
             with st.form("emp_manual_att_form", clear_on_submit=True):
-                m_staff = st.selectbox("ਆਪਣਾ ਨਾਮ ਚੁਣੋ", [s['name'] for s in staff_list])
+                m_staff = st.selectbox("ਆਪਣਾ ਨਾਮ ਚੁਣੋ", [s.get('name', 'Unknown') for s in staff_list])
                 m_date = st.date_input("ਕਿਸ ਦਿਨ ਦੀ ਬੇਨਤੀ ਹੈ? (Date)")
                 m_status = st.selectbox("ਕੀ ਲਗਾਉਣਾ ਹੈ? (Status)", ["Present (ਹਾਜ਼ਰ)", "Absent (ਛੁੱਟੀ/ਗੈਰ-ਹਾਜ਼ਰ)", "Half Day (ਅੱਧਾ ਦਿਨ)"])
                 m_reason = st.text_input("ਕਾਰਨ (Reason)")
@@ -532,6 +536,17 @@ elif st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
     if c12.button("🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff)", use_container_width=True):
         st.session_state.current_tab = "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)"
         st.rerun()
+    
+    if is_admin:
+        if st.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"
+            st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"
+            st.rerun()
+    elif is_staff:
+        if st.button("🗑️ ਡਿਲੀਟ ਬੇਨਤੀ", use_container_width=True):
+            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"
+            st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)"
+            st.rerun()
 
 # ==========================================
 # 1. SINGLE WINDOW: VOUCHER & RECEIPT ENTRY
@@ -1358,9 +1373,10 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                         time.sleep(1.2); st.rerun()
         with col2:
             st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ (Current Stock Inventory)")
-            stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute()
-            if stock_res.data:
-                df_stock = pd.DataFrame(stock_res.data)
+            try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
+            except Exception: stock_res = []
+            if stock_res:
+                df_stock = pd.DataFrame(stock_res)
                 disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'last_updated'] if c in df_stock.columns]
                 st.dataframe(df_stock[disp_cols], hide_index=True, use_container_width=True)
                 
@@ -1386,12 +1402,303 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                         supabase.table("receipt_books").insert({"collector_name": collector_input, "start_no": int(start_ser), "end_no": int(end_ser), "issued_date": issue_date.strftime("%Y-%m-%d"), "status": "Active"}).execute()
                         st.success(f"✅ ਕਿਤਾਬ ਜਾਰੀ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!")
         st.write("### 📑 ਜਾਰੀ ਕੀਤੀਆਂ ਗਈਆਂ ਕਿਤਾਬਾਂ")
-        books_all = supabase.table("receipt_books").select("*").execute().data or []
+        try: books_all = supabase.table("receipt_books").select("*").execute().data or []
+        except Exception: books_all = []
         if books_all:
             df_books = pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']]
             st.dataframe(df_books, hide_index=True, use_container_width=True)
             report_file_books = generate_html_report("ਜਾਰੀ ਕੀਤੀਆਂ ਰਸੀਦ ਕਿਤਾਬਾਂ (Issued Receipt Books)", df_books.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_books, "r", encoding="utf-8") as file: st.download_button("🖨️ ਕਿਤਾਬਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_books, mime="text/html")
+
+# ==========================================
+# 4. STUDENTS (Separate Tab WITH PHOTO & LANDSCAPE)
+# ==========================================
+elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
+    st.header("🎓 ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ (Student Records)")
+    s_tab1, s_tab2 = st.tabs(["➕ ਨਵਾਂ ਵਿਦਿਆਰਥੀ ਦਰਜ ਕਰੋ (Add New)", "📋 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Database List)"])
+    
+    with s_tab1:
+        if not is_mgmt:
+            with st.form("student_form", clear_on_submit=True):
+                st.write("### 🎓 ਨਵਾਂ ਵਿਦਿਆਰਥੀ")
+                col_s1, col_s2 = st.columns(2)
+                with col_s1:
+                    stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ (Name)")
+                    stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone)")
+                with col_s2:
+                    stu_course = st.selectbox("ਕਲਾਸ (Course)", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
+                    join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ (Join Date)", value=date.today())
+                
+                s_photo = st.file_uploader("ਵਿਦਿਆਰਥੀ ਦੀ ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ (Upload Photo)", type=['png', 'jpg', 'jpeg'])
+                st.caption("ਫੋਟੋ ਦਾ ਸਾਈਜ਼ ਆਪਣੇ ਆਪ ਛੋਟਾ ਹੋ ਜਾਵੇਗਾ।")
+
+                if st.form_submit_button("ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ (Save Record)", type="primary") and stu_name:
+                    with st.spinner("ਸੇਵ ਹੋ ਰਿਹਾ ਹੈ..."):
+                        try:
+                            photo_str = compress_image(s_photo)
+                            supabase.table("students").insert({
+                                "name": stu_name, 
+                                "phone": stu_phone, 
+                                "course": stu_course, 
+                                "join_date": join_date.strftime("%Y-%m-%d"), 
+                                "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ",
+                                "photo_base64": photo_str
+                            }).execute()
+                            st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+                        except Exception as e:
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' ਕਾਲਮ ਬਣਾਓ। Details: {e}")
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
+
+    with s_tab2:
+        st.write("### 📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Students List)")
+        try: student_data = supabase.table("students").select("*").execute().data or []
+        except Exception: student_data = []
+        
+        if student_data:
+            df_stu = pd.DataFrame(student_data)
+            display_cols = [c for c in ['name', 'phone', 'course', 'join_date', 'pass_date'] if c in df_stu.columns]
+            
+            st.dataframe(df_stu[display_cols], hide_index=True, use_container_width=True)
+            
+            st.write("---")
+            st.write("#### 🖼️ ਵਿਦਿਆਰਥੀ ਦਾ ਪੂਰਾ ਵੇਰਵਾ ਅਤੇ ਫੋਟੋ (View Details & Photo)")
+            s_options = {f"{s.get('name','Unknown')} ({s.get('course', '')}) - {s.get('phone', '')}": s for s in student_data}
+            selected_s = st.selectbox("ਵਿਦਿਆਰਥੀ ਚੁਣੋ (Select Student)", list(s_options.keys()))
+            
+            if selected_s:
+                s_d = s_options[selected_s]
+                sc1, sc2 = st.columns([3, 1])
+                with sc1:
+                    st.write(f"**ਨਾਮ:** {s_d.get('name', '')} | **ਕਲਾਸ:** {s_d.get('course', '')}")
+                    st.write(f"**ਫ਼ੋਨ:** {s_d.get('phone', '')}")
+                    st.write(f"**ਦਾਖਲਾ ਮਿਤੀ:** {s_d.get('join_date', '')} | **ਸਟੇਟਸ:** {s_d.get('pass_date', '')}")
+                with sc2:
+                    if s_d.get('photo_base64'):
+                        st.markdown(f'<img src="data:image/jpeg;base64,{s_d["photo_base64"]}" style="width:120px; border:2px solid #4A1B15; border-radius:5px;">', unsafe_allow_html=True)
+                    else:
+                        st.info("ਕੋਈ ਫੋਟੋ ਨਹੀਂ ਹੈ।")
+            
+            # --- Generate Landscape Printed Report with Images ---
+            df_print = df_stu.copy()
+            if 'photo_base64' in df_print.columns:
+                df_print['ਫੋਟੋ (Photo)'] = df_print['photo_base64'].apply(
+                    lambda x: f'<img src="data:image/jpeg;base64,{x}" class="table-img">' if x else 'No Photo'
+                )
+            else:
+                df_print['ਫੋਟੋ (Photo)'] = 'No Photo'
+
+            print_cols_map = {
+                'name': 'ਨਾਮ (Name)',
+                'phone': 'ਫ਼ੋਨ (Phone)',
+                'course': 'ਕਲਾਸ (Course)',
+                'join_date': 'ਦਾਖਲਾ ਮਿਤੀ (Join Date)',
+                'pass_date': 'ਸਟੇਟਸ (Status)',
+                'ਫੋਟੋ (Photo)': 'ਫੋਟੋ (Photo)'
+            }
+            df_print = df_print.rename(columns={k: v for k, v in print_cols_map.items() if k in df_print.columns})
+            print_cols = [v for k, v in print_cols_map.items() if v in df_print.columns]
+
+            html_table = df_print[print_cols].to_html(index=False, border=1, classes='report-table', escape=False)
+            report_file_stu = generate_html_report_landscape("ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ (Students List)", html_table)
+            
+            with open(report_file_stu, "r", encoding="utf-8") as file: 
+                st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ (Print Landscape Report)", data=file.read(), file_name=report_file_stu, mime="text/html", type="primary")
+        else:
+            st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+# ==========================================
+# 5. WIDOWS RATION DATABASE (New Tab WITH IMAGES & NEW FIELDS)
+# ==========================================
+elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)":
+    st.header("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ ਡਾਟਾਬੇਸ ਅਤੇ ਵੰਡ (Widows Ration & Distribution)")
+    
+    w_tab1, w_tab2, w_tab3 = st.tabs(["➕ ਨਵਾਂ ਕਾਰਡ / ਪ੍ਰੋਫਾਈਲ ਬਣਾਓ (Add New)", "📋 ਡਾਟਾਬੇਸ ਸੂਚੀ (Database List)", "🛍️ ਰਾਸ਼ਨ ਵੰਡ (Ration Distribution)"])
+    
+    with w_tab1:
+        if not is_mgmt:
+            with st.form("widow_form", clear_on_submit=True):
+                st.write("### 👵 ਨਵਾਂ ਵਿਧਵਾ ਕਾਰਡ ਦਰਜ ਕਰੋ (New Widow Card Entry)")
+                
+                c_w1, c_w2, c_w3 = st.columns(3)
+                with c_w1:
+                    w_form_no = st.text_input("ਫਾਰਮ ਨੰ: (Form No.)")
+                    w_name = st.text_input("ਨਾਮ ਬੀਬੀ: (Name) *ਜ਼ਰੂਰੀ*", key="w_req_name")
+                    w_husband = st.text_input("ਪਤੀ ਦਾ ਨਾਮ: (Husband's Name)")
+                    w_death_date = st.text_input("ਪਤੀ ਦੀ ਮੌਤ ਦੀ ਤਾਰੀਖ:")
+                    
+                with c_w2:
+                    w_card_no = st.text_input("ਕਾਰਡ ਨੰ: (Card No.)")
+                    w_age = st.text_input("ਉਮਰ / ਸਾਲ: (Age or DOB)")
+                    w_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ: (Phone) *ਜ਼ਰੂਰੀ*")
+                    w_issued_by = st.text_input("ਜਾਰੀ ਕਰਤਾ: (Issued By)")
+                    
+                with c_w3:
+                    w_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ (Upload Photo)", type=['png', 'jpg', 'jpeg'])
+                    st.caption("ਫੋਟੋ ਦਾ ਸਾਈਜ਼ ਆਪਣੇ ਆਪ ਛੋਟਾ ਹੋ ਜਾਵੇਗਾ।")
+                    w_card_date = st.date_input("ਕਾਰਡ ਸ਼ੁਰੂਆਤ ਦੀ ਤਾਰੀਖ:", value=date.today())
+                
+                w_address = st.text_area("ਪਤਾ (Address):")
+                
+                st.write("**ਬੱਚੇ (Children Details):**")
+                cb1, cb2 = st.columns(2)
+                with cb1:
+                    w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 14 ਸਾਲ - 8ਵੀਂ, 10 ਸਾਲ - 5ਵੀਂ")
+                with cb2:
+                    w_girls = st.text_area("ਲੜਕੀਆਂ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 12 ਸਾਲ - 6ਵੀਂ")
+                
+                if st.form_submit_button("ਕਾਰਡ ਸੇਵ ਕਰੋ (Save Card)", type="primary") and w_name:
+                    with st.spinner("ਸੇਵ ਹੋ ਰਿਹਾ ਹੈ..."):
+                        try:
+                            photo_str = compress_image(w_photo)
+                            supabase.table("widows").insert({
+                                "form_no": w_form_no,
+                                "card_no": w_card_no,
+                                "name": w_name,
+                                "age": w_age,
+                                "husband_name": w_husband,
+                                "husband_death_date": w_death_date,
+                                "phone": w_phone,
+                                "address": w_address,
+                                "boys_details": w_boys,
+                                "girls_details": w_girls,
+                                "issued_by": w_issued_by,
+                                "join_date": str(w_card_date),
+                                "photo_base64": photo_str
+                            }).execute()
+                            st.success(f"✅ '{w_name}' ਦਾ ਕਾਰਡ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ ਹੈ!")
+                        except Exception as e:
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ widows ਟੇਬਲ ਵਿੱਚ ਨਵੇਂ ਕਾਲਮ ਬਣਾਓ। Details: {e}")
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
+
+    with w_tab2:
+        st.write("### 📑 ਰਜਿਸਟਰਡ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ")
+        try: widows_data = supabase.table("widows").select("*").execute().data or []
+        except Exception: widows_data = []
+            
+        if widows_data:
+            df_w = pd.DataFrame(widows_data)
+            display_cols = [c for c in ['card_no', 'name', 'age', 'husband_name', 'phone', 'address', 'join_date'] if c in df_w.columns]
+            
+            st.dataframe(df_w[display_cols], hide_index=True, use_container_width=True)
+            
+            st.write("---")
+            st.write("#### 🖼️ ਪੂਰਾ ਕਾਰਡ ਅਤੇ ਫੋਟੋ ਦੇਖੋ (View Full Card with Photo)")
+            w_options = {f"ਕਾਰਡ: {w.get('card_no', '')} - {w.get('name','Unknown')}": w for w in widows_data}
+            selected_w = st.selectbox("ਵਿਧਵਾ ਚੁਣੋ (Select Widow)", list(w_options.keys()))
+            
+            if selected_w:
+                w_d = w_options[selected_w]
+                w_col1, w_col2 = st.columns([3, 1])
+                with w_col1:
+                    st.write(f"**ਫਾਰਮ ਨੰ:** {w_d.get('form_no', '')} | **ਕਾਰਡ ਨੰ:** {w_d.get('card_no', '')}")
+                    st.write(f"**ਨਾਮ:** {w_d.get('name', '')} | **ਉਮਰ:** {w_d.get('age', '')}")
+                    st.write(f"**ਪਤੀ ਦਾ ਨਾਮ:** {w_d.get('husband_name', '')} (ਮੌਤ: {w_d.get('husband_death_date', '')})")
+                    st.write(f"**ਫ਼ੋਨ:** {w_d.get('phone', '')}")
+                    st.write(f"**ਪਤਾ:** {w_d.get('address', '')}")
+                    st.write(f"**ਲੜਕੇ:** {w_d.get('boys_details', '')} | **ਲੜਕੀਆਂ:** {w_d.get('girls_details', '')}")
+                    st.write(f"**ਕਾਰਡ ਜਾਰੀ ਮਿਤੀ:** {w_d.get('join_date', '')} | **ਜਾਰੀ ਕਰਤਾ:** {w_d.get('issued_by', '')}")
+                with w_col2:
+                    if w_d.get('photo_base64'):
+                        st.markdown(f'<img src="data:image/jpeg;base64,{w_d["photo_base64"]}" style="width:150px; border:2px solid #4A1B15; border-radius:5px;">', unsafe_allow_html=True)
+                    else:
+                        st.info("ਕੋਈ ਫੋਟੋ ਨਹੀਂ ਹੈ।")
+            
+            # --- Generate Landscape Printed Report with Images ---
+            df_print_w = df_w.copy()
+            if 'photo_base64' in df_print_w.columns:
+                df_print_w['ਫੋਟੋ (Photo)'] = df_print_w['photo_base64'].apply(
+                    lambda x: f'<img src="data:image/jpeg;base64,{x}" class="table-img">' if x else 'No Photo'
+                )
+            else:
+                df_print_w['ਫੋਟੋ (Photo)'] = 'No Photo'
+
+            print_cols_map_w = {
+                'card_no': 'ਕਾਰਡ ਨੰ (Card)',
+                'name': 'ਨਾਮ (Name)',
+                'age': 'ਉਮਰ (Age)',
+                'husband_name': 'ਪਤੀ ਦਾ ਨਾਮ (Husband)',
+                'phone': 'ਫ਼ੋਨ (Phone)',
+                'address': 'ਪਤਾ (Address)',
+                'ਫੋਟੋ (Photo)': 'ਫੋਟੋ (Photo)'
+            }
+            df_print_w = df_print_w.rename(columns={k: v for k, v in print_cols_map_w.items() if k in df_print_w.columns})
+            print_cols_w = [v for k, v in print_cols_map_w.items() if v in df_print_w.columns]
+
+            html_table_w = df_print_w[print_cols_w].to_html(index=False, border=1, classes='report-table', escape=False)
+            report_file_w = generate_html_report_landscape("ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ (Widows Database)", html_table_w)
+            
+            with open(report_file_w, "r", encoding="utf-8") as file: 
+                st.download_button("🖨️ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ (Print Landscape)", data=file.read(), file_name=report_file_w, mime="text/html", type="primary")
+        else:
+            st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    with w_tab3:
+        st.write("### 🛍️ ਮਹੀਨਾਵਾਰ ਰਾਸ਼ਨ ਵੰਡ (Monthly Ration Distribution)")
+        try:
+            widows_list = supabase.table("widows").select("*").execute().data or []
+            stock_list = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
+        except Exception:
+            widows_list, stock_list = [], []
+            
+        if not widows_list:
+            st.warning("⚠️ ਪਹਿਲਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਪ੍ਰੋਫਾਈਲ ਦਰਜ ਕਰੋ।")
+        elif not stock_list:
+            st.warning("⚠️ ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ ਸਟਾਕ ਅੱਪਡੇਟ ਕਰੋ।")
+        else:
+            if not is_mgmt:
+                w_names = [f"ਕਾਰਡ {w.get('card_no','-')} - {w.get('name','Unknown')} ({w.get('phone','')})" for w in widows_list]
+                s_items = [s['item_name'] for s in stock_list]
+                s_dict = {s['item_name']: float(s.get('quantity', 0) or 0) for s in stock_list}
+                
+                with st.form("ration_dist_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        selected_widow = st.selectbox("ਕਿਸ ਨੂੰ ਰਾਸ਼ਨ ਦਿੱਤਾ? (Select Widow)", w_names)
+                        dist_date = st.date_input("ਵੰਡਣ ਦੀ ਮਿਤੀ (Distribution Date)", value=date.today())
+                    with col2:
+                        selected_item = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਦਿੱਤਾ? (Select Item)", s_items)
+                        qty_to_give = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ: {s_dict.get(selected_item, 0)}", min_value=0.5, step=0.5)
+                        
+                    if st.form_submit_button("ਰਾਸ਼ਨ ਵੰਡ ਸੇਵ ਕਰੋ (Save & Update Stock)", type="primary"):
+                        old_qty = s_dict.get(selected_item, 0)
+                        if qty_to_give > old_qty:
+                            st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {old_qty} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                        else:
+                            new_qty = max(0.0, old_qty - qty_to_give)
+                            curr_stock = supabase.table("stock").select("*").eq("item_name", selected_item).execute().data
+                            if curr_stock:
+                                curr_val = float(curr_stock[0].get('estimated_value', 0) or 0)
+                                new_val = (curr_val * (new_qty / old_qty)) if old_qty > 0 else 0.0
+                                supabase.table("stock").update({
+                                    "quantity": new_qty, 
+                                    "estimated_value": round(new_val, 2),
+                                    "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                }).eq("item_name", selected_item).execute()
+                            
+                            widow_just_name = selected_widow.split(" - ")[1].split(" (")[0] if " - " in selected_widow else selected_widow.split(" (")[0]
+                            supabase.table("ration_distribution").insert({
+                                "widow_name": widow_just_name,
+                                "item_name": selected_item,
+                                "quantity": qty_to_give,
+                                "distribution_date": str(dist_date)
+                            }).execute()
+                            
+                            st.success(f"✅ {widow_just_name} ਨੂੰ {qty_to_give} {selected_item} ਦੇ ਦਿੱਤਾ ਗਿਆ ਹੈ! ਸਟਾਕ ਅਪਡੇਟ ਹੋ ਗਿਆ।")
+                            time.sleep(1.5); st.rerun()
+                            
+        st.markdown("---")
+        st.write("#### 📑 ਪਿਛਲੀ ਰਾਸ਼ਨ ਵੰਡ ਦਾ ਰਿਕਾਰਡ (Recent Distributions)")
+        try: dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).execute().data or []
+        except Exception: dist_data = []
+        if dist_data:
+            df_dist = pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']]
+            st.dataframe(df_dist, hide_index=True, use_container_width=True)
+            report_file_dist = generate_html_report("ਰਾਸ਼ਨ ਵੰਡ ਰਿਕਾਰਡ (Ration Distribution)", df_dist.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_dist, "r", encoding="utf-8") as file: st.download_button("🖨️ ਵੰਡ ਰਿਕਾਰਡ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_dist, mime="text/html")
+        else:
+            st.info("ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
 # ==========================================
 # 6. ADMIN & BULK UPLOAD MANAGEMENT
