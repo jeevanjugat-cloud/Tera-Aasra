@@ -442,7 +442,7 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
             except Exception: today_record = []
             
             st.write("### 📍 ਲੋਕੇਸ਼ਨ ਵੈਰੀਫਿਕੇਸ਼ਨ (Location Check)")
-            st.info("ਹਾਜ਼ਰੀ ਲਗਾਉਣ ਲਈ ਤੁਹਾਡਾ NGO (100 ਮੀਟਰ ਦੇ ਘੇਰੇ) ਵਿੱਚ ਹੋਣਾ ਜ਼ਰੂਰੀ ਹੈ। ਹੇਠਾਂ ਬਟਨ ਦਬਾ ਕੇ ਆਪਣੀ ਲੋਕੇਸ਼ਨ ਦਿਓ:")
+            st.info("ਹਾਜ਼ਰੀ ਲਗਾਉਣ ਲਈ ਤੁਹਾਡਾ TERA AASRA (100 ਮੀਟਰ ਦੇ ਘੇਰੇ) ਵਿੱਚ ਹੋਣਾ ਜ਼ਰੂਰੀ ਹੈ। ਹੇਠਾਂ ਬਟਨ ਦਬਾ ਕੇ ਆਪਣੀ ਲੋਕੇਸ਼ਨ ਦਿਓ:")
             
             try:
                 from streamlit_geolocation import streamlit_geolocation
@@ -481,7 +481,7 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
                                 st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
                                 st.info("🌟 ਅੱਜ ਦੀ ਤੁਹਾਡੀ ਡਿਊਟੀ ਪੂਰੀ ਹੋ ਗਈ ਹੈ।")
                     else:
-                        st.error(f"❌ ਤੁਸੀਂ NGO ਤੋਂ ਬਾਹਰ ਹੋ (ਦੂਰੀ: {dist:.0f} ਮੀਟਰ)। ਹਾਜ਼ਰੀ ਸਿਰਫ਼ 100 ਮੀਟਰ ਦੇ ਅੰਦਰ ਲੱਗ ਸਕਦੀ ਹੈ।")
+                        st.error(f"❌ ਤੁਸੀਂ TERA AASRA ਤੋਂ ਬਾਹਰ ਹੋ (ਦੂਰੀ: {dist:.0f} ਮੀਟਰ)। ਹਾਜ਼ਰੀ ਸਿਰਫ਼ 100 ਮੀਟਰ ਦੇ ਅੰਦਰ ਲੱਗ ਸਕਦੀ ਹੈ।")
                 else:
                     st.warning("ਆਪਣੀ ਲੋਕੇਸ਼ਨ ਭੇਜਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ ਬਟਨ 'ਤੇ ਕਲਿੱਕ ਕਰੋ ਅਤੇ ਬ੍ਰਾਊਜ਼ਰ ਦੀ 'Allow Location' ਪਰਮਿਸ਼ਨ ਦਿਓ।")
             except ImportError:
@@ -730,7 +730,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), key="ik_date")
                 
                 st.markdown("---")
-                add_destination = st.radio("ਦਾਨ ਕੀਤੇ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ? (Where to add this item?)", 
+                add_destination = st.radio("ਦਾਨ ਕੀਤੇ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ جوੜਨਾ ਹੈ? (Where to add this item?)", 
                                            ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], 
                                            horizontal=True)
                 
