@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date, timedelta
+import calendar
 import urllib.parse
 import io
 import base64
@@ -188,16 +189,16 @@ def generate_html_report_landscape(title, content_html):
     html_content = f"""
     <!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>{title}</title>
     <style>
-        @page {{ size: landscape; margin: 15mm; }}
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; background-color: #fff; text-align: center; }}
-        .header {{ margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; text-align: center; }}
-        .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
-        .tagline {{ font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
-        .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
-        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: center; vertical-align: middle; }}
-        .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; vertical-align: middle; text-align: center; }}
+        @page {{ size: landscape; margin: 10mm; }}
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; color: #333; background-color: #fff; text-align: center; }}
+        .header {{ margin-bottom: 15px; border-bottom: 2px solid #4A1B15; padding-bottom: 10px; text-align: center; }}
+        .title {{ font-size: 22px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
+        .tagline {{ font-size: 15px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
+        .report-title {{ font-size: 16px; font-weight: bold; color: #0F4C81; margin-top: 8px; }}
+        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; text-align: center; vertical-align: middle; }}
+        .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 5px; color: #000; vertical-align: middle; text-align: center; }}
         .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
-        .table-img {{ width: 70px; height: 70px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; }}
+        .table-img {{ width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; }}
         @media print {{ body {{ padding: 0; }} }}
     </style></head>
     <body>
@@ -205,10 +206,10 @@ def generate_html_report_landscape(title, content_html):
             {img_html}
             <div class="title">{NGO_NAME_PB}</div>
             <div class="tagline">{NGO_TAGLINE_PB}</div>
-            <div style="font-size: 13px;">{NGO_ADDRESS_PB}</div>
+            <div style="font-size: 12px;">{NGO_ADDRESS_PB}</div>
             <div class="report-title">{title}</div>
         </div>
-        <div>{content_html}</div>
+        <div style="overflow-x: auto;">{content_html}</div>
         <script>window.onload = function() {{ window.print(); }}</script>
     </body></html>
     """
@@ -403,7 +404,6 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
     
     my_username = st.session_state.get('username', '')
     
-    # Securely Fetch ONLY the logged-in employee's profile
     try: my_profile = supabase.table("staff_profiles").select("*").eq("login_id", my_username).execute().data
     except Exception: my_profile = []
     
@@ -1707,7 +1707,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
 elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)":
     st.header("🧑‍💼 ਸਟਾਫ ਮੈਨੇਜਮੈਂਟ ਅਤੇ ਹਾਜ਼ਰੀ (Staff Management)")
     
-    tab_list = ["👤 ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Profiles)", "🛡️ ਐਡਮਿਨ ਮਨਜ਼ੂਰੀ (Admin Approvals)", "📋 ਸਭ ਦੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (All Reports)"]
+    tab_list = ["👤 ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Profiles)", "🛡️ ਐਡਮਿਨ ਮਨਜ਼ੂਰੀ (Admin Approvals)", "📋 ਸਭ ਦੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Report)"]
     att_tabs = st.tabs(tab_list)
     
     # --- 1. STAFF PROFILES (ADMIN/MGMT ONLY) ---
@@ -1721,7 +1721,6 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                     st_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone)")
                     st_role = st.selectbox("ਡਿਊਟੀ / ਅਹੁਦਾ (Role/Duty)", ["ਮੈਨੇਜਰ", "ਅਧਿਆਪਕ", "ਕਲਰਕ", "ਸੇਵਾਦਾਰ", "ਡਰਾਈਵਰ", "ਹੋਰ"])
                     
-                    # 🔴 NEW FIELD: Link to System Login ID
                     st_login = st.selectbox("ਸਿਸਟਮ ਲਾਗਇਨ ਆਈ.ਡੀ (System Login ID)", ["ਕੋਈ ਨਹੀਂ (None)", "emp1", "emp2", "emp3", "emp4", "emp5"])
                     st.caption("ਜੋ ID ਇੱਥੇ ਚੁਣੋਗੇ, ਕਰਮਚਾਰੀ ਉਸੇ ID ਨਾਲ ਲਾਗਇਨ ਕਰਕੇ ਆਪਣੀ ਹਾਜ਼ਰੀ ਲਗਾ ਸਕੇਗਾ।")
                     
@@ -1757,7 +1756,6 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                 disp_st_cols = [c for c in ['name', 'phone', 'role', 'login_id', 'join_date'] if c in df_staff.columns]
                 st.dataframe(df_staff[disp_st_cols], hide_index=True, use_container_width=True)
                 
-                # Landscape Print with Photos
                 df_print_st = df_staff.copy()
                 if 'photo_base64' in df_print_st.columns:
                     df_print_st['ਫੋਟੋ (Photo)'] = df_print_st['photo_base64'].apply(
@@ -1808,7 +1806,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                         else:
                             supabase.table("attendance").insert({
                                 "staff_name": target_r['staff_name'], "date": target_r['date'],
-                                "in_time": "Approved Leave", "out_time": "Approved Leave", "status": target_r['requested_status']
+                                "in_time": "Manual", "out_time": "Manual", "status": target_r['requested_status']
                             }).execute()
                         
                         supabase.table("attendance_requests").update({"status": "Approved"}).eq("id", r_id).execute()
@@ -1820,18 +1818,67 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
 
-    # --- 3. ALL REPORTS (ADMIN VIEW) ---
+    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW) ---
     with att_tabs[2]:
-        st.write("### 📅 ਸਾਰੇ ਸਟਾਫ ਦੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (All Attendance Records)")
-        try:
-            all_att = supabase.table("attendance").select("*").order("date", desc=True).limit(50).execute().data or []
-            if all_att:
-                df_all_att = pd.DataFrame(all_att)
-                disp_att_cols = [c for c in ['date', 'staff_name', 'in_time', 'out_time', 'status'] if c in df_all_att.columns]
-                st.dataframe(df_all_att[disp_att_cols], hide_index=True, use_container_width=True)
-            else:
-                st.info("ਹਾਲੇ ਤੱਕ ਕੋਈ ਹਾਜ਼ਰੀ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।")
-        except Exception: pass
+        st.write("### 📅 ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Attendance Report)")
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            sel_month = st.selectbox("ਮਹੀਨਾ (Month)", range(1, 13), index=date.today().month - 1)
+        with col_m2:
+            sel_year = st.selectbox("ਸਾਲ (Year)", range(2024, 2035), index=date.today().year - 2024)
+            
+        if st.button("ਰਿਪੋਰਟ ਬਣਾਓ (Generate Report)", type="primary"):
+            num_days = calendar.monthrange(sel_year, sel_month)[1]
+            start_date_str = f"{sel_year}-{sel_month:02d}-01"
+            end_date_str = f"{sel_year}-{sel_month:02d}-{num_days:02d}"
+            
+            try:
+                all_att = supabase.table("attendance").select("*").gte("date", start_date_str).lte("date", end_date_str).execute().data or []
+                
+                if all_att:
+                    df_att = pd.DataFrame(all_att)
+                    df_att['date'] = pd.to_datetime(df_att['date'])
+                    df_att['day'] = df_att['date'].dt.day
+                    
+                    def get_status_code(status_str):
+                        if not status_str: return "-"
+                        s = str(status_str).lower()
+                        if "present" in s or "ਹਾਜ਼ਰ" in s: return "P"
+                        if "absent" in s or "ਛੁੱਟੀ" in s or "ਗੈਰ" in s: return "A"
+                        if "half" in s or "ਅੱਧਾ" in s: return "HD"
+                        return "P" # fallback
+                        
+                    df_att['status_code'] = df_att['status'].apply(get_status_code)
+                    
+                    # Pivot Table
+                    pivot_df = df_att.pivot_table(index='staff_name', columns='day', values='status_code', aggfunc='last')
+                    
+                    # Ensure all days 1 to 31/30 are columns
+                    all_days = list(range(1, num_days + 1))
+                    pivot_df = pivot_df.reindex(columns=all_days).fillna("-")
+                    
+                    # Totals
+                    pivot_df['Total P'] = (pivot_df[all_days] == 'P').sum(axis=1) + ((pivot_df[all_days] == 'HD').sum(axis=1) * 0.5)
+                    pivot_df['Total A'] = (pivot_df[all_days] == 'A').sum(axis=1)
+                    
+                    pivot_df = pivot_df.reset_index()
+                    pivot_df.rename(columns={'staff_name': 'Staff Name'}, inplace=True)
+                    
+                    st.dataframe(pivot_df, hide_index=True, use_container_width=True)
+                    
+                    # Print Landscape Button
+                    html_table_att = pivot_df.to_html(index=False, border=1, classes='report-table')
+                    report_title = f"ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ - {sel_month}/{sel_year} (Monthly Attendance)"
+                    report_file_att = generate_html_report_landscape(report_title, html_table_att)
+                    
+                    with open(report_file_att, "r", encoding="utf-8") as file:
+                        st.download_button("🖨️ ਮਹੀਨਾਵਾਰ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Monthly Landscape)", data=file.read(), file_name=report_file_att, mime="text/html", type="primary")
+                        
+                else:
+                    st.info("ਇਸ ਮਹੀਨੇ ਦਾ ਕੋਈ ਹਾਜ਼ਰੀ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ। (No records found for this month)")
+            except Exception as e:
+                st.error(f"Error generating report: {e}")
 
 # ==========================================
 # 6. ADMIN & BULK UPLOAD MANAGEMENT
