@@ -510,7 +510,7 @@ elif st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
         st.session_state.acc_mode = "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)"
         st.rerun()
     if c7.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank)", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ և CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"
         st.rerun()
     if c8.button("📁 ਪਾਰਟੀਆਂ (Parties)", use_container_width=True):
@@ -731,9 +731,22 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
                             new_qty = old_qty + s_qty_ik
                             new_val = old_val + amount_ik
-                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_ik, "last_updated": current_datetime}).eq("item_name", s_item_ik).execute()
+                            supabase.table("stock").update({
+                                "quantity": new_qty, 
+                                "estimated_value": round(new_val, 2), 
+                                "unit": s_unit_ik, 
+                                "procurement_date": formatted_date_ik,
+                                "last_updated": current_datetime
+                            }).eq("item_name", s_item_ik).execute()
                         else:
-                            supabase.table("stock").insert({"item_name": s_item_ik, "quantity": s_qty_ik, "estimated_value": round(amount_ik, 2), "unit": s_unit_ik, "last_updated": current_datetime}).execute()
+                            supabase.table("stock").insert({
+                                "item_name": s_item_ik, 
+                                "quantity": s_qty_ik, 
+                                "estimated_value": round(amount_ik, 2), 
+                                "unit": s_unit_ik, 
+                                "procurement_date": formatted_date_ik,
+                                "last_updated": current_datetime
+                            }).execute()
                         st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
                         
                     elif add_destination == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)" and s_item_ik:
@@ -826,30 +839,59 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਮਿਰਰ ਖਾਤੇ ਵਿੱਚ ਵੀ ਦਿਖਾਓ (Add to Bank Ledger)", value=False)
                 
                 st.markdown("---")
-                add_to_stock_exp = st.checkbox("✅ ਖਰੀਦੇ ਗਏ ਸਮਾਨ ਨੂੰ ਆਟੋਮੈਟਿਕ ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Auto-add to Stock)", value=False)
+                # FIXED: Added Fixed Asset to Expense Route
+                add_destination_exp = st.radio("ਖਰੀਦੇ ਗਏ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ? (Where to add this item?)", 
+                                               ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], 
+                                               horizontal=True)
+                
+                st.write("*(ਜੇਕਰ ਸਟਾਕ ਜਾਂ ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
                 col_es1, col_es2, col_es3 = st.columns(3)
-                with col_es1: s_item_exp = st.text_input("ਸਟਾਕ ਆਈਟਮ ਦਾ ਨਾਮ (Stock Item Name)", key="s_item_exp")
-                with col_es2: s_qty_exp = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
-                with col_es3: s_unit_exp = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_exp")
+                with col_es1: s_item_exp = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ (Item/Asset Name)", key="s_item_exp")
+                with col_es2: s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
+                with col_es3: s_unit_exp = st.selectbox("ਇਕਾਈ (Unit - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", STOCK_UNITS, key="s_unit_exp")
                 
                 if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
                     # 1. Insert Expense
                     supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
                     
-                    # 2. Add to Stock automatically
-                    if add_to_stock_exp and s_item_exp and s_qty_exp > 0:
-                        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # 2. Add to Stock OR Fixed Asset automatically
+                    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    if add_destination_exp == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)" and s_item_exp and s_qty_exp > 0:
                         res_stock = supabase.table("stock").select("*").eq("item_name", s_item_exp).execute()
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
                             old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
                             new_qty = old_qty + s_qty_exp
                             new_val = old_val + exp_amount
-                            supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "unit": s_unit_exp, "last_updated": current_date}).eq("item_name", s_item_exp).execute()
+                            supabase.table("stock").update({
+                                "quantity": new_qty, 
+                                "estimated_value": round(new_val, 2), 
+                                "unit": s_unit_exp, 
+                                "procurement_date": exp_date.strftime("%Y-%m-%d"),
+                                "last_updated": current_date
+                            }).eq("item_name", s_item_exp).execute()
                         else:
-                            supabase.table("stock").insert({"item_name": s_item_exp, "quantity": s_qty_exp, "estimated_value": round(exp_amount, 2), "unit": s_unit_exp, "last_updated": current_date}).execute()
-                    
-                    st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved!)")
+                            supabase.table("stock").insert({
+                                "item_name": s_item_exp, 
+                                "quantity": s_qty_exp, 
+                                "estimated_value": round(exp_amount, 2), 
+                                "unit": s_unit_exp, 
+                                "procurement_date": exp_date.strftime("%Y-%m-%d"),
+                                "last_updated": current_date
+                            }).execute()
+                        st.success(f"✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ ਅਤੇ '{s_item_exp}' ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                        
+                    elif add_destination_exp == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)" and s_item_exp and s_qty_exp > 0:
+                        supabase.table("assets").insert({
+                            "name": s_item_exp,
+                            "value": exp_amount,
+                            "quantity": s_qty_exp,
+                            "date_added": str(exp_date)
+                        }).execute()
+                        st.success(f"✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ ਅਤੇ '{s_item_exp}' ਪੱਕੀ ਸੰਪਤੀ (Fixed Asset) ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                    else:
+                        st.success("✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ! (Expense Saved!)")
             
             st.markdown("---")
             st.write("#### 🕒 ਪਿਛਲੇ ਖਰਚੇ (Recent Expenses)")
@@ -1074,6 +1116,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         fin_report = generate_html_report("Financial Statements (ਖਾਤੇ)", full_html)
         with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਫਾਈਨਾਂਸ਼ੀਅਲ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
 
+        # --- FIXED: Show Assets & Liabilities List Directly Here ---
         if is_admin:
             st.markdown("---")
             st.subheader("⚙️ ਸੰਪਤੀ ਅਤੇ ਫੰਡ ਜੋੜੋ (Add Fixed Assets / Funds - Admin Only)")
@@ -1084,8 +1127,9 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     a_name = st.text_input("ਸੰਪਤੀ ਦਾ ਨਾਮ (e.g. Building, Furniture)")
                     a_qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=1.0, step=1.0)
                     a_val = st.number_input("ਕੁੱਲ ਮੁੱਲ (Total Value ₹)", min_value=0.0)
+                    a_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today())
                     if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
-                        supabase.table("assets").insert({"name": a_name, "quantity": a_qty, "value": a_val, "date_added": str(date.today())}).execute()
+                        supabase.table("assets").insert({"name": a_name, "quantity": a_qty, "value": a_val, "date_added": str(a_date)}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
             with ac2:
                 with st.form("add_liab"):
@@ -1095,6 +1139,21 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                         supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+            
+            st.write("### 📋 ਮੌਜੂਦਾ ਪੱਕੀ ਸੰਪਤੀ ਅਤੇ ਫੰਡ ਦੀ ਸੂਚੀ (Current Assets & Funds)")
+            col_v1, col_v2 = st.columns(2)
+            with col_v1:
+                st.write("**🏢 ਪੱਕੀ ਸੰਪਤੀ (Fixed Assets)**")
+                if not df_assets.empty:
+                    st.dataframe(df_assets[[c for c in ['id', 'name', 'quantity', 'value', 'date_added'] if c in df_assets.columns]], hide_index=True, use_container_width=True)
+                else:
+                    st.info("ਕੋਈ ਸੰਪਤੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            with col_v2:
+                st.write("**💰 ਫੰਡ/ਉਧਾਰ (Liabilities & Funds)**")
+                if not df_liab.empty:
+                    st.dataframe(df_liab[[c for c in ['id', 'name', 'value', 'date_added'] if c in df_liab.columns]], hide_index=True, use_container_width=True)
+                else:
+                    st.info("ਕੋਈ ਫੰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
     elif selected_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ (Consolidated Main Daybook)")
@@ -1245,7 +1304,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}", type="primary")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ دਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
@@ -1341,6 +1400,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                     qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=0.0, step=0.5)
                     unit = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS)
                     est_val = st.number_input("ਅੰਦਾਜ਼ਨ ਕੁੱਲ ਕੀਮਤ (Estimated Total Value ₹ - Optional)", min_value=0.0)
+                    proc_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today())
                     stock_action = st.radio("ਐਕਸ਼ਨ (Action)", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add Stock)", "ਸਮਾਨ ਵਰਤਿਆ (Remove Stock)"])
                     
                     if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Save Stock)", type="primary") and item_name:
@@ -1352,16 +1412,22 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                             if "Add" in stock_action:
                                 new_qty = old_qty + qty
                                 new_val = old_val + est_val
+                                supabase.table("stock").update({
+                                    "quantity": new_qty,
+                                    "estimated_value": round(new_val, 2),
+                                    "unit": unit,
+                                    "procurement_date": str(proc_date),
+                                    "last_updated": current_date
+                                }).eq("item_name", item_name).execute()
                             else:
                                 new_qty = max(0.0, old_qty - qty)
                                 new_val = max(0.0, old_val - est_val) if est_val > 0 else (old_val * (new_qty / old_qty) if old_qty > 0 else 0.0)
-                            
-                            supabase.table("stock").update({
-                                "quantity": new_qty,
-                                "estimated_value": round(new_val, 2),
-                                "unit": unit,
-                                "last_updated": current_date
-                            }).eq("item_name", item_name).execute()
+                                supabase.table("stock").update({
+                                    "quantity": new_qty,
+                                    "estimated_value": round(new_val, 2),
+                                    "unit": unit,
+                                    "last_updated": current_date
+                                }).eq("item_name", item_name).execute()
                         else:
                             new_qty = qty if "Add" in stock_action else 0.0
                             new_val = est_val if "Add" in stock_action else 0.0
@@ -1370,6 +1436,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                                 "quantity": new_qty,
                                 "estimated_value": round(new_val, 2),
                                 "unit": unit,
+                                "procurement_date": str(proc_date) if "Add" in stock_action else "",
                                 "last_updated": current_date
                             }).execute()
                         st.success(f"✅ '{item_name}' ਦਾ ਸਟਾਕ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
@@ -1380,7 +1447,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
             except Exception: stock_res = []
             if stock_res:
                 df_stock = pd.DataFrame(stock_res)
-                disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'last_updated'] if c in df_stock.columns]
+                disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
                 st.dataframe(df_stock[disp_cols], hide_index=True, use_container_width=True)
                 
                 report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
@@ -1820,7 +1887,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
 
-    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW - FIXED) ---
+    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW) ---
     with att_tabs[2]:
         st.write("### 📅 ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Attendance Report)")
         
@@ -1830,7 +1897,6 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         with col_m2:
             sel_year = st.selectbox("ਸਾਲ (Year)", range(2024, 2035), index=date.today().year - 2024)
             
-        # LIVE GENERATION: No button needed, report generates instantly and shows print button
         num_days = calendar.monthrange(sel_year, sel_month)[1]
         start_date_str = f"{sel_year}-{sel_month:02d}-01"
         end_date_str = f"{sel_year}-{sel_month:02d}-{num_days:02d}"
@@ -1869,11 +1935,11 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                 
                 st.dataframe(pivot_df, hide_index=True, use_container_width=True)
                 
-                # ✅ FIXED: Print Landscape Button is now always visible when data exists
                 html_table_att = pivot_df.to_html(index=False, border=1, classes='report-table')
                 report_title = f"ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ - {sel_month}/{sel_year} (Monthly Attendance)"
                 report_file_att = generate_html_report_landscape(report_title, html_table_att)
                 
+                # FIXED: Download button is directly generated outside the button press!
                 with open(report_file_att, "r", encoding="utf-8") as file:
                     st.download_button("🖨️ ਮਹੀਨਾਵਾਰ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Monthly Landscape)", data=file.read(), file_name=report_file_att, mime="text/html", type="primary")
                     
