@@ -590,8 +590,11 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਤਿਆਰ ਕਰੋ (Save & Generate Receipt)", type="primary")
                 
             if submitted and donor_name:
+                # OVERLAP CHECK FOR RECEIPT BOOK
                 books = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
                 matched_book = next((b for b in books if int(b['start_no']) <= int(rec_no_input) <= int(b['end_no'])), None)
+                
+                # DOUBLE ENTRY CHECK FOR DONATION ID
                 existing_rec = supabase.table("donations").select("*").eq("id", int(rec_no_input)).execute().data
                 
                 if not matched_book:
@@ -624,7 +627,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.markdown("---")
             st.write("#### 🕒 ਤੁਹਾਡੀਆਂ ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Donations)")
             try:
-                recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("id", desc=True).limit(10).execute().data
+                recents = supabase.table("donations").select("*").eq("donation_type", "ਪੈਸੇ (Monetary)").order("date", desc=True).limit(50).execute().data
                 if recents: 
                     df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name']]
                     df_rec.insert(0, "Select", False)
@@ -681,7 +684,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             with st.form("inkind_form", clear_on_submit=True):
                 st.write("### 📦 ਸਮਾਨ ਦਾ ਦਾਨ ਦਰਜ ਕਰੋ")
                 donor_name_ik = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ (Donor Name)", key="ik_name")
-                donor_phone_ik = text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)", key="ik_phone")
+                donor_phone_ik = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)", key="ik_phone")
                 item_details_ik = st.text_input("ਰਸੀਦ 'ਤੇ ਛਾਪਣ ਲਈ ਸਮਾਨ ਦਾ ਵੇਰਵਾ (Receipt Item Details)", key="ik_item")
                 rec_no_ik = st.number_input("ਰਸੀਦ ਨੰਬਰ (Printed Receipt No.)", min_value=1, step=1, key="ik_rec")
                 
@@ -776,7 +779,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.markdown("---")
             st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent In-Kind)")
             try:
-                recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("id", desc=True).limit(10).execute().data
+                recent_ik = supabase.table("donations").select("*").eq("donation_type", "ਸਮਾਨ (In-Kind / Ration)").order("date", desc=True).limit(50).execute().data
                 if recent_ik: 
                     df_ik = pd.DataFrame(recent_ik)[['id', 'date', 'name', 'phone', 'item_details', 'amount']]
                     df_ik.insert(0, "Select", False)
@@ -876,7 +879,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             
             st.markdown("---")
             try:
-                recents = supabase.table("expenses").select("*").order("id", desc=True).limit(5).execute().data
+                recents = supabase.table("expenses").select("*").order("date", desc=True).limit(50).execute().data
                 if recents: st.dataframe(pd.DataFrame(recents)[['id', 'date', 'description', 'amount', 'category', 'bank_account']], hide_index=True, use_container_width=True)
             except: pass
         else:
@@ -894,6 +897,13 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 if st.form_submit_button("ਪਾਰਟੀ ਸੇਵ ਕਰੋ (Save Party)", type="primary") and p_name:
                     supabase.table("parties").insert({"name": p_name, "party_type": p_type, "phone": p_phone, "address": p_address, "opening_balance": p_amount, "created_at": str(date.today())}).execute()
                     st.success(f"✅ ਪਾਰਟੀ '{p_name}' ਸੇਵ ਹੋ ਗਈ!")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਪਾਰਟੀਆਂ (Recent Parties)")
+            try:
+                recents = supabase.table("parties").select("*").order("id", desc=True).limit(50).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'name', 'party_type', 'opening_balance']], hide_index=True, use_container_width=True)
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -910,6 +920,13 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 if st.form_submit_button("ਚੈੱਕ ਸੇਵ ਕਰੋ (Save Cheque)", type="primary") and cq_no:
                     supabase.table("cheques").insert({"cheque_no": cq_no, "bank_name": cq_bank, "party_name": cq_party, "amount": cq_amt, "cheque_date": str(cq_date), "status": cq_status}).execute()
                     st.success("✅ ਚੈੱਕ ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੇ ਚੈੱਕ (Recent Cheques)")
+            try:
+                recents = supabase.table("cheques").select("*").order("cheque_date", desc=True).limit(50).execute().data
+                if recents: st.dataframe(pd.DataFrame(recents)[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount', 'status']], hide_index=True, use_container_width=True)
+            except: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -970,6 +987,12 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
     if selected_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value'])
         df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
+        
+        # FIX: Ensure values are numeric for proper calculation
+        if not df_assets.empty and 'value' in df_assets.columns:
+            df_assets['value'] = pd.to_numeric(df_assets['value'], errors='coerce').fillna(0.0)
+        if not df_liab.empty and 'value' in df_liab.columns:
+            df_liab['value'] = pd.to_numeric(df_liab['value'], errors='coerce').fillna(0.0)
         
         total_income = df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)']['amount'].sum() if not df_don.empty else 0.0
         total_income += df_ledg['credit'].sum() if not df_ledg.empty and 'credit' in df_ledg.columns else 0.0
@@ -1268,8 +1291,21 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                     issue_date = st.date_input("ਜਾਰੀ ਕਰਨ ਦੀ ਮਿਤੀ", value=date.today())
                 if st.form_submit_button("ਕਿਤਾਬ ਜਾਰੀ ਕਰੋ (Issue Book)", type="primary"):
                     if collector_input and end_ser >= start_ser:
-                        supabase.table("receipt_books").insert({"collector_name": collector_input, "start_no": int(start_ser), "end_no": int(end_ser), "issued_date": issue_date.strftime("%Y-%m-%d"), "status": "Active"}).execute()
-                        st.success(f"✅ ਕਿਤਾਬ ਜਾਰੀ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!")
+                        # OVERLAP CHECK FOR RECEIPT BOOK
+                        existing_books = supabase.table("receipt_books").select("*").execute().data or []
+                        overlap = False
+                        overlapping_book = None
+                        for b in existing_books:
+                            if int(start_ser) <= int(b['end_no']) and int(end_ser) >= int(b['start_no']):
+                                overlap = True
+                                overlapping_book = b
+                                break
+                        
+                        if overlap:
+                            st.error(f"❌ ਗਲਤੀ: ਇਹ ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ '{overlapping_book['collector_name']}' ਨੂੰ (ਨੰਬਰ {overlapping_book['start_no']} ਤੋਂ {overlapping_book['end_no']}) ਜਾਰੀ ਕੀਤੇ ਜਾ ਚੁੱਕੇ ਹਨ!")
+                        else:
+                            supabase.table("receipt_books").insert({"collector_name": collector_input, "start_no": int(start_ser), "end_no": int(end_ser), "issued_date": issue_date.strftime("%Y-%m-%d"), "status": "Active"}).execute()
+                            st.success(f"✅ ਕਿਤਾਬ ਜਾਰੀ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!")
         st.write("### 📑 ਜਾਰੀ ਕੀਤੀਆਂ ਗਈਆਂ ਕਿਤਾਬਾਂ")
         try: books_all = supabase.table("receipt_books").select("*").execute().data or []
         except Exception: books_all = []
@@ -1315,7 +1351,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
                             }).execute()
                             st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
                         except Exception as e:
-                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' ਕਾਲਮ ਬਣਾਓ। Details: {e}")
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' કਾਲਮ ਬਣਾਓ। Details: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -1557,7 +1593,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                             
         st.markdown("---")
         st.write("#### 📑 ਪਿਛਲੀ ਰਾਸ਼ਨ ਵੰਡ ਦਾ ਰਿਕਾਰਡ (Recent Distributions)")
-        try: dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).execute().data or []
+        try: dist_data = supabase.table("ration_distribution").select("*").order("distribution_date", desc=True).limit(50).execute().data or []
         except Exception: dist_data = []
         if dist_data:
             df_dist = pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']]
