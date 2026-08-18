@@ -510,7 +510,7 @@ elif st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
         st.session_state.acc_mode = "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)"
         st.rerun()
     if c7.button("🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank)", use_container_width=True):
-        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
+        st.session_state.current_tab = "🏦 ਖਾਤੇ, ਬੈਂਕ և CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)"
         st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"
         st.rerun()
     if c8.button("📁 ਪਾਰਟੀਆਂ (Parties)", use_container_width=True):
@@ -696,7 +696,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 st.write("*(ਜੇਕਰ ਸਟਾਕ ਜਾਂ ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
                 col_s1, col_s2, col_s3 = st.columns(3)
                 with col_s1: s_item_ik = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ (Item/Asset Name)", key="s_item_ik")
-                with col_s2: s_qty_ik = st.number_input("ਸਟਾਕ ਮਾਤਰਾ (Qty - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", min_value=0.0, step=0.5, key="s_qty_ik")
+                with col_s2: s_qty_ik = st.number_input("ਸਟਾਕ/ਸੰਪਤੀ ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
                 with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", STOCK_UNITS, key="s_unit_ik")
                 
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ (Generate In-Kind Receipt)", type="primary")
@@ -740,6 +740,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         supabase.table("assets").insert({
                             "name": s_item_ik,
                             "value": amount_ik,
+                            "quantity": s_qty_ik,
                             "date_added": formatted_date_ik
                         }).execute()
                         st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਪੱਕੀ ਸੰਪਤੀ (Fixed Assets) ਵਿੱਚ ਜੁੜ ਗਿਆ!")
@@ -926,7 +927,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     with c_p2:
                         phone = str(rec.get('phone', '')).strip()
                         if phone and phone.lower() not in ['nan', 'none', '']:
-                            amt_str = f"₹{rec.get('amount',0)}/- ਦਾ دਾਨ" if rec.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{rec.get('item_details')}'"
+                            amt_str = f"₹{rec.get('amount',0)}/- ਦਾ ਦਾਨ" if rec.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{rec.get('item_details')}'"
                             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {rec.get('name')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_str} (ਰਸੀਦ ਨੰ: {search_id}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Resend via WhatsApp)</a>', unsafe_allow_html=True)
@@ -1079,11 +1080,12 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             ac1, ac2 = st.columns(2)
             with ac1:
                 with st.form("add_asset"):
-                    st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ جوੜੋ)**")
+                    st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ ਜੋੜੋ)**")
                     a_name = st.text_input("ਸੰਪਤੀ ਦਾ ਨਾਮ (e.g. Building, Furniture)")
-                    a_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
+                    a_qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=1.0, step=1.0)
+                    a_val = st.number_input("ਕੁੱਲ ਮੁੱਲ (Total Value ₹)", min_value=0.0)
                     if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
-                        supabase.table("assets").insert({"name": a_name, "value": a_val, "date_added": str(date.today())}).execute()
+                        supabase.table("assets").insert({"name": a_name, "quantity": a_qty, "value": a_val, "date_added": str(date.today())}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
             with ac2:
                 with st.form("add_liab"):
@@ -1243,7 +1245,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=h_file, mime="text/html", key=f"dl_bk_{c_rec_no}", type="primary")
                     with col_c2:
                         if c_phone:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ ਦਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {c_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{ldata['credit']}/- ਦਾ دਾਨ (Bank Transfer ਰਾਹੀਂ, ਰਸੀਦ ਨੰ: {c_rec_no}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{c_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
 
@@ -1818,7 +1820,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
 
-    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW) ---
+    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW - FIXED) ---
     with att_tabs[2]:
         st.write("### 📅 ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Attendance Report)")
         
@@ -1828,7 +1830,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         with col_m2:
             sel_year = st.selectbox("ਸਾਲ (Year)", range(2024, 2035), index=date.today().year - 2024)
             
-        # FIX: Removed the "Generate Report" button so the download button won't disappear!
+        # LIVE GENERATION: No button needed, report generates instantly and shows print button
         num_days = calendar.monthrange(sel_year, sel_month)[1]
         start_date_str = f"{sel_year}-{sel_month:02d}-01"
         end_date_str = f"{sel_year}-{sel_month:02d}-{num_days:02d}"
@@ -1867,7 +1869,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                 
                 st.dataframe(pivot_df, hide_index=True, use_container_width=True)
                 
-                # Print Landscape Button
+                # ✅ FIXED: Print Landscape Button is now always visible when data exists
                 html_table_att = pivot_df.to_html(index=False, border=1, classes='report-table')
                 report_title = f"ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ - {sel_month}/{sel_year} (Monthly Attendance)"
                 report_file_att = generate_html_report_landscape(report_title, html_table_att)
