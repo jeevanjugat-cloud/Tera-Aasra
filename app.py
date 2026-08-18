@@ -8,6 +8,7 @@ import base64
 import os
 import time
 import json
+import math
 from PIL import Image
 from supabase import create_client, Client
 
@@ -15,6 +16,11 @@ from supabase import create_client, Client
 NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
 NGO_TAGLINE_PB = "ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (ਸੇਵਾ-ਸਹਿਯੋਗ-ਭਲਾਈ)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
+
+# --- GEO-FENCING (ATTENDANCE LOCATION) ---
+# ਤੁਸੀਂ ਆਪਣੀ ਜ਼ਰੂਰਤ ਅਨੁਸਾਰ ਇਹਨਾਂ Co-ordinates ਨੂੰ ਥੋੜ੍ਹਾ ਬਦਲ ਸਕਦੇ ਹੋ
+NGO_LAT = 31.6120 
+NGO_LON = 74.8677
 
 # --- CATEGORIES & ACCOUNTS ---
 BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
@@ -125,6 +131,16 @@ st.markdown("""
         .whatsapp-btn:hover { background-color: #128C7E; }
     </style>
 """, unsafe_allow_html=True)
+
+def get_distance_meters(lat1, lon1, lat2, lon2):
+    R = 6371000 # Radius of earth in meters
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = (math.sin(d_lat / 2) * math.sin(d_lat / 2) +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(d_lon / 2) * math.sin(d_lon / 2))
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 def compress_image(uploaded_file, max_size=(150, 150)):
     if uploaded_file is not None:
@@ -398,7 +414,7 @@ if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)" and not is_
     st.markdown("---")
 
 # ==========================================
-# 0. EMPLOYEE ATTENDANCE (DEDICATED STRICT VIEW)
+# 0. EMPLOYEE ATTENDANCE (GEO-FENCING VIEW)
 # ==========================================
 if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My Attendance)":
     st.header("⏱️ ਰੋਜ਼ਾਨਾ ਹਾਜ਼ਰੀ (Daily Attendance)")
@@ -425,27 +441,51 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
             try: today_record = supabase.table("attendance").select("*").eq("staff_name", clean_name).eq("date", today_str).execute().data
             except Exception: today_record = []
             
-            if not today_record:
-                st.info(f"ਤੁਹਾਡੀ ਅੱਜ ਦੀ ਹਾਜ਼ਰੀ ਹਾਲੇ ਨਹੀਂ ਲੱਗੀ। (Time: {current_time})")
-                if st.button("🟢 Punch IN (ਆਉਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
-                    supabase.table("attendance").insert({
-                        "staff_name": clean_name, "date": today_str,
-                        "in_time": current_time, "out_time": "", "status": "Present"
-                    }).execute()
-                    st.success(f"✅ ਹਾਜ਼ਰੀ ਲੱਗ ਗਈ ਹੈ!")
-                    time.sleep(1.5); st.rerun()
-            else:
-                rec = today_record[0]
-                st.success(f"✅ Punch IN Time: {rec.get('in_time', '')}")
-                if not rec.get('out_time') or rec.get('out_time') == "":
-                    st.warning(f"ਤੁਹਾਡਾ ਜਾਣ ਦਾ ਸਮਾਂ ਹਾਲੇ ਨਹੀਂ ਲੱਗਿਆ। (Time: {current_time})")
-                    if st.button("🔴 Punch OUT (ਜਾਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
-                        supabase.table("attendance").update({"out_time": current_time}).eq("id", rec['id']).execute()
-                        st.success(f"✅ ਜਾਣ ਦਾ ਸਮਾਂ ਲੱਗ ਗਿਆ ਹੈ!")
-                        time.sleep(1.5); st.rerun()
+            st.write("### 📍 ਲੋਕੇਸ਼ਨ ਵੈਰੀਫਿਕੇਸ਼ਨ (Location Check)")
+            st.info("ਹਾਜ਼ਰੀ ਲਗਾਉਣ ਲਈ ਤੁਹਾਡਾ NGO (100 ਮੀਟਰ ਦੇ ਘੇਰੇ) ਵਿੱਚ ਹੋਣਾ ਜ਼ਰੂਰੀ ਹੈ। ਹੇਠਾਂ ਬਟਨ ਦਬਾ ਕੇ ਆਪਣੀ ਲੋਕੇਸ਼ਨ ਦਿਓ:")
+            
+            try:
+                from streamlit_geolocation import streamlit_geolocation
+                loc = streamlit_geolocation()
+                
+                if loc and loc.get('latitude') is not None and loc.get('longitude') is not None:
+                    user_lat = loc['latitude']
+                    user_lon = loc['longitude']
+                    dist = get_distance_meters(user_lat, user_lon, NGO_LAT, NGO_LON)
+                    
+                    st.write(f"📍 ਤੁਹਾਡੀ ਮੌਜੂਦਾ ਦੂਰੀ: **{dist:.0f} ਮੀਟਰ**")
+                    
+                    if dist <= 100:
+                        st.success("✅ ਲੋਕੇਸ਼ਨ ਮੈਚ ਹੋ ਗਈ! ਹੁਣ ਤੁਸੀਂ ਹਾਜ਼ਰੀ ਲਗਾ ਸਕਦੇ ਹੋ।")
+                        st.markdown("---")
+                        
+                        if not today_record:
+                            st.info(f"ਤੁਹਾਡੀ ਅੱਜ ਦੀ ਹਾਜ਼ਰੀ ਹਾਲੇ ਨਹੀਂ ਲੱਗੀ। (Time: {current_time})")
+                            if st.button("🟢 Punch IN (ਆਉਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
+                                supabase.table("attendance").insert({
+                                    "staff_name": clean_name, "date": today_str,
+                                    "in_time": current_time, "out_time": "", "status": "Present"
+                                }).execute()
+                                st.success(f"✅ ਹਾਜ਼ਰੀ ਲੱਗ ਗਈ ਹੈ!")
+                                time.sleep(1.5); st.rerun()
+                        else:
+                            rec = today_record[0]
+                            st.success(f"✅ Punch IN Time: {rec.get('in_time', '')}")
+                            if not rec.get('out_time') or rec.get('out_time') == "":
+                                st.warning(f"ਤੁਹਾਡਾ ਜਾਣ ਦਾ ਸਮਾਂ ਹਾਲੇ ਨਹੀਂ ਲੱਗਿਆ। (Time: {current_time})")
+                                if st.button("🔴 Punch OUT (ਜਾਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
+                                    supabase.table("attendance").update({"out_time": current_time}).eq("id", rec['id']).execute()
+                                    st.success(f"✅ ਜਾਣ ਦਾ ਸਮਾਂ ਲੱਗ ਗਿਆ ਹੈ!")
+                                    time.sleep(1.5); st.rerun()
+                            else:
+                                st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
+                                st.info("🌟 ਅੱਜ ਦੀ ਤੁਹਾਡੀ ਡਿਊਟੀ ਪੂਰੀ ਹੋ ਗਈ ਹੈ।")
+                    else:
+                        st.error(f"❌ ਤੁਸੀਂ NGO ਤੋਂ ਬਾਹਰ ਹੋ (ਦੂਰੀ: {dist:.0f} ਮੀਟਰ)। ਹਾਜ਼ਰੀ ਸਿਰਫ਼ 100 ਮੀਟਰ ਦੇ ਅੰਦਰ ਲੱਗ ਸਕਦੀ ਹੈ।")
                 else:
-                    st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
-                    st.info("🌟 ਅੱਜ ਦੀ ਤੁਹਾਡੀ ਡਿਊਟੀ ਪੂਰੀ ਹੋ ਗਈ ਹੈ।")
+                    st.warning("ਆਪਣੀ ਲੋਕੇਸ਼ਨ ਭੇਜਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ ਬਟਨ 'ਤੇ ਕਲਿੱਕ ਕਰੋ ਅਤੇ ਬ੍ਰਾਊਜ਼ਰ ਦੀ 'Allow Location' ਪਰਮਿਸ਼ਨ ਦਿਓ।")
+            except ImportError:
+                st.error("🚨 ਤਕਨੀਕੀ ਗਲਤੀ: ਕਿਰਪਾ ਕਰਕੇ ਟਰਮੀਨਲ (CMD) ਵਿੱਚ ਇਹ ਕਮਾਂਡ ਚਲਾਓ: `pip install streamlit-geolocation`")
 
             st.markdown("---")
             st.write(f"#### 📅 ਤੁਹਾਡੀ ਪਿਛਲੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Your Past Attendance)")
@@ -590,11 +630,8 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਤਿਆਰ ਕਰੋ (Save & Generate Receipt)", type="primary")
                 
             if submitted and donor_name:
-                # OVERLAP CHECK FOR RECEIPT BOOK
                 books = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
                 matched_book = next((b for b in books if int(b['start_no']) <= int(rec_no_input) <= int(b['end_no'])), None)
-                
-                # DOUBLE ENTRY CHECK FOR DONATION ID
                 existing_rec = supabase.table("donations").select("*").eq("id", int(rec_no_input)).execute().data
                 
                 if not matched_book:
@@ -1291,7 +1328,6 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                     issue_date = st.date_input("ਜਾਰੀ ਕਰਨ ਦੀ ਮਿਤੀ", value=date.today())
                 if st.form_submit_button("ਕਿਤਾਬ ਜਾਰੀ ਕਰੋ (Issue Book)", type="primary"):
                     if collector_input and end_ser >= start_ser:
-                        # OVERLAP CHECK FOR RECEIPT BOOK
                         existing_books = supabase.table("receipt_books").select("*").execute().data or []
                         overlap = False
                         overlapping_book = None
@@ -1351,7 +1387,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
                             }).execute()
                             st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
                         except Exception as e:
-                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' કਾਲਮ ਬਣਾਓ। Details: {e}")
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' ਕਾਲਮ ਬਣਾਓ। Details: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -1720,7 +1756,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
 
-    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW - FIXED) ---
+    # --- 3. ALL REPORTS (MONTHLY MATRIX VIEW) ---
     with att_tabs[2]:
         st.write("### 📅 ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Attendance Report)")
         
