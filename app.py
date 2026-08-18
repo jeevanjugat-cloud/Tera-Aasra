@@ -926,7 +926,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     with c_p2:
                         phone = str(rec.get('phone', '')).strip()
                         if phone and phone.lower() not in ['nan', 'none', '']:
-                            amt_str = f"₹{rec.get('amount',0)}/- ਦਾ ਦਾਨ" if rec.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{rec.get('item_details')}'"
+                            amt_str = f"₹{rec.get('amount',0)}/- ਦਾ دਾਨ" if rec.get('donation_type') == "ਪੈਸੇ (Monetary)" else f"ਦਾਨ ਵਜੋਂ '{rec.get('item_details')}'"
                             msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {rec.get('name')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ {amt_str} (ਰਸੀਦ ਨੰ: {search_id}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Resend via WhatsApp)</a>', unsafe_allow_html=True)
@@ -1079,7 +1079,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             ac1, ac2 = st.columns(2)
             with ac1:
                 with st.form("add_asset"):
-                    st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ ਜੋੜੋ)**")
+                    st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ جوੜੋ)**")
                     a_name = st.text_input("ਸੰਪਤੀ ਦਾ ਨਾਮ (e.g. Building, Furniture)")
                     a_val = st.number_input("ਮੁੱਲ (Value ₹)", min_value=0.0)
                     if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
@@ -1828,57 +1828,57 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
         with col_m2:
             sel_year = st.selectbox("ਸਾਲ (Year)", range(2024, 2035), index=date.today().year - 2024)
             
-        if st.button("ਰਿਪੋਰਟ ਬਣਾਓ (Generate Report)", type="primary"):
-            num_days = calendar.monthrange(sel_year, sel_month)[1]
-            start_date_str = f"{sel_year}-{sel_month:02d}-01"
-            end_date_str = f"{sel_year}-{sel_month:02d}-{num_days:02d}"
+        # FIX: Removed the "Generate Report" button so the download button won't disappear!
+        num_days = calendar.monthrange(sel_year, sel_month)[1]
+        start_date_str = f"{sel_year}-{sel_month:02d}-01"
+        end_date_str = f"{sel_year}-{sel_month:02d}-{num_days:02d}"
+        
+        try:
+            all_att = supabase.table("attendance").select("*").gte("date", start_date_str).lte("date", end_date_str).execute().data or []
             
-            try:
-                all_att = supabase.table("attendance").select("*").gte("date", start_date_str).lte("date", end_date_str).execute().data or []
+            if all_att:
+                df_att = pd.DataFrame(all_att)
+                df_att['date'] = pd.to_datetime(df_att['date'])
+                df_att['day'] = df_att['date'].dt.day
                 
-                if all_att:
-                    df_att = pd.DataFrame(all_att)
-                    df_att['date'] = pd.to_datetime(df_att['date'])
-                    df_att['day'] = df_att['date'].dt.day
+                def get_status_code(status_str):
+                    if not status_str: return "-"
+                    s = str(status_str).lower()
+                    if "present" in s or "ਹਾਜ਼ਰ" in s: return "P"
+                    if "absent" in s or "ਛੁੱਟੀ" in s or "ਗੈਰ" in s: return "A"
+                    if "half" in s or "ਅੱਧਾ" in s: return "HD"
+                    return "P" # fallback
                     
-                    def get_status_code(status_str):
-                        if not status_str: return "-"
-                        s = str(status_str).lower()
-                        if "present" in s or "ਹਾਜ਼ਰ" in s: return "P"
-                        if "absent" in s or "ਛੁੱਟੀ" in s or "ਗੈਰ" in s: return "A"
-                        if "half" in s or "ਅੱਧਾ" in s: return "HD"
-                        return "P" # fallback
-                        
-                    df_att['status_code'] = df_att['status'].apply(get_status_code)
+                df_att['status_code'] = df_att['status'].apply(get_status_code)
+                
+                # Pivot Table
+                pivot_df = df_att.pivot_table(index='staff_name', columns='day', values='status_code', aggfunc='last')
+                
+                # Ensure all days 1 to 31/30 are columns
+                all_days = list(range(1, num_days + 1))
+                pivot_df = pivot_df.reindex(columns=all_days).fillna("-")
+                
+                # Totals
+                pivot_df['Total P'] = (pivot_df[all_days] == 'P').sum(axis=1) + ((pivot_df[all_days] == 'HD').sum(axis=1) * 0.5)
+                pivot_df['Total A'] = (pivot_df[all_days] == 'A').sum(axis=1)
+                
+                pivot_df = pivot_df.reset_index()
+                pivot_df.rename(columns={'staff_name': 'Staff Name'}, inplace=True)
+                
+                st.dataframe(pivot_df, hide_index=True, use_container_width=True)
+                
+                # Print Landscape Button
+                html_table_att = pivot_df.to_html(index=False, border=1, classes='report-table')
+                report_title = f"ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ - {sel_month}/{sel_year} (Monthly Attendance)"
+                report_file_att = generate_html_report_landscape(report_title, html_table_att)
+                
+                with open(report_file_att, "r", encoding="utf-8") as file:
+                    st.download_button("🖨️ ਮਹੀਨਾਵਾਰ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Monthly Landscape)", data=file.read(), file_name=report_file_att, mime="text/html", type="primary")
                     
-                    # Pivot Table
-                    pivot_df = df_att.pivot_table(index='staff_name', columns='day', values='status_code', aggfunc='last')
-                    
-                    # Ensure all days 1 to 31/30 are columns
-                    all_days = list(range(1, num_days + 1))
-                    pivot_df = pivot_df.reindex(columns=all_days).fillna("-")
-                    
-                    # Totals
-                    pivot_df['Total P'] = (pivot_df[all_days] == 'P').sum(axis=1) + ((pivot_df[all_days] == 'HD').sum(axis=1) * 0.5)
-                    pivot_df['Total A'] = (pivot_df[all_days] == 'A').sum(axis=1)
-                    
-                    pivot_df = pivot_df.reset_index()
-                    pivot_df.rename(columns={'staff_name': 'Staff Name'}, inplace=True)
-                    
-                    st.dataframe(pivot_df, hide_index=True, use_container_width=True)
-                    
-                    # Print Landscape Button
-                    html_table_att = pivot_df.to_html(index=False, border=1, classes='report-table')
-                    report_title = f"ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ - {sel_month}/{sel_year} (Monthly Attendance)"
-                    report_file_att = generate_html_report_landscape(report_title, html_table_att)
-                    
-                    with open(report_file_att, "r", encoding="utf-8") as file:
-                        st.download_button("🖨️ ਮਹੀਨਾਵਾਰ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Monthly Landscape)", data=file.read(), file_name=report_file_att, mime="text/html", type="primary")
-                        
-                else:
-                    st.info("ਇਸ ਮਹੀਨੇ ਦਾ ਕੋਈ ਹਾਜ਼ਰੀ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ। (No records found for this month)")
-            except Exception as e:
-                st.error(f"Error generating report: {e}")
+            else:
+                st.info("ਇਸ ਮਹੀਨੇ ਦਾ ਕੋਈ ਹਾਜ਼ਰੀ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ। (No records found for this month)")
+        except Exception as e:
+            st.error(f"Error generating report: {e}")
 
 # ==========================================
 # 6. ADMIN & BULK UPLOAD MANAGEMENT
