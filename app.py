@@ -29,20 +29,15 @@ EXPENSE_CATEGORIES = [
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 
 # ==========================================
-# SECURE CREDENTIALS (WITH FALLBACK FOR SAFETY)
+# CREDENTIALS (DIRECTLY IN CODE AS REQUESTED)
 # ==========================================
-try:
-    USERS = st.secrets["USERS"]
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-except Exception:
-    USERS = {
-        "admin": {"password": "Japnik@3315", "role": "admin"},
-        "staff": {"password": "12345", "role": "staff"},
-        "management": {"password": "view@123", "role": "management"}
-    }
-    SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
-    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
+USERS = {
+    "admin": {"password": "Japnik@3315", "role": "admin"},
+    "staff": {"password": "12345", "role": "staff"},
+    "management": {"password": "view@123", "role": "management"}
+}
+SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
 st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
 
@@ -499,7 +494,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     df_rec = pd.DataFrame(recents)[['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name']]
                     df_rec.insert(0, "Select", False)
                     
-                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ:**")
+                    st.write("**🖨️ ਰਸੀਦ ਪ੍ਰਿੰਟ ਜਾਂ WhatsApp ਕਰਨ ਲਈ ਟਿੱਕ ਲਗਾਓ (Select to Print/WhatsApp):**")
                     
                     edited_df = st.data_editor(
                         df_rec,
@@ -513,7 +508,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
                     
                     if selected_ids:
-                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ")
+                        st.write("##### 🖨️ ਚੁਣੀਆਂ ਗਈਆਂ ਰਸੀਦਾਂ (Selected Receipts)")
                         for sid in selected_ids:
                             row_data = next(r for r in recents if r['id'] == sid)
                             h_file = generate_html_receipt(
@@ -668,7 +663,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                                 st.markdown(f"**ਰਸੀਦ #{sel_data_ik['id']}** - {sel_data_ik.get('name','')} ({sel_data_ik.get('item_details','')})")
                             with c2:
                                 with open(h_file_recent_ik, "r", encoding="utf-8") as file:
-                                    st.download_button("🖨️ Print", data=file.read(), file_name=h_file_recent_ik, mime="text/html", key=f"p_ik_{sel_data_ik['id']}")
+                                    st.download_button("🖨️ Print", data=f.read(), file_name=h_file_recent_ik, mime="text/html", key=f"p_ik_{sel_data_ik['id']}")
                             with c3:
                                 phone = str(sel_data_ik.get('phone', '')).strip()
                                 if phone and phone.lower() not in ['nan', 'none', '']:
@@ -680,7 +675,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 else: 
                     st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
             except Exception as e: 
-                pass
+                st.error(f"Error: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -1378,7 +1373,6 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
             
         if widows_data:
             df_w = pd.DataFrame(widows_data)
-            # Make sure we only show columns that exist in the dataframe to avoid errors if some are missing
             display_cols = [c for c in ['card_no', 'name', 'age', 'husband_name', 'phone', 'address', 'join_date'] if c in df_w.columns]
             
             st.dataframe(df_w[display_cols], hide_index=True, use_container_width=True)
@@ -1738,13 +1732,12 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         if pd.isna(orig_val): orig_val = None
                         if pd.isna(ed_val): ed_val = None
                         
-                        # SAFETY FIX: Ensure numeric values stay numeric when edited!
                         if str(orig_val) != str(ed_val):
                             if isinstance(orig_val, (int, float)) and ed_val is not None:
                                 try:
                                     ed_val = float(ed_val) if '.' in str(ed_val) else int(ed_val)
                                 except ValueError:
-                                    pass # Keep as string if it can't be converted
+                                    pass
                             changes[k] = ed_val
                     
                     if changes:
