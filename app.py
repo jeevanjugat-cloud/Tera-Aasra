@@ -738,14 +738,19 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 stock_opts_ik = existing_stock_ik + ["➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ (Type New Name)"]
                 
                 st.write("*(ਜੇਕਰ ਸਟਾਕ/ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
-                col_s1, col_s2 = st.columns(2)
+                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
                 with col_s1: 
                     s_item_sel_ik = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ (Select Existing Item)", stock_opts_ik, key="s_item_sel_ik")
                     s_item_new_ik = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ (Or Type New Name)", key="s_item_new_ik")
                 with col_s2: 
-                    s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
-                    s_unit_ik = st.selectbox("ਇਕਾਈ (Unit - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", STOCK_UNITS, key="s_unit_ik")
-                    s_type_ik = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type - ਸਿਰਫ਼ ਸੰਪਤੀ ਲਈ)", ASSET_TYPES, key="s_type_ik")
+                    s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
+                with col_s3:
+                    is_whole_ik = any(u in s_unit_ik for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
+                    s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=1.0 if is_whole_ik else 0.5, key="s_qty_ik")
+                with col_s4: 
+                    s_type_ik = None
+                    if add_destination == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)":
+                        s_type_ik = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES, key="s_type_ik")
                 
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ (Generate In-Kind Receipt)", type="primary")
                 
@@ -758,6 +763,8 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 
                 if add_destination != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and not final_item_ik:
                     st.error("❌ ਗਲਤੀ: ਕਿਰਪਾ ਕਰਕੇ ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ ਚੁਣੋ ਜਾਂ ਲਿਖੋ!")
+                elif add_destination != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and is_whole_ik and not float(s_qty_ik).is_integer():
+                    st.error(f"❌ ਗਲਤੀ: '{s_unit_ik}' ਲਈ ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ (Whole Number) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ, ਦਸ਼ਮਲਵ (Decimal) ਵਿੱਚ ਨਹੀਂ!")
                 elif not matched_book_ik:
                     st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ {rec_no_ik} ਜਾਰੀ ਕੀਤੀ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
                 elif existing_rec_ik:
@@ -886,15 +893,20 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     s_item_sel_exp = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ (Select Existing Item)", stock_opts_exp, key="s_item_sel_exp")
                     s_item_new_exp = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ (Or Type New Name)", key="s_item_new_exp")
                 with col_es2: 
-                    s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
-                    s_unit_exp = st.selectbox("ਇਕਾਈ (Unit - ਸਿਰਫ਼ ਸਟਾਕ ਲਈ)", STOCK_UNITS, key="s_unit_exp")
-                    s_type_exp = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type - ਸਿਰਫ਼ ਸੰਪਤੀ ਲਈ)", ASSET_TYPES, key="s_type_exp")
+                    s_unit_exp = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_exp")
+                    is_whole_exp = any(u in s_unit_exp for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
+                    s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=1.0 if is_whole_exp else 0.5, key="s_qty_exp")
+                    s_type_exp = None
+                    if add_destination_exp == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)":
+                        s_type_exp = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type - ਸਿਰਫ਼ ਸੰਪਤੀ ਲਈ)", ASSET_TYPES, key="s_type_exp")
                 
                 if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
                     final_item_exp = s_item_new_exp.strip() if s_item_sel_exp == "➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ (Type New Name)" else s_item_sel_exp.strip()
                     
                     if add_destination_exp != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and not final_item_exp:
                         st.error("❌ ਗਲਤੀ: ਕਿਰਪਾ ਕਰਕੇ ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ ਚੁਣੋ ਜਾਂ ਲਿਖੋ!")
+                    elif add_destination_exp != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and is_whole_exp and not float(s_qty_exp).is_integer():
+                        st.error(f"❌ ਗਲਤੀ: '{s_unit_exp}' ਲਈ ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ (Whole Number) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ, ਦਸ਼ਮਲਵ (Decimal) ਵਿੱਚ ਨਹੀਂ!")
                     else:
                         supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
                         
@@ -1133,8 +1145,11 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     a_val = st.number_input("ਕੁੱਲ ਮੁੱਲ (Total Value ₹)", min_value=0.0)
                     a_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today())
                     if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
-                        supabase.table("assets").insert({"name": a_name, "asset_type": a_type, "quantity": a_qty, "value": a_val, "date_added": str(a_date)}).execute()
-                        st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
+                        if not float(a_qty).is_integer():
+                            st.error("❌ ਗਲਤੀ: ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ (Whole Number) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
+                        else:
+                            supabase.table("assets").insert({"name": a_name, "asset_type": a_type, "quantity": a_qty, "value": a_val, "date_added": str(a_date)}).execute()
+                            st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
             with ac2:
                 with st.form("add_liab"):
                     st.write("**Fund/Liability (ਫੰਡ ਜਾਂ ਉਧਾਰ ਜੋੜੋ)**")
@@ -1303,13 +1318,18 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                         s_items = list(s_dict.keys())
                         
                         item_name = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਵੰਡਣਾ ਹੈ? (Select Item)", s_items)
-                        qty = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ: {s_dict.get(item_name, 0)}", min_value=0.5, step=0.5)
+                        item_unit = s_units.get(item_name, '')
+                        is_whole_issue = any(u in item_unit for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
+                        
+                        qty = st.number_input(f"ਮਾਤਰਾ ({item_unit}) - ਮੌਜੂਦ: {s_dict.get(item_name, 0)}", min_value=0.5 if not is_whole_issue else 1.0, step=1.0 if is_whole_issue else 0.5)
                         purpose_input = st.text_input("ਵਰਤੋਂ ਦਾ ਕਾਰਨ / ਕਿਸਨੂੰ ਦਿੱਤਾ? (Purpose/Recipient)", placeholder="e.g. Langar, Cleaning, Sent to XYZ...")
                         proc_date = st.date_input("ਮਿਤੀ (Date)", value=date.today())
                         
                         if st.form_submit_button("ਸਟਾਕ ਜਾਰੀ ਕਰੋ (Issue Stock)", type="primary"):
                             if not purpose_input.strip():
                                 st.error("❌ ਕਿਰਪਾ ਕਰਕੇ ਵਰਤੋਂ ਦਾ ਕਾਰਨ ਦੱਸੋ (Please provide the purpose of usage)!")
+                            elif is_whole_issue and not float(qty).is_integer():
+                                st.error(f"❌ ਗਲਤੀ: '{item_unit}' ਲਈ ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ (Whole Number) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
                             else:
                                 old_qty = s_dict.get(item_name, 0)
                                 if qty > old_qty:
@@ -1329,7 +1349,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                                     supabase.table("stock_usage").insert({
                                         "item_name": item_name,
                                         "quantity": qty,
-                                        "unit": s_units.get(item_name, ''),
+                                        "unit": item_unit,
                                         "purpose": purpose_input,
                                         "usage_date": str(proc_date)
                                     }).execute()
