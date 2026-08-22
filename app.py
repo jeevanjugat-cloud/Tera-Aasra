@@ -1728,15 +1728,17 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
             df_areq = pd.DataFrame(att_reqs)[['id', 'staff_name', 'date', 'requested_status', 'reason', 'created_at']]
             st.dataframe(df_areq, hide_index=True, use_container_width=True)
             
-            req_choices = [f"ID: {r['id']} - {r['staff_name']} ({r['date']} : {r['requested_status']})" for r in att_reqs]
-            sel_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request)", req_choices)
-            r_id = int(sel_req_str.split(" ")[1])
+            # FIXED: Dictionary mapping instead of string split
+            req_dict = {f"ID: {r['id']} - {r['staff_name']} ({r['date']} : {r['requested_status']})": r for r in att_reqs}
+            sel_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request)", list(req_dict.keys()))
             
-            col_aa, col_ar = st.columns(2)
-            with col_aa:
-                if st.button("✅ ਹਾਜ਼ਰੀ ਮਨਜ਼ੂਰ ਕਰੋ (Approve)", type="primary"):
-                    target_r = next((r for r in att_reqs if int(r['id']) == r_id), None)
-                    if target_r:
+            if sel_req_str:
+                target_r = req_dict[sel_req_str]
+                r_id = target_r['id']
+                
+                col_aa, col_ar = st.columns(2)
+                with col_aa:
+                    if st.button("✅ ਹਾਜ਼ਰੀ ਮਨਜ਼ੂਰ ਕਰੋ (Approve)", type="primary"):
                         existing = supabase.table("attendance").select("*").eq("staff_name", target_r['staff_name']).eq("date", target_r['date']).execute().data
                         if existing:
                             supabase.table("attendance").update({"status": target_r['requested_status']}).eq("id", existing[0]['id']).execute()
@@ -1748,10 +1750,10 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                         
                         supabase.table("attendance_requests").update({"status": "Approved"}).eq("id", r_id).execute()
                         st.success("✅ ਹਾਜ਼ਰੀ ਲੱਗ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
-            with col_ar:
-                if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
-                    supabase.table("attendance_requests").update({"status": "Rejected"}).eq("id", r_id).execute()
-                    st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕੀਤੀ ਗਈ ਹੈ।"); time.sleep(1.5); st.rerun()
+                with col_ar:
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)"):
+                        supabase.table("attendance_requests").update({"status": "Rejected"}).eq("id", r_id).execute()
+                        st.error("❌ ਬੇਨਤੀ ਰੱਦ ਕੀਤੀ ਗਈ ਹੈ।"); time.sleep(1.5); st.rerun()
         else:
             st.info("ਇਸ ਸਮੇਂ ਕੋਈ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
 
@@ -1881,28 +1883,28 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 
             if reqs:
                 df_reqs = pd.DataFrame(reqs)
-                # DYNAMIC COLUMN CHECK TO PREVENT KEYERROR
                 disp_reqs_cols = [c for c in ['id', 'table_name', 'record_id', 'details', 'created_at'] if c in df_reqs.columns]
                 st.dataframe(df_reqs[disp_reqs_cols], hide_index=True, use_container_width=True)
                 
-                req_choices = [f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')})" for r in reqs]
-                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request to Action)", req_choices, key="sel_del_req")
+                # FIXED: Dictionary mapping instead of string split
+                del_dict = {f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')})": r for r in reqs}
+                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request to Action)", list(del_dict.keys()), key="sel_del_req")
+                
                 if selected_req_str:
-                    req_id = int(selected_req_str.split(" ")[1])
+                    target_req = del_dict[selected_req_str]
+                    req_id = target_req.get('id')
                     
                     col_a, col_r = st.columns(2)
                     with col_a:
                         if st.button("✅ ਡਿਲੀਟ ਮਨਜ਼ੂਰ (Approve & Delete)", type="primary"):
-                            target_req = next((r for r in reqs if int(r.get('id', -1)) == req_id), None)
-                            if target_req:
-                                try:
-                                    if target_req.get('table_name') == "stock": 
-                                        supabase.table(target_req['table_name']).delete().eq("item_name", str(target_req['record_id'])).execute()
-                                    else: 
-                                        supabase.table(target_req['table_name']).delete().eq("id", int(float(target_req['record_id']))).execute()
-                                    supabase.table("deletion_requests").update({"status": "Approved"}).eq("id", req_id).execute()
-                                    st.success("✅ ਐਂਟਰੀ ਪੱਕੇ ਤੌਰ 'ਤੇ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
-                                except Exception as e: st.error(f"Error: {e}")
+                            try:
+                                if target_req.get('table_name') == "stock": 
+                                    supabase.table(target_req['table_name']).delete().eq("item_name", str(target_req['record_id'])).execute()
+                                else: 
+                                    supabase.table(target_req['table_name']).delete().eq("id", int(float(target_req['record_id']))).execute()
+                                supabase.table("deletion_requests").update({"status": "Approved"}).eq("id", req_id).execute()
+                                st.success("✅ ਐਂਟਰੀ ਪੱਕੇ ਤੌਰ 'ਤੇ ਡਿਲੀਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+                            except Exception as e: st.error(f"Error: {e}")
                     with col_r:
                         if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)", type="primary"):
                             supabase.table("deletion_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
@@ -1993,29 +1995,29 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
             
             if reqs_edit:
                 df_reqs_edit = pd.DataFrame(reqs_edit)
-                # DYNAMIC COLUMN CHECK TO PREVENT KEYERROR
                 disp_edit_cols = [c for c in ['id', 'table_name', 'record_id', 'changes', 'created_at'] if c in df_reqs_edit.columns]
                 st.dataframe(df_reqs_edit[disp_edit_cols], hide_index=True, use_container_width=True)
                 
-                req_choices = [f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')} - Rec: {r.get('record_id', 'N/A')})" for r in reqs_edit]
-                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Edit Request)", req_choices, key="sel_edit_req")
+                # FIXED: Dictionary mapping instead of string split
+                edit_dict = {f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')} - Rec: {r.get('record_id', 'N/A')})": r for r in reqs_edit}
+                selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Edit Request)", list(edit_dict.keys()), key="sel_edit_req")
+                
                 if selected_req_str:
-                    req_id = int(selected_req_str.split(" ")[1])
+                    target_req = edit_dict[selected_req_str]
+                    req_id = target_req.get('id')
                     
                     col_ea, col_er = st.columns(2)
                     with col_ea:
                         if st.button("✅ ਸੋਧ ਮਨਜ਼ੂਰ ਕਰੋ (Approve & Update)", type="primary"):
-                            target_req = next((r for r in reqs_edit if int(r.get('id', -1)) == req_id), None)
-                            if target_req:
-                                try:
-                                    changes_dict = json.loads(target_req['changes'])
-                                    rec_id = target_req['record_id'] if target_req['table_name'] == "stock" else int(float(target_req['record_id']))
-                                    col_name = "item_name" if target_req['table_name'] == "stock" else "id"
-                                    
-                                    supabase.table(target_req['table_name']).update(changes_dict).eq(col_name, rec_id).execute()
-                                    supabase.table("edit_requests").update({"status": "Approved"}).eq("id", req_id).execute()
-                                    st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
-                                except Exception as e: st.error(f"Error: {e}")
+                            try:
+                                changes_dict = json.loads(target_req['changes'])
+                                rec_id = target_req['record_id'] if target_req['table_name'] == "stock" else int(float(target_req['record_id']))
+                                col_name = "item_name" if target_req['table_name'] == "stock" else "id"
+                                
+                                supabase.table(target_req['table_name']).update(changes_dict).eq(col_name, rec_id).execute()
+                                supabase.table("edit_requests").update({"status": "Approved"}).eq("id", req_id).execute()
+                                st.success("✅ ਐਂਟਰੀ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+                            except Exception as e: st.error(f"Error: {e}")
                     with col_er:
                         if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ (Reject)", type="primary"):
                             supabase.table("edit_requests").update({"status": "Rejected"}).eq("id", req_id).execute()
