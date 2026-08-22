@@ -733,12 +733,17 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                                            ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], 
                                            horizontal=True)
                 
-                st.write("*(ਜੇਕਰ ਸਟਾਕ ਜਾਂ ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
-                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-                with col_s1: s_item_ik = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ", key="s_item_ik")
-                with col_s2: s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
-                with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
-                with col_s4: s_type_ik = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES, key="s_type_ik")
+                s_item_ik, s_qty_ik, s_unit_ik, s_type_ik = "", 0.0, "", None
+                
+                if add_destination != "ਕਿਤੇ ਨਹੀਂ (Do not add)":
+                    st.write("*(ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
+                    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+                    with col_s1: s_item_ik = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ", key="s_item_ik")
+                    with col_s2: s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
+                    with col_s3: s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
+                    with col_s4:
+                        if add_destination == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)":
+                            s_type_ik = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES, key="s_type_ik")
                 
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ (Generate In-Kind Receipt)", type="primary")
                 
@@ -786,7 +791,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                                 "procurement_date": formatted_date_ik,
                                 "last_updated": current_datetime
                             }).execute()
-                        st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                        st.success(f"✅ ਰਸੀਦ ਬਣ ਗਈ ਅਤੇ '{s_item_ik}' ਆਮ ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
                         
                     elif add_destination == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)" and s_item_ik:
                         supabase.table("assets").insert({
@@ -865,11 +870,17 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                                                ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], 
                                                horizontal=True)
                 
-                col_es1, col_es2, col_es3, col_es4 = st.columns(4)
-                with col_es1: s_item_exp = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ", key="s_item_exp")
-                with col_es2: s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
-                with col_es3: s_unit_exp = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_exp")
-                with col_es4: s_type_exp = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES, key="s_type_exp")
+                s_item_exp, s_qty_exp, s_unit_exp, s_type_exp = "", 0.0, "", None
+                
+                if add_destination_exp != "ਕਿਤੇ ਨਹੀਂ (Do not add)":
+                    st.write("*(ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
+                    col_es1, col_es2, col_es3, col_es4 = st.columns(4)
+                    with col_es1: s_item_exp = st.text_input("ਸਟਾਕ/ਸੰਪਤੀ ਦਾ ਨਾਮ", key="s_item_exp")
+                    with col_es2: s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
+                    with col_es3: s_unit_exp = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_exp")
+                    with col_es4: 
+                        if add_destination_exp == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)":
+                            s_type_exp = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES, key="s_type_exp")
                 
                 if st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ (Save Expense)", type="primary") and desc:
                     supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
@@ -899,7 +910,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                                 "procurement_date": exp_date.strftime("%Y-%m-%d"),
                                 "last_updated": current_date
                             }).execute()
-                        st.success(f"✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ ਅਤੇ '{s_item_exp}' ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
+                        st.success(f"✅ ਖਰਚਾ ਸੇਵ ਹੋ ਗਿਆ ਅਤੇ '{s_item_exp}' ਆਮ ਸਟਾਕ ਵਿੱਚ ਜੁੜ ਗਿਆ!")
                         
                     elif add_destination_exp == "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)" and s_item_exp and s_qty_exp > 0:
                         supabase.table("assets").insert({
@@ -1234,6 +1245,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 except Exception: pass
                 try: pd.DataFrame(supabase.table("ration_distribution").select("*").execute().data or []).to_excel(writer, sheet_name='Ration_Distribution', index=False)
                 except Exception: pass
+                try: pd.DataFrame(supabase.table("stock_usage").select("*").execute().data or []).to_excel(writer, sheet_name='Stock_Usage_Log', index=False)
+                except Exception: pass
                 pd.DataFrame(supabase.table("receipt_books").select("*").execute().data or []).to_excel(writer, sheet_name='Receipt_Books', index=False)
             st.download_button("📥 ਕਲਿੱਕ ਕਰਕੇ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"CA_Audit_Data_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
 
@@ -1257,62 +1270,95 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                     item_name = st.text_input("ਵਸਤੂ ਦਾ ਨਾਮ (Item Name)")
                     qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=0.0, step=0.5)
                     unit = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS)
-                    est_val = st.number_input("ਅੰਦਾਜ਼ਨ ਕੁੱਲ ਕੀਮਤ (Estimated Total Value ₹ - Optional)", min_value=0.0)
-                    proc_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today())
+                    est_val = st.number_input("ਅੰਦਾਜ਼ਨ ਕੁੱਲ ਕੀਮਤ (Estimated Value ₹ - Optional)", min_value=0.0)
+                    proc_date = st.date_input("ਮਿਤੀ (Date)", value=date.today())
                     stock_action = st.radio("ਐਕਸ਼ਨ (Action)", ["ਨਵਾਂ ਸਮਾਨ ਆਇਆ (Add Stock)", "ਸਮਾਨ ਵਰਤਿਆ (Remove Stock)"])
                     
+                    # ADDED: Purpose field for stock removal
+                    purpose_input = ""
+                    if "Remove" in stock_action:
+                        purpose_input = st.text_input("ਵਰਤੋਂ ਦਾ ਕਾਰਨ (Where is it utilized?)", placeholder="e.g. Langar, Cleaning...")
+                    
                     if st.form_submit_button("ਸਟਾਕ ਅਪਡੇਟ ਕਰੋ (Save Stock)", type="primary") and item_name:
-                        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
-                        if res.data:
-                            old_qty = float(res.data[0].get('quantity', 0) or 0)
-                            old_val = float(res.data[0].get('estimated_value', 0) or 0)
-                            if "Add" in stock_action:
-                                new_qty = old_qty + qty
-                                new_val = old_val + est_val
-                                supabase.table("stock").update({
-                                    "quantity": new_qty,
-                                    "estimated_value": round(new_val, 2),
-                                    "unit": unit,
-                                    "procurement_date": str(proc_date),
-                                    "last_updated": current_date
-                                }).eq("item_name", item_name).execute()
-                            else:
-                                new_qty = max(0.0, old_qty - qty)
-                                new_val = max(0.0, old_val - est_val) if est_val > 0 else (old_val * (new_qty / old_qty) if old_qty > 0 else 0.0)
-                                supabase.table("stock").update({
-                                    "quantity": new_qty,
-                                    "estimated_value": round(new_val, 2),
-                                    "unit": unit,
-                                    "last_updated": current_date
-                                }).eq("item_name", item_name).execute()
+                        if "Remove" in stock_action and not purpose_input.strip():
+                            st.error("❌ ਕਿਰਪਾ ਕਰਕੇ ਵਰਤੋਂ ਦਾ ਕਾਰਨ ਦੱਸੋ (Please provide the purpose of usage)!")
                         else:
-                            new_qty = qty if "Add" in stock_action else 0.0
-                            new_val = est_val if "Add" in stock_action else 0.0
-                            supabase.table("stock").insert({
-                                "item_name": item_name,
-                                "quantity": new_qty,
-                                "estimated_value": round(new_val, 2),
-                                "unit": unit,
-                                "procurement_date": str(proc_date) if "Add" in stock_action else "",
-                                "last_updated": current_date
-                            }).execute()
-                        st.success(f"✅ '{item_name}' ਦਾ ਸਟਾਕ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
-                        time.sleep(1.2); st.rerun()
+                            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            res = supabase.table("stock").select("*").eq("item_name", item_name).execute()
+                            if res.data:
+                                old_qty = float(res.data[0].get('quantity', 0) or 0)
+                                old_val = float(res.data[0].get('estimated_value', 0) or 0)
+                                if "Add" in stock_action:
+                                    new_qty = old_qty + qty
+                                    new_val = old_val + est_val
+                                    supabase.table("stock").update({
+                                        "quantity": new_qty,
+                                        "estimated_value": round(new_val, 2),
+                                        "unit": unit,
+                                        "procurement_date": str(proc_date),
+                                        "last_updated": current_date
+                                    }).eq("item_name", item_name).execute()
+                                    st.success(f"✅ '{item_name}' ਦਾ ਸਟਾਕ ਸਫਲਤਾਪੂਰਵਕ ਅਪਡੇਟ ਹੋ ਗਿਆ ਹੈ!")
+                                else:
+                                    if qty > old_qty:
+                                        st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {old_qty} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                                    else:
+                                        new_qty = max(0.0, old_qty - qty)
+                                        new_val = max(0.0, old_val - est_val) if est_val > 0 else (old_val * (new_qty / old_qty) if old_qty > 0 else 0.0)
+                                        supabase.table("stock").update({
+                                            "quantity": new_qty,
+                                            "estimated_value": round(new_val, 2),
+                                            "unit": unit,
+                                            "last_updated": current_date
+                                        }).eq("item_name", item_name).execute()
+                                        
+                                        # Log the usage
+                                        supabase.table("stock_usage").insert({
+                                            "item_name": item_name,
+                                            "quantity": qty,
+                                            "unit": unit,
+                                            "purpose": purpose_input,
+                                            "usage_date": str(proc_date)
+                                        }).execute()
+                                        st.success(f"✅ '{item_name}' ਦੀ ਵਰਤੋਂ ਰਿਕਾਰਡ ਹੋ ਗਈ ਹੈ!")
+                            else:
+                                if "Add" in stock_action:
+                                    supabase.table("stock").insert({
+                                        "item_name": item_name,
+                                        "quantity": qty,
+                                        "estimated_value": round(est_val, 2),
+                                        "unit": unit,
+                                        "procurement_date": str(proc_date),
+                                        "last_updated": current_date
+                                    }).execute()
+                                    st.success(f"✅ '{item_name}' ਨਵਾਂ ਸਟਾਕ ਵਿੱਚ ਜੋੜਿਆ ਗਿਆ ਹੈ!")
+                                else:
+                                    st.error("❌ ਗਲਤੀ: ਇਹ ਸਮਾਨ ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ ਨਹੀਂ ਹੈ!")
+                            time.sleep(1.2); st.rerun()
+                            
         with col2:
-            st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ (Current Stock Inventory)")
-            try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
-            except Exception: stock_res = []
-            if stock_res:
-                df_stock = pd.DataFrame(stock_res)
-                disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
-                st.dataframe(df_stock[disp_cols], hide_index=True, use_container_width=True)
-                
-                report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
-                with open(report_file_stock, "r", encoding="utf-8") as file:
-                    st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
-            else:
-                st.info("ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+            st_tabs = st.tabs(["📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)", "📝 ਵਰਤੋਂ ਦਾ ਰਿਕਾਰਡ (Stock Usage Log)"])
+            with st_tabs[0]:
+                try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
+                except Exception: stock_res = []
+                if stock_res:
+                    df_stock = pd.DataFrame(stock_res)
+                    disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
+                    st.dataframe(df_stock[disp_cols], hide_index=True, use_container_width=True)
+                    report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", df_stock[disp_cols].to_html(index=False, border=1, classes='report-table'))
+                    with open(report_file_stock, "r", encoding="utf-8") as file:
+                        st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
+                else:
+                    st.info("ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+                    
+            with st_tabs[1]:
+                try: usage_res = supabase.table("stock_usage").select("*").order("usage_date", desc=True).limit(50).execute().data or []
+                except Exception: usage_res = []
+                if usage_res:
+                    df_usage = pd.DataFrame(usage_res)[['usage_date', 'item_name', 'quantity', 'unit', 'purpose']]
+                    st.dataframe(df_usage, hide_index=True, use_container_width=True)
+                else:
+                    st.info("ਸਟਾਕ ਦੀ ਵਰਤੋਂ ਦਾ ਕੋਈ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।")
 
     elif selected_mode == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)":
         if is_admin:
@@ -1614,6 +1660,15 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                                     "estimated_value": round(new_val, 2),
                                     "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                                 }).eq("item_name", selected_item).execute()
+                                
+                                # Log usage for widow ration
+                                supabase.table("stock_usage").insert({
+                                    "item_name": selected_item,
+                                    "quantity": qty_to_give,
+                                    "unit": curr_stock[0].get('unit', ''),
+                                    "purpose": f"Ration to Widow: {selected_widow.split(' - ')[1].split(' (')[0]}",
+                                    "usage_date": str(dist_date)
+                                }).execute()
                             
                             widow_just_name = selected_widow.split(" - ")[1].split(" (")[0] if " - " in selected_widow else selected_widow.split(" (")[0]
                             supabase.table("ration_distribution").insert({
@@ -1728,7 +1783,6 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
             df_areq = pd.DataFrame(att_reqs)[['id', 'staff_name', 'date', 'requested_status', 'reason', 'created_at']]
             st.dataframe(df_areq, hide_index=True, use_container_width=True)
             
-            # FIXED: Dictionary mapping instead of string split
             req_dict = {f"ID: {r['id']} - {r['staff_name']} ({r['date']} : {r['requested_status']})": r for r in att_reqs}
             sel_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request)", list(req_dict.keys()))
             
@@ -1840,6 +1894,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", 
         "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", 
         "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", 
+        "ਸਟਾਕ ਵਰਤੋਂ (Stock Usage)": "stock_usage",
         "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", 
         "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books",
         "ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Staff)": "staff_profiles", "ਹਾਜ਼ਰੀ (Attendance)": "attendance"
@@ -1886,7 +1941,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 disp_reqs_cols = [c for c in ['id', 'table_name', 'record_id', 'details', 'created_at'] if c in df_reqs.columns]
                 st.dataframe(df_reqs[disp_reqs_cols], hide_index=True, use_container_width=True)
                 
-                # FIXED: Dictionary mapping instead of string split
                 del_dict = {f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')})": r for r in reqs}
                 selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Request to Action)", list(del_dict.keys()), key="sel_del_req")
                 
@@ -1931,7 +1985,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         if raw_data:
             df_del = pd.DataFrame(raw_data)
             if search_name:
-                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name', 'staff_name'] if c in df_del.columns]
+                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name', 'staff_name', 'purpose'] if c in df_del.columns]
                 if search_cols:
                     mask = df_del[search_cols[0]].astype(str).str.contains(search_name, case=False, na=False)
                     for c in search_cols[1:]: mask = mask | df_del[c].astype(str).str.contains(search_name, case=False, na=False)
@@ -1939,7 +1993,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                     
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
-                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_del.columns]
+                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_del.columns]
                 if date_cols:
                     d_col = date_cols[0]
                     df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce').dt.date
@@ -1998,7 +2052,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 disp_edit_cols = [c for c in ['id', 'table_name', 'record_id', 'changes', 'created_at'] if c in df_reqs_edit.columns]
                 st.dataframe(df_reqs_edit[disp_edit_cols], hide_index=True, use_container_width=True)
                 
-                # FIXED: Dictionary mapping instead of string split
                 edit_dict = {f"ID: {r.get('id', 'N/A')} ({r.get('table_name', 'N/A')} - Rec: {r.get('record_id', 'N/A')})": r for r in reqs_edit}
                 selected_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ (Select Edit Request)", list(edit_dict.keys()), key="sel_edit_req")
                 
@@ -2045,14 +2098,14 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         if raw_data:
             df_edit = pd.DataFrame(raw_data)
             if search_name:
-                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name', 'staff_name'] if c in df_edit.columns]
+                search_cols = [c for c in ['name', 'description', 'item_name', 'party_name', 'collector_name', 'widow_name', 'staff_name', 'purpose'] if c in df_edit.columns]
                 if search_cols:
                     mask = df_edit[search_cols[0]].astype(str).str.contains(search_name, case=False, na=False)
                     for c in search_cols[1:]: mask = mask | df_edit[c].astype(str).str.contains(search_name, case=False, na=False)
                     df_edit = df_edit[mask]
             if filter_date and len(date_range) == 2:
                 d_start, d_end = date_range
-                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added'] if c in df_edit.columns]
+                date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_edit.columns]
                 if date_cols:
                     d_col = date_cols[0]
                     df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], errors='coerce').dt.date
