@@ -625,7 +625,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ? (Select Bank)", BANK_ACCOUNTS)
                     receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today())
                 
-                # UI FIX: Moved checkbox to be more prominent
                 st.markdown("---")
                 add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book) ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
                 st.caption("*(ਜੇਕਰ ਤੁਸੀਂ ਇਸਨੂੰ ਚੈੱਕ ਕਰੋਗੇ, ਤਾਂ ਇਹ ਰਕਮ ਬੈਂਕ ਦੀ ਸਟੇਟਮੈਂਟ ਵਿੱਚ ਵੀ ਆਟੋਮੈਟਿਕ ਜੁੜ ਜਾਵੇਗੀ)*")
@@ -743,7 +742,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 
                 st.write("*(ਜੇਕਰ ਸਟਾਕ/ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
                 
-                # UI FIX: Permanent fields to fix form dynamic update limits
                 col_s1, col_s2 = st.columns(2)
                 with col_s1: 
                     s_item_sel_ik = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ (Select Existing Item)", stock_opts_ik, key="s_item_sel_ik")
@@ -880,7 +878,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ? (From which Bank?)", BANK_ACCOUNTS)
                 exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
                 
-                # UI FIX: Moved checkbox to be more prominent
                 st.markdown("---")
                 add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book) ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
                 st.caption("*(ਜੇਕਰ ਤੁਸੀਂ ਇਸਨੂੰ ਚੈੱਕ ਕਰੋਗੇ, ਤਾਂ ਇਹ ਰਕਮ ਬੈਂਕ ਦੀ ਸਟੇਟਮੈਂਟ ਵਿੱਚੋਂ ਵੀ ਆਟੋਮੈਟਿਕ ਘੱਟ ਜਾਵੇਗੀ)*")
@@ -896,7 +893,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 
                 st.write("*(ਜੇਕਰ ਸਟਾਕ/ਸੰਪਤੀ ਚੁਣਿਆ ਹੈ, ਤਾਂ ਹੇਠਾਂ ਵੇਰਵਾ ਭਰੋ)*")
                 
-                # UI FIX: Permanent fields to fix form dynamic update limits
                 col_es1, col_es2 = st.columns(2)
                 with col_es1: 
                     s_item_sel_exp = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ (Select Existing Item)", stock_opts_exp, key="s_item_sel_exp")
@@ -1068,7 +1064,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value'])
         df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
         
-        # FIX: Ensure values are numeric for proper calculation
         if not df_assets.empty and 'value' in df_assets.columns:
             df_assets['value'] = pd.to_numeric(df_assets['value'], errors='coerce').fillna(0.0)
         if not df_liab.empty and 'value' in df_liab.columns:
@@ -1080,7 +1075,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         total_expense += df_ledg['debit'].sum() if not df_ledg.empty and 'debit' in df_ledg.columns else 0.0
         surplus = total_income - total_expense
         
-        # Calculate Asset Totals by Category
         if not df_assets.empty:
             if 'asset_type' not in df_assets.columns:
                 df_assets['asset_type'] = 'ਹੋਰ (Other)'
@@ -1359,7 +1353,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                                     supabase.table("stock_usage").insert({
                                         "item_name": item_name,
                                         "quantity": qty,
-                                        "unit": s_units.get(item_name, ''),
+                                        "unit": item_unit,
                                         "purpose": purpose_input,
                                         "usage_date": str(proc_date)
                                     }).execute()
@@ -1918,16 +1912,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
 
     if selected_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Data via Excel)")
+        st.info("ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨੀਆਂ, ਵਿਦਿਆਰਥੀਆਂ ਜਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ।")
         
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)"])
-        
-        if upload_type == "ਦਾਨ (Donations)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ (Required Columns): id, date, name, phone, amount, payment_mode, donation_type, item_details, bank_account, on_account_of, collector_name")
-        elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: name, phone, course, join_date, pass_date")
-        elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: form_no, card_no, name, age, husband_name, husband_death_date, phone, address, boys_details, girls_details, issued_by, join_date")
-            
         uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
         
         if uploaded_file is not None:
@@ -2103,7 +2090,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
             st.markdown("---")
             
         st.subheader("⚡ ਸੋਧਣ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ ਅਤੇ ਬਦਲੋ (Edit Entries)")
-        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਅਪਡੇਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
         
         edit_type = st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ? (Select Category)", list(t_map.keys()), key="edit_cat")
         table_name = t_map[edit_type]
