@@ -25,7 +25,7 @@ NGO_LON = 74.8677
 BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
-    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ মিলিটারি (Sound)", 
+    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
     "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
@@ -502,7 +502,7 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
             st.write("### 📝 ਛੁੱਟੀ ਜਾਂ ਪੁਰਾਣੀ ਹਾਜ਼ਰੀ ਦੀ ਬੇਨਤੀ (Leave Request)")
             with st.form("emp_manual_att_form", clear_on_submit=True):
                 st.write(f"**ਸਟਾਫ ਦਾ ਨਾਮ:** {clean_name}")
-                m_date = st.date_input("ਕਿਸ ਦਿਨ ਦੀ ਬੇਨਤੀ ਹੈ? (Date)")
+                m_date = st.date_input("ਕਿਸ ਦਿਨ ਦੀ ਬੇਨਤੀ ਹੈ? (Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 m_status = st.selectbox("ਕੀ ਲਗਾਉਣਾ ਹੈ? (Status)", ["Present (ਹਾਜ਼ਰ)", "Absent (ਛੁੱਟੀ/ਗੈਰ-ਹਾਜ਼ਰ)", "Half Day (ਅੱਧਾ ਦਿਨ)"])
                 m_reason = st.text_input("ਕਾਰਨ (Reason)")
                 
@@ -623,7 +623,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ (Payment Mode)", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
                 with col_m2:
                     bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ? (Select Bank)", BANK_ACCOUNTS)
-                    receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today())
+                    receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ (Receipt Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 
                 st.markdown("---")
                 add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book) ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
@@ -729,7 +729,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 
                 col_k1, col_k2 = st.columns(2)
                 with col_k1: amount_ik = st.number_input("ਅੰਦਾਜ਼ਨ ਕੀਮਤ (Estimated Value ₹)", min_value=0.0, key="ik_amt")
-                with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), key="ik_date")
+                with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), key="ik_date", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 
                 st.markdown("---")
                 add_destination = st.radio("ਦਾਨ ਕੀਤੇ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ? (Where to add this item?)", 
@@ -876,7 +876,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 cat = st.selectbox("ਕੈਟਾਗਰੀ (Category / Sub-head)", [c for c in EXPENSE_CATEGORIES if not c.startswith("---")])
                 exp_amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
                 bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ? (From which Bank?)", BANK_ACCOUNTS)
-                exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today())
+                exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ (Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 
                 st.markdown("---")
                 add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book) ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
@@ -991,7 +991,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 cq_bank = st.selectbox("ਬੈਂਕ ਖਾਤਾ (Bank Account)", BANK_ACCOUNTS)
                 cq_party = st.text_input("ਕਿਸ ਨੂੰ ਦਿੱਤਾ/ਲਿਆ (Party Name)")
                 cq_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
-                cq_date = st.date_input("ਚੈੱਕ ਦੀ ਮਿਤੀ (Cheque Date)", value=date.today())
+                cq_date = st.date_input("ਚੈੱਕ ਦੀ ਮਿਤੀ (Cheque Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 cq_status = st.selectbox("ਸਟੇਟਸ (Status)", ["Pending (ਕਲੀਅਰ ਹੋਣਾ ਬਾਕੀ)", "Cleared (ਕਲੀਅਰ ਹੋ ਗਿਆ)", "Cancelled (ਰੱਦ ਕੀਤਾ)"])
                 if st.form_submit_button("ਚੈੱਕ ਸੇਵ ਕਰੋ (Save Cheque)", type="primary") and cq_no:
                     supabase.table("cheques").insert({"cheque_no": cq_no, "bank_name": cq_bank, "party_name": cq_party, "amount": cq_amt, "cheque_date": str(cq_date), "status": cq_status}).execute()
@@ -1147,7 +1147,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     a_type = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES)
                     a_qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=1.0, step=1.0)
                     a_val = st.number_input("ਕੁੱਲ ਮੁੱਲ (Total Value ₹)", min_value=0.0)
-                    a_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today())
+                    a_date = st.date_input("ਖਰੀਦ/ਪ੍ਰਾਪਤੀ ਮਿਤੀ (Procurement Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                     if st.form_submit_button("ਸੰਪਤੀ ਸੇਵ ਕਰੋ", type="primary"):
                         if not float(a_qty).is_integer():
                             st.error("❌ ਗਲਤੀ: ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ (Whole Number) ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
@@ -1181,8 +1181,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
     elif selected_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ (Consolidated Main Daybook)")
         col_d1, col_d2 = st.columns(2)
-        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), key="md_start")
-        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), key="md_end")
+        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), key="md_start", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), key="md_end", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
 
         main_entries = []
         if not df_don.empty:
@@ -1223,8 +1223,8 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
         selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank)", BANK_ACCOUNTS)
         col_d1, col_d2 = st.columns(2)
-        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1))
-        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today())
+        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
 
         search_banks = [selected_bank, "Kotak Bank"] if selected_bank == "Kotak Bank Regular" else [selected_bank]
 
@@ -1326,8 +1326,8 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                         is_whole_issue = any(u in item_unit for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
                         
                         qty = st.number_input(f"ਮਾਤਰਾ ({item_unit}) - ਮੌਜੂਦ: {s_dict.get(item_name, 0)}", min_value=0.5 if not is_whole_issue else 1.0, step=1.0 if is_whole_issue else 0.5)
-                        purpose_input = st.text_input("ਵਰਤੋਂ ਦਾ ਕਾਰਨ / ਕਿਸਨੂੰ ਦਿੱਤਾ? (Purpose/Recipient)", placeholder="e.g. Langar, Cleaning, Sent to XYZ...")
-                        proc_date = st.date_input("ਮਿਤੀ (Date)", value=date.today())
+                        purpose_input = st.text_input("ਵਰਤੋਂ ਦਾ કਾਰਨ / ਕਿਸਨੂੰ ਦਿੱਤਾ? (Purpose/Recipient)", placeholder="e.g. Langar, Cleaning, Sent to XYZ...")
+                        proc_date = st.date_input("ਮਿਤੀ (Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                         
                         if st.form_submit_button("ਸਟਾਕ ਜਾਰੀ ਕਰੋ (Issue Stock)", type="primary"):
                             if not purpose_input.strip():
@@ -1381,7 +1381,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
                     start_ser = st.number_input("ਸ਼ੁਰੂਆਤੀ ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1, value=1)
                 with c_b2:
                     end_ser = st.number_input("ਆਖਰੀ ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1, value=100)
-                    issue_date = st.date_input("ਜਾਰੀ ਕਰਨ ਦੀ ਮਿਤੀ", value=date.today())
+                    issue_date = st.date_input("ਜਾਰੀ ਕਰਨ ਦੀ ਮਿਤੀ", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 if st.form_submit_button("ਕਿਤਾਬ ਜਾਰੀ ਕਰੋ (Issue Book)", type="primary"):
                     if collector_input and end_ser >= start_ser:
                         existing_books = supabase.table("receipt_books").select("*").execute().data or []
@@ -1424,7 +1424,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
                     stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Phone)")
                 with col_s2:
                     stu_course = st.selectbox("ਕਲਾਸ (Course)", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"])
-                    join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ (Join Date)", value=date.today())
+                    join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ (Join Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 
                 s_photo = st.file_uploader("ਵਿਦਿਆਰਥੀ ਦੀ ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ (Upload Photo)", type=['png', 'jpg', 'jpeg'])
                 st.caption("ਫੋਟੋ ਦਾ ਸਾਈਜ਼ ਆਪਣੇ ਆਪ ਛੋਟਾ ਹੋ ਜਾਵੇਗਾ।")
@@ -1532,7 +1532,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                 with c_w3:
                     w_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ (Upload Photo)", type=['png', 'jpg', 'jpeg'])
                     st.caption("ਫੋਟੋ ਦਾ ਸਾਈਜ਼ ਆਪਣੇ ਆਪ ਛੋਟਾ ਹੋ ਜਾਵੇਗਾ।")
-                    w_card_date = st.date_input("ਕਾਰਡ ਸ਼ੁਰੂਆਤ ਦੀ ਤਾਰੀਖ:", value=date.today())
+                    w_card_date = st.date_input("ਕਾਰਡ ਸ਼ੁਰੂਆਤ ਦੀ ਤਾਰੀਖ:", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                 
                 w_address = st.text_area("ਪਤਾ (Address):")
                 
@@ -1651,7 +1651,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                     col1, col2 = st.columns(2)
                     with col1:
                         selected_widow = st.selectbox("ਕਿਸ ਨੂੰ ਰਾਸ਼ਨ ਦਿੱਤਾ? (Select Widow)", w_names)
-                        dist_date = st.date_input("ਵੰਡਣ ਦੀ ਮਿਤੀ (Distribution Date)", value=date.today())
+                        dist_date = st.date_input("ਵੰਡਣ ਦੀ ਮਿਤੀ (Distribution Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                     with col2:
                         selected_item = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਦਿੱਤਾ? (Select Item)", s_items)
                         qty_to_give = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਵਿੱਚ ਮੌਜੂਦ: {s_dict.get(selected_item, 0)}", min_value=0.5, step=0.5)
@@ -1726,7 +1726,7 @@ elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾ�
                     st_login = st.selectbox("ਸਿਸਟਮ ਲਾਗਇਨ ਆਈ.ਡੀ (System Login ID)", ["ਕੋਈ ਨਹੀਂ (None)", "emp1", "emp2", "emp3", "emp4", "emp5"])
                     st.caption("ਜੋ ID ਇੱਥੇ ਚੁਣੋਗੇ, ਕਰਮਚਾਰੀ ਉਸੇ ID ਨਾਲ ਲਾਗਇਨ ਕਰਕੇ ਆਪਣੀ ਹਾਜ਼ਰੀ ਲਗਾ ਸਕੇਗਾ।")
                     
-                    st_join = st.date_input("ਜੁਆਇਨਿੰਗ ਮਿਤੀ (Join Date)", value=date.today())
+                    st_join = st.date_input("ਜੁਆਇਨਿੰਗ ਮਿਤੀ (Join Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                     st_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ (Upload Photo)", type=['png', 'jpg', 'jpeg'])
                     
                     if st.form_submit_button("ਪ੍ਰੋਫਾਈਲ ਸੇਵ ਕਰੋ (Save Staff)", type="primary") and st_name:
@@ -2027,7 +2027,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         with col_f1: search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ", key="del_srch")
         with col_f2: 
             filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ", key="del_chk_dt")
-            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="del_dt") if filter_date else []
+            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="del_dt", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY") if filter_date else []
 
         with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ..."):
             try: raw_data = supabase.table(table_name).select("*").execute().data or []
@@ -2131,6 +2131,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
             st.markdown("---")
             
         st.subheader("⚡ ਸੋਧਣ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ ਅਤੇ ਬਦਲੋ (Edit Entries)")
+        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਅਪਡੇਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
         
         edit_type = st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ? (Select Category)", list(t_map.keys()), key="edit_cat")
         table_name = t_map[edit_type]
@@ -2139,7 +2140,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         with col_f1: search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ", key="edit_srch")
         with col_f2: 
             filter_date = st.checkbox("ਮਿਤੀ ਨਾਲ ਲੱਭੋ", key="edit_chk_dt")
-            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="edit_dt") if filter_date else []
+            date_range = st.date_input("ਮਿਤੀ ਚੁਣੋ", [], key="edit_dt", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY") if filter_date else []
             
         with st.spinner("ਡਾਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ..."):
             try: raw_data = supabase.table(table_name).select("*").execute().data or []
