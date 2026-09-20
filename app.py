@@ -1937,13 +1937,13 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         if 'add_to_mirror' not in df_upload.columns: df_upload['add_to_mirror'] = True
                         if 'balance' in df_upload.columns: df_upload['balance'] = df_upload['balance'].fillna(0)
                         df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
-                        supabase.table("donations").insert(df_upload.to_dict(orient='records')).execute()
-                    
+                        table_name = "donations"
+                        
                     elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
-                        supabase.table("students").insert(df_upload.to_dict(orient='records')).execute()
+                        table_name = "students"
                         
                     elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
-                        supabase.table("widows").insert(df_upload.to_dict(orient='records')).execute()
+                        table_name = "widows"
                         
                     elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
                         if 'debit' in df_upload.columns: df_upload['debit'] = pd.to_numeric(df_upload['debit'], errors='coerce').fillna(0)
@@ -1951,10 +1951,21 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         if 'credit' in df_upload.columns: df_upload['credit'] = pd.to_numeric(df_upload['credit'], errors='coerce').fillna(0)
                         else: df_upload['credit'] = 0.0
                         if 'source' not in df_upload.columns: df_upload['source'] = 'Bulk Excel'
-                        supabase.table("bank_ledger").insert(df_upload.to_dict(orient='records')).execute()
-                        
+                        table_name = "bank_ledger"
+
+                    # --- 100% BULLETPROOF FIX: ਡਾਟਾਬੇਸ ਵਿੱਚ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਹਰ ਇੱਕ 'nan' ਨੂੰ ਲੱਭ ਕੇ ਖਤਮ ਕਰੋ ---
+                    records = df_upload.to_dict(orient='records')
+                    for rec in records:
+                        for k, v in rec.items():
+                            if isinstance(v, float) and math.isnan(v):
+                                rec[k] = None
+
+                    # ਸਾਫ ਕੀਤਾ ਹੋਇਆ ਡਾਟਾ Supabase ਵਿੱਚ ਸੇਵ ਕਰੋ
+                    supabase.table(table_name).insert(records).execute()
+                    
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e:
+                    st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
                     st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
 
     elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
