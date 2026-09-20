@@ -25,7 +25,7 @@ NGO_LON = 74.8677
 BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
 EXPENSE_CATEGORIES = [
     "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
-    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
+    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ মিলিটারি (Sound)", 
     "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
     "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
     "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
@@ -705,7 +705,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             with c3:
                                 phone = str(row_data.get('phone', '')).strip()
                                 if phone and phone.lower() not in ['nan', 'none', '']:
-                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {row_data.get('name','')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
                                     url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
                                     st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 5px 15px; font-size: 14px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
                                 else:
@@ -1916,33 +1916,44 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
         
         if upload_type == "ਦਾਨ (Donations)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ (Required Columns): id, date, name, phone, amount, payment_mode, donation_type, item_details, bank_account, on_account_of, collector_name")
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ (Required Columns): id, date, name, phone, amount, payment_mode, donation_type, item_details, bank_account, on_account_of, collector_name, balance")
         elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
             st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: name, phone, course, join_date, pass_date")
         elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
             st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: form_no, card_no, name, age, husband_name, husband_death_date, phone, address, boys_details, girls_details, issued_by, join_date")
         elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: txn_date, description, bank_name, debit, credit, source")
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: txn_date, description, bank_name, debit, credit, balance, source")
             
         uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
         
         if uploaded_file is not None:
             df_upload = pd.read_excel(uploaded_file)
-            df_upload = df_upload.where(pd.notnull(df_upload), None)
+            df_upload.columns = df_upload.columns.str.lower()
+            
+            # --- ਬੁਲੇਟਪਰੂਫ ਹੱਲ (Bulletproof Fix for NaN) ---
+            df_upload = df_upload.astype(object).where(pd.notna(df_upload), None)
+            
             st.dataframe(df_upload.head(10), use_container_width=True)
             
             if st.button(f"🚀 ਸਾਰਾ ਡਾਟਾ {upload_type} ਵਿੱਚ ਸੇਵ ਕਰੋ (Upload All)", type="primary"):
                 try:
                     if upload_type == "ਦਾਨ (Donations)":
                         if 'add_to_mirror' not in df_upload.columns: df_upload['add_to_mirror'] = True
-                        if 'balance' in df_upload.columns: df_upload['balance'] = df_upload['balance'].fillna(0)
+                        if 'balance' in df_upload.columns: df_upload['balance'] = pd.to_numeric(df_upload['balance'], errors='coerce').fillna(0)
                         df_upload['add_to_mirror'] = df_upload['add_to_mirror'].fillna(True).astype(bool)
+                        
+                        allowed_cols = ['id', 'date', 'name', 'phone', 'amount', 'payment_mode', 'donation_type', 'item_details', 'bank_account', 'on_account_of', 'collector_name', 'add_to_mirror', 'balance']
+                        df_upload = df_upload[[c for c in allowed_cols if c in df_upload.columns]]
                         table_name = "donations"
                         
                     elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
+                        allowed_cols = ['name', 'phone', 'course', 'join_date', 'pass_date', 'photo_base64']
+                        df_upload = df_upload[[c for c in allowed_cols if c in df_upload.columns]]
                         table_name = "students"
                         
                     elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
+                        allowed_cols = ['form_no', 'card_no', 'name', 'age', 'husband_name', 'husband_death_date', 'phone', 'address', 'boys_details', 'girls_details', 'issued_by', 'join_date', 'photo_base64']
+                        df_upload = df_upload[[c for c in allowed_cols if c in df_upload.columns]]
                         table_name = "widows"
                         
                     elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
@@ -1950,7 +1961,11 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         else: df_upload['debit'] = 0.0
                         if 'credit' in df_upload.columns: df_upload['credit'] = pd.to_numeric(df_upload['credit'], errors='coerce').fillna(0)
                         else: df_upload['credit'] = 0.0
+                        if 'balance' in df_upload.columns: df_upload['balance'] = pd.to_numeric(df_upload['balance'], errors='coerce').fillna(0)
                         if 'source' not in df_upload.columns: df_upload['source'] = 'Bulk Excel'
+                        
+                        allowed_cols = ['txn_date', 'description', 'bank_name', 'debit', 'credit', 'balance', 'source']
+                        df_upload = df_upload[[c for c in allowed_cols if c in df_upload.columns]]
                         table_name = "bank_ledger"
 
                     # --- 100% BULLETPROOF FIX: ਡਾਟਾਬੇਸ ਵਿੱਚ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਹਰ ਇੱਕ 'nan' ਨੂੰ ਲੱਭ ਕੇ ਖਤਮ ਕਰੋ ---
@@ -1960,12 +1975,10 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                             if isinstance(v, float) and math.isnan(v):
                                 rec[k] = None
 
-                    # ਸਾਫ ਕੀਤਾ ਹੋਇਆ ਡਾਟਾ Supabase ਵਿੱਚ ਸੇਵ ਕਰੋ
                     supabase.table(table_name).insert(records).execute()
                     
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e:
-                    st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
                     st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਐਕਸਲ ਸ਼ੀਟ ਦੇ ਕਾਲਮ ਚੈੱਕ ਕਰੋ। (Details: {e})")
 
     elif selected_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
