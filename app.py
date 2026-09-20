@@ -1928,7 +1928,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         
         if uploaded_file is not None:
             df_upload = pd.read_excel(uploaded_file)
-            df_upload.columns = df_upload.columns.str.lower()
+            df_upload = df_upload.where(pd.notnull(df_upload), None)
             st.dataframe(df_upload.head(10), use_container_width=True)
             
             if st.button(f"🚀 ਸਾਰਾ ਡਾਟਾ {upload_type} ਵਿੱਚ ਸੇਵ ਕਰੋ (Upload All)", type="primary"):
