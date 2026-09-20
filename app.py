@@ -705,7 +705,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             with c3:
                                 phone = str(row_data.get('phone', '')).strip()
                                 if phone and phone.lower() not in ['nan', 'none', '']:
-                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {row_data.get('name','')} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
+                                    msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ₹{row_data.get('amount',0)}/- ਦਾ ਦਾਨ (ਰਸੀਦ ਨੰ: {row_data['id']}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਧੰਨਵਾਦ ਜੀ।"
                                     url = f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
                                     st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn" style="padding: 5px 15px; font-size: 14px; margin-top: 0;">💬 WhatsApp</a>', unsafe_allow_html=True)
                                 else:
@@ -1912,9 +1912,18 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
 
     if selected_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ (Upload Data via Excel)")
-        st.info("ਇੱਕੋ ਕਲਿੱਕ ਵਿੱਚ ਐਕਸਲ ਸ਼ੀਟ ਰਾਹੀਂ ਦਾਨੀਆਂ, ਵਿਦਿਆਰਥੀਆਂ ਜਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਵੱਡਾ ਰਿਕਾਰਡ ਅੱਪਲੋਡ ਕਰੋ।")
         
-        upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)"])
+        upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
+        
+        if upload_type == "ਦਾਨ (Donations)":
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ (Required Columns): id, date, name, phone, amount, payment_mode, donation_type, item_details, bank_account, on_account_of, collector_name")
+        elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: name, phone, course, join_date, pass_date")
+        elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: form_no, card_no, name, age, husband_name, husband_death_date, phone, address, boys_details, girls_details, issued_by, join_date")
+        elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: txn_date, description, bank_name, debit, credit, source")
+            
         uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
         
         if uploaded_file is not None:
@@ -1935,6 +1944,14 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         
                     elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
                         supabase.table("widows").insert(df_upload.to_dict(orient='records')).execute()
+                        
+                    elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
+                        if 'debit' in df_upload.columns: df_upload['debit'] = pd.to_numeric(df_upload['debit'], errors='coerce').fillna(0)
+                        else: df_upload['debit'] = 0.0
+                        if 'credit' in df_upload.columns: df_upload['credit'] = pd.to_numeric(df_upload['credit'], errors='coerce').fillna(0)
+                        else: df_upload['credit'] = 0.0
+                        if 'source' not in df_upload.columns: df_upload['source'] = 'Bulk Excel'
+                        supabase.table("bank_ledger").insert(df_upload.to_dict(orient='records')).execute()
                         
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e:
