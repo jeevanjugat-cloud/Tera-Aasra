@@ -193,7 +193,7 @@ def generate_html_report(title, content_html):
         .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
         .tagline {{ font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
         .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
-        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
+        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left; }}
         .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
         .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
         .bs-box {{ width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; text-align: left; }}
@@ -1237,6 +1237,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
     
     modes = [
         "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
+        "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Cash & Bank Balances)",
         "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)",
         "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", 
         "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)", 
@@ -1296,12 +1297,36 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         st.markdown(inc_exp_html, unsafe_allow_html=True)
         
         bank_balances = {"ਨਕਦ (Cash)": 0.0, "Kotak Bank Regular": 0.0, "Kotak Bank Corpus Fund": 0.0, "Punjab & Sind Bank": 0.0}
+        
+        df_don_safe = df_don.copy()
+        if not df_don_safe.empty:
+            df_don_safe['add_to_mirror'] = df_don_safe.get('add_to_mirror', False).fillna(False).astype(bool)
+            df_don_safe['amount'] = pd.to_numeric(df_don_safe['amount'], errors='coerce').fillna(0)
+            
+        df_exp_safe = df_exp.copy()
+        if not df_exp_safe.empty:
+            df_exp_safe['add_to_mirror'] = df_exp_safe.get('add_to_mirror', False).fillna(False).astype(bool)
+            df_exp_safe['amount'] = pd.to_numeric(df_exp_safe['amount'], errors='coerce').fillna(0)
+            
+        df_ledg_safe = df_ledg.copy()
+        if not df_ledg_safe.empty:
+            if 'credit' in df_ledg_safe.columns: df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe['credit'], errors='coerce').fillna(0)
+            if 'debit' in df_ledg_safe.columns: df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe['debit'], errors='coerce').fillna(0)
+
         for bank in BANK_ACCOUNTS:
             b_list = [bank, "Kotak Bank"] if bank == "Kotak Bank Regular" else [bank]
-            b_in = df_don[(df_don['bank_account'].isin(b_list)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don.get('add_to_mirror', False) == True)]['amount'].sum() if not df_don.empty else 0
-            b_in += df_ledg[df_ledg['bank_name'].isin(b_list)]['credit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'credit' in df_ledg.columns else 0
-            b_out = df_exp[(df_exp['bank_account'].isin(b_list)) & (df_exp.get('add_to_mirror', False) == True)]['amount'].sum() if not df_exp.empty else 0
-            b_out += df_ledg[df_ledg['bank_name'].isin(b_list)]['debit'].sum() if not df_ledg.empty and 'bank_name' in df_ledg.columns and 'debit' in df_ledg.columns else 0
+            b_in, b_out = 0.0, 0.0
+            
+            if not df_don_safe.empty:
+                b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
+            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
+                
+            if not df_exp_safe.empty:
+                b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
+            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
+                
             bank_balances[bank] = b_in - b_out
         
         total_assets = fixed_assets_val + sum(bank_balances.values())
@@ -1375,6 +1400,55 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                     st.dataframe(format_dates_in_df(df_liab[[c for c in ['id', 'name', 'value', 'date_added'] if c in df_liab.columns]]), hide_index=True, use_container_width=True)
                 else:
                     st.info("ਕੋਈ ਫੰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    elif selected_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Cash & Bank Balances)":
+        st.write("### 💰 ਮੌਜੂਦਾ ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Current Cash In Hand & Bank Balances)")
+        
+        bank_balances = {"ਨਕਦ (Cash)": 0.0, "Kotak Bank Regular": 0.0, "Kotak Bank Corpus Fund": 0.0, "Punjab & Sind Bank": 0.0}
+        
+        df_don_safe = df_don.copy()
+        if not df_don_safe.empty:
+            df_don_safe['add_to_mirror'] = df_don_safe.get('add_to_mirror', False).fillna(False).astype(bool)
+            df_don_safe['amount'] = pd.to_numeric(df_don_safe['amount'], errors='coerce').fillna(0)
+            
+        df_exp_safe = df_exp.copy()
+        if not df_exp_safe.empty:
+            df_exp_safe['add_to_mirror'] = df_exp_safe.get('add_to_mirror', False).fillna(False).astype(bool)
+            df_exp_safe['amount'] = pd.to_numeric(df_exp_safe['amount'], errors='coerce').fillna(0)
+            
+        df_ledg_safe = df_ledg.copy()
+        if not df_ledg_safe.empty:
+            if 'credit' in df_ledg_safe.columns: df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe['credit'], errors='coerce').fillna(0)
+            if 'debit' in df_ledg_safe.columns: df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe['debit'], errors='coerce').fillna(0)
+
+        for bank in BANK_ACCOUNTS:
+            b_list = [bank, "Kotak Bank"] if bank == "Kotak Bank Regular" else [bank]
+            b_in, b_out = 0.0, 0.0
+            
+            if not df_don_safe.empty:
+                b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
+            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
+                
+            if not df_exp_safe.empty:
+                b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
+            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
+                
+            bank_balances[bank] = b_in - b_out
+            
+        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ (Account Name)", "ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"])
+        total_bal = df_bals["ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"].sum()
+        
+        st.dataframe(df_bals.style.format({'ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)': '{:,.2f}'}), hide_index=True, use_container_width=True)
+        st.markdown(f"**ਕੁੱਲ ਬੈਲੇਂਸ (Total Balance): ₹ {total_bal:,.2f}**")
+        
+        html_table = df_bals.to_html(index=False, border=1, classes='report-table')
+        html_table += f"<br><h4 style='text-align: right; color: #D92B2B;'>ਕੁੱਲ (Total Balance): Rs. {total_bal:,.2f}</h4>"
+        rep_file = generate_html_report("ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ ਰਿਪੋਰਟ (Cash In Hand & Bank Balances)", html_table)
+        
+        with open(rep_file, "r", encoding="utf-8") as f:
+            st.download_button("🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Balances)", data=f.read(), file_name=rep_file, mime="text/html", type="primary")
 
     elif selected_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ (Consolidated Main Daybook)")
@@ -1758,7 +1832,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                 st.write("**ਬੱਚੇ (Children Details):**")
                 cb1, cb2 = st.columns(2)
                 with cb1:
-                    w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 14 ਸਾਲ - 8ਵੀਂ, 10 ਸਾਲ - 5ਵੀਂ")
+                    w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 14 ਸਾਲ - 8ਵੀਂ, 10 মিলিটারি - 5ਵੀਂ")
                 with cb2:
                     w_girls = st.text_area("ਲੜਕੀਆਂ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 12 ਸਾਲ - 6ਵੀਂ")
                 
