@@ -843,7 +843,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl", type="primary")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ カਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
             
@@ -1213,14 +1213,18 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
-            df_main['Date'] = pd.to_datetime(df_main['Date'], dayfirst=True, errors='coerce').dt.date
+            # FIX: Convert to safe Timestamp format for comparison
+            df_main['Date'] = pd.to_datetime(df_main['Date'], dayfirst=True, errors='coerce')
             df_main = df_main.dropna(subset=['Date'])
             df_main = df_main.sort_values(by='Date')
             
-            df_before = df_main[df_main['Date'] < start_date]
+            start_ts = pd.to_datetime(start_date)
+            end_ts = pd.to_datetime(end_date)
+            
+            df_before = df_main[df_main['Date'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
             
-            df_period = df_main[(df_main['Date'] >= start_date) & (df_main['Date'] <= end_date)].copy()
+            df_period = df_main[(df_main['Date'] >= start_ts) & (df_main['Date'] <= end_ts)].copy()
             running_bal = opening_bal
             balances = []
             for _, row in df_period.iterrows():
@@ -1259,12 +1263,18 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
-            df_compiled['Date'] = pd.to_datetime(df_compiled['Date'], dayfirst=True, errors='coerce').dt.date
+            # FIX: Convert to safe Timestamp format for comparison
+            df_compiled['Date'] = pd.to_datetime(df_compiled['Date'], dayfirst=True, errors='coerce')
             df_compiled = df_compiled.dropna(subset=['Date'])
             df_compiled = df_compiled.sort_values(by='Date')
-            df_before = df_compiled[df_compiled['Date'] < start_date]
+            
+            start_ts = pd.to_datetime(start_date)
+            end_ts = pd.to_datetime(end_date)
+            
+            df_before = df_compiled[df_compiled['Date'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
-            df_period = df_compiled[(df_compiled['Date'] >= start_date) & (df_compiled['Date'] <= end_date)].copy()
+            
+            df_period = df_compiled[(df_compiled['Date'] >= start_ts) & (df_compiled['Date'] <= end_ts)].copy()
             running_bal = opening_bal
             balances = []
             for _, row in df_period.iterrows():
@@ -1465,7 +1475,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
                             }).execute()
                             st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
                         except Exception as e:
-                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' ਕਾਲਮ ਬਣਾਓ। Details: {e}")
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64'คਾਲਮ ਬਣਾਓ। Details: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -2070,8 +2080,11 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_del.columns]
                 if date_cols:
                     d_col = date_cols[0]
-                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce').dt.date
-                    df_del = df_del[(df_del['__temp_date'] >= d_start) & (df_del['__temp_date'] <= d_end)]
+                    # FIX: Compare safely with explicit Timestamps
+                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce')
+                    d_start_ts = pd.to_datetime(d_start)
+                    d_end_ts = pd.to_datetime(d_end)
+                    df_del = df_del[(df_del['__temp_date'] >= d_start_ts) & (df_del['__temp_date'] <= d_end_ts)]
                     df_del = df_del.drop(columns=['__temp_date'])
                     
             if not df_del.empty:
@@ -2154,6 +2167,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
             st.markdown("---")
             
         st.subheader("⚡ ਸੋਧਣ ਲਈ ਐਂਟਰੀਆਂ ਲੱਭੋ ਅਤੇ ਬਦਲੋ (Edit Entries)")
+        if is_staff: st.info("⚠️ ਸਟਾਫ ਸਿੱਧਾ ਅਪਡੇਟ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਤੁਹਾਡੀ ਬੇਨਤੀ ਐਡਮਿਨ ਕੋਲ ਮਨਜ਼ੂਰੀ ਲਈ ਜਾਵੇਗੀ।")
         
         edit_type = st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ? (Select Category)", list(t_map.keys()), key="edit_cat")
         table_name = t_map[edit_type]
@@ -2181,8 +2195,11 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_edit.columns]
                 if date_cols:
                     d_col = date_cols[0]
-                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], errors='coerce').dt.date
-                    df_edit = df_edit[(df_edit['__temp_date'] >= d_start) & (df_edit['__temp_date'] <= d_end)]
+                    # FIX: Compare safely with explicit Timestamps
+                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], errors='coerce')
+                    d_start_ts = pd.to_datetime(d_start)
+                    d_end_ts = pd.to_datetime(d_end)
+                    df_edit = df_edit[(df_edit['__temp_date'] >= d_start_ts) & (df_edit['__temp_date'] <= d_end_ts)]
                     df_edit = df_edit.drop(columns=['__temp_date'])
                     
             if not df_edit.empty:
@@ -2193,7 +2210,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 pk_col = 'item_name' if table_name == 'stock' else 'id'
                 disabled_cols = [pk_col] if pk_col in df_edit.columns else []
                 
-                # ਅਸੀਂ ਇੱਥੇ RAW ਡਾਟਾ ਦਿਖਾਉਂਦੇ ਹਾਂ ਤਾਂ ਜੋ DB ਨੂੰ ਵਾਪਸ ਭੇਜਣ ਵੇਲੇ ਫਾਰਮੈਟ ਖਰਾਬ ਨਾ ਹੋਵੇ (ਡਾਟਾਬੇਸ ਸੁਰੱਖਿਆ ਲਈ)
                 edited_df = st.data_editor(
                     df_edit,
                     hide_index=True,
