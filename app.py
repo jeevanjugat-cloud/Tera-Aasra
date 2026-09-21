@@ -193,7 +193,7 @@ def generate_html_report(title, content_html):
         .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
         .tagline {{ font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
         .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
-        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left; }}
+        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
         .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
         .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
         .bs-box {{ width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; text-align: left; }}
@@ -1317,15 +1317,26 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             b_list = [bank, "Kotak Bank"] if bank == "Kotak Bank Regular" else [bank]
             b_in, b_out = 0.0, 0.0
             
-            if not df_don_safe.empty:
-                b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
-            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
-                b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
-                
-            if not df_exp_safe.empty:
-                b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
-            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
-                b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
+            if bank == "ਨਕਦ (Cash)":
+                if not df_don_safe.empty:
+                    b_in += df_don_safe[(df_don_safe['bank_account'] == bank) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                    b_in += df_ledg_safe[df_ledg_safe['bank_name'] == bank]['credit'].sum()
+                    
+                if not df_exp_safe.empty:
+                    b_out += df_exp_safe[df_exp_safe['bank_account'] == bank]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                    b_out += df_ledg_safe[df_ledg_safe['bank_name'] == bank]['debit'].sum()
+            else:
+                if not df_don_safe.empty:
+                    b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                    b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
+                    
+                if not df_exp_safe.empty:
+                    b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                    b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
                 
             bank_balances[bank] = b_in - b_out
         
@@ -1425,15 +1436,26 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             b_list = [bank, "Kotak Bank"] if bank == "Kotak Bank Regular" else [bank]
             b_in, b_out = 0.0, 0.0
             
-            if not df_don_safe.empty:
-                b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
-            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
-                b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
-                
-            if not df_exp_safe.empty:
-                b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
-            if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
-                b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
+            if bank == "ਨਕਦ (Cash)":
+                if not df_don_safe.empty:
+                    b_in += df_don_safe[(df_don_safe['bank_account'] == bank) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                    b_in += df_ledg_safe[df_ledg_safe['bank_name'] == bank]['credit'].sum()
+                    
+                if not df_exp_safe.empty:
+                    b_out += df_exp_safe[df_exp_safe['bank_account'] == bank]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                    b_out += df_ledg_safe[df_ledg_safe['bank_name'] == bank]['debit'].sum()
+            else:
+                if not df_don_safe.empty:
+                    b_in += df_don_safe[(df_don_safe['bank_account'].isin(b_list)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'credit' in df_ledg_safe.columns:
+                    b_in += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['credit'].sum()
+                    
+                if not df_exp_safe.empty:
+                    b_out += df_exp_safe[(df_exp_safe['bank_account'].isin(b_list)) & (df_exp_safe['add_to_mirror'] == True)]['amount'].sum()
+                if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns and 'debit' in df_ledg_safe.columns:
+                    b_out += df_ledg_safe[df_ledg_safe['bank_name'].isin(b_list)]['debit'].sum()
                 
             bank_balances[bank] = b_in - b_out
             
@@ -1832,7 +1854,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                 st.write("**ਬੱਚੇ (Children Details):**")
                 cb1, cb2 = st.columns(2)
                 with cb1:
-                    w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 14 ਸਾਲ - 8ਵੀਂ, 10 মিলিটারি - 5ਵੀਂ")
+                    w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 14 ਸਾਲ - 8ਵੀਂ, 10 ਸਾਲ - 5ਵੀਂ")
                 with cb2:
                     w_girls = st.text_area("ਲੜਕੀਆਂ (ਉਮਰ, ਕਲਾਸ): \nਉਦਾਹਰਣ: 12 ਸਾਲ - 6ਵੀਂ")
                 
@@ -2208,14 +2230,16 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
         
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ (Select Data Type)", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
         
-        if upload_type == "ਦਾਨ (Donations)":
+        default_bank_upload = "Kotak Bank Regular"
+        if upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
+            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: txn_date, description, debit, credit, balance, source (bank_name ਆਟੋਮੈਟਿਕ ਭਰਿਆ ਜਾਵੇਗਾ)")
+            default_bank_upload = st.selectbox("ਇਹ ਸਟੇਟਮੈਂਟ ਕਿਸ ਬੈਂਕ ਦੀ ਹੈ? (Select Bank for this Statement)", BANK_ACCOUNTS, index=1)
+        elif upload_type == "ਦਾਨ (Donations)":
             st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ (Required Columns): id, date, name, phone, address, amount, payment_mode, cheque_no, cheque_bank, donation_type, item_details, bank_account, on_account_of, collector_name, balance")
         elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
             st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: name, phone, course, join_date, pass_date")
         elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
             st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: form_no, card_no, name, age, husband_name, husband_death_date, phone, address, boys_details, girls_details, issued_by, join_date")
-        elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
-            st.info("💡 ਜ਼ਰੂਰੀ ਕਾਲਮ: txn_date, description, bank_name, debit, credit, balance, source")
             
         uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
         
@@ -2254,13 +2278,24 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         if 'credit' in df_upload.columns: df_upload['credit'] = pd.to_numeric(df_upload['credit'], errors='coerce').fillna(0)
                         else: df_upload['credit'] = 0.0
                         if 'balance' in df_upload.columns: df_upload['balance'] = pd.to_numeric(df_upload['balance'], errors='coerce').fillna(0)
+                        else: df_upload['balance'] = 0.0
                         if 'source' not in df_upload.columns: df_upload['source'] = 'Bulk Excel'
-                        if 'bank_name' in df_upload.columns: df_upload['bank_name'] = df_upload['bank_name'].astype(str).str.strip()
+                        
+                        if 'bank_name' not in df_upload.columns: 
+                            df_upload['bank_name'] = default_bank_upload
+                        else:
+                            df_upload['bank_name'] = df_upload['bank_name'].fillna(default_bank_upload).replace("", default_bank_upload)
+                            
                         if 'txn_date' in df_upload.columns: 
                             df_upload['txn_date'] = pd.to_datetime(df_upload['txn_date'], dayfirst=True, errors='coerce').dt.strftime('%Y-%m-%d')
                         
                         allowed_cols = ['txn_date', 'description', 'bank_name', 'debit', 'credit', 'balance', 'source']
-                        df_upload = df_upload[[c for c in allowed_cols if c in df_upload.columns]]
+                        
+                        for c in allowed_cols:
+                            if c not in df_upload.columns:
+                                df_upload[c] = None
+                                
+                        df_upload = df_upload[allowed_cols]
                         table_name = "bank_ledger"
 
                     records = df_upload.to_dict(orient='records')
