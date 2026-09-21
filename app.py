@@ -843,7 +843,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                             st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ (Print)", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl", type="primary")
                     with col_d2:
                         if donor_phone_ik:
-                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ カਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
+                            msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ।\n\nਸਤਿਕਾਰਯੋਗ {donor_name_ik} ਜੀ,\n{NGO_NAME_PB} ਨੂੰ ਦਾਨ ਵਜੋਂ '{item_details_ik}' (ਰਸੀਦ ਨੰ: {rec_no_ik}) ਦੇਣ ਲਈ ਆਪ ਜੀ ਦਾ ਬਹੁਤ-ਬਹੁਤ ਧੰਨਵਾਦ ਜੀ।"
                             url = f"https://wa.me/{donor_phone_ik}?text={urllib.parse.quote(msg)}"
                             st.markdown(f'<a href="{url}" target="_blank" class="whatsapp-btn">💬 WhatsApp \'ਤੇ ਰਸੀਦ ਭੇਜੋ (Send via WhatsApp)</a>', unsafe_allow_html=True)
             
@@ -1213,7 +1213,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
-            # FIX: Convert to safe Timestamp format for comparison
             df_main['Date'] = pd.to_datetime(df_main['Date'], dayfirst=True, errors='coerce')
             df_main = df_main.dropna(subset=['Date'])
             df_main = df_main.sort_values(by='Date')
@@ -1263,7 +1262,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
-            # FIX: Convert to safe Timestamp format for comparison
             df_compiled['Date'] = pd.to_datetime(df_compiled['Date'], dayfirst=True, errors='coerce')
             df_compiled = df_compiled.dropna(subset=['Date'])
             df_compiled = df_compiled.sort_values(by='Date')
@@ -1475,7 +1473,7 @@ elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
                             }).execute()
                             st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
                         except Exception as e:
-                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64'คਾਲਮ ਬਣਾਓ। Details: {e}")
+                            st.error(f"❌ ਐਰਰ: ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ Supabase ਦੇ students ਟੇਬਲ ਵਿੱਚ 'photo_base64' ਕਾਲਮ ਬਣਾਓ। Details: {e}")
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ: ਤੁਸੀਂ ਸਿਰਫ਼ ਡਾਟਾ ਦੇਖ ਸਕਦੇ ਹੋ।")
 
@@ -2210,6 +2208,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 pk_col = 'item_name' if table_name == 'stock' else 'id'
                 disabled_cols = [pk_col] if pk_col in df_edit.columns else []
                 
+                # ਅਸੀਂ ਇੱਥੇ RAW ਡਾਟਾ ਦਿਖਾਉਂਦੇ ਹਾਂ ਤਾਂ ਜੋ DB ਨੂੰ ਵਾਪਸ ਭੇਜਣ ਵੇਲੇ ਫਾਰਮੈਟ ਖਰਾਬ ਨਾ ਹੋਵੇ (ਡਾਟਾਬੇਸ ਸੁਰੱਖਿਆ ਲਈ)
                 edited_df = st.data_editor(
                     df_edit,
                     hide_index=True,
