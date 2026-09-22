@@ -897,7 +897,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     }).execute()
                     
                     current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)" and final_item_ik and s_qty_ik > 0:
+                    if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ جوੜੋ (Add to Stock)" and final_item_ik and s_qty_ik > 0:
                         res_stock = supabase.table("stock").select("*").eq("item_name", final_item_ik).execute()
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
@@ -1042,7 +1042,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
                             old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
-                            new_qty = old_qty + s_qty_ik
+                            new_qty = old_qty + s_qty_exp
                             new_val = old_val + exp_amount
                             supabase.table("stock").update({
                                 "quantity": new_qty, 
@@ -1524,13 +1524,13 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         main_entries = []
         if not df_don.empty:
             for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
-                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'Donation'})
+                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': float(row['amount']), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'Donation'})
         if not df_exp.empty:
             for _, row in df_exp.iterrows():
-                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']} ({row['category']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'Expense'})
+                main_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']} ({row['category']})", 'Account': row.get('bank_account', 'N/A'), 'Credit': 0.0, 'Debit': float(row['amount']), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'Expense'})
         if not df_ledg.empty and 'bank_name' in df_ledg.columns:
             for _, row in df_ledg.iterrows():
-                main_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': row.get('bank_name', 'N/A'), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
+                main_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': row.get('bank_name', 'N/A'), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual')})
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
@@ -1550,9 +1550,9 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             for _, row in df_period.iterrows():
                 running_bal += (row['Credit'] - row['Debit'])
                 balances.append(running_bal)
-            df_period['Running Balance'] = balances
+            df_period['ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)'] = balances
             
-            disp_cols = ['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'Running Balance']
+            disp_cols = ['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']
             df_disp = format_dates_in_df(df_period[disp_cols])
             
             if filter_opt == "ਸਿਰਫ਼ ਦਾਨ (Donations)":
@@ -1562,7 +1562,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             elif filter_opt == "ਸਿਰਫ਼ ਬੈਂਕ (Bank Ledger)":
                 df_disp = df_disp[df_disp['Source'].str.contains('Manual|Bulk Excel|Bank', na=False)]
             
-            st.dataframe(df_disp.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), hide_index=True, use_container_width=True)
+            st.dataframe(df_disp.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
             report_file_main = generate_html_report(f"ਮੁੱਖ ਲੈਜ਼ਰ ({filter_opt})", df_disp.to_html(index=False, border=1, classes='report-table'))
             with open(report_file_main, "r", encoding="utf-8") as file: 
                 st.download_button("🖨️ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ (Print Ledger)", data=file.read(), file_name=report_file_main, mime="text/html", type="primary")
@@ -1579,12 +1579,12 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         ledger_entries = []
         if not df_don.empty:
             df_don['add_to_mirror'] = df_don.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_don[(df_don['bank_account'].isin(search_banks)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'Source': 'App (Donation)'})
+            for _, row in df_don[(df_don['bank_account'].isin(search_banks)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
         if not df_exp.empty:
             df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_exp[(df_exp['bank_account'].isin(search_banks)) & (df_exp['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'Source': 'App (Expense)'})
+            for _, row in df_exp[(df_exp['bank_account'].isin(search_banks)) & (df_exp['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
         if not df_ledg.empty and 'bank_name' in df_ledg.columns:
-            for _, row in df_ledg[df_ledg['bank_name'].isin(search_banks)].iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'Source': row.get('source', 'Manual')})
+            for _, row in df_ledg[df_ledg['bank_name'].isin(search_banks)].iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual')})
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
@@ -1604,10 +1604,10 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             for _, row in df_period.iterrows():
                 running_bal += (row['Credit'] - row['Debit'])
                 balances.append(running_bal)
-            df_period['Running Balance'] = balances
+            df_period['ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)'] = balances
             
-            df_disp_bank = format_dates_in_df(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'Running Balance']])
-            st.dataframe(df_disp_bank.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'Running Balance': '{:.2f}'}), hide_index=True, use_container_width=True)
+            df_disp_bank = format_dates_in_df(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']])
+            st.dataframe(df_disp_bank.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
 
     elif selected_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)":
         st.write("### 📊 CA ਆਡਿਟ ਅਤੇ ਐਕਸਲ ਬੈਕਅੱਪ")
@@ -1657,7 +1657,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
             disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
             st.dataframe(format_dates_in_df(df_stock[disp_cols]), hide_index=True, use_container_width=True)
             
-            report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", format_dates_in_df(df_stock[disp_cols]).to_html(index=False, border=1, classes='report-table'))
+            report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ স্টক)", format_dates_in_df(df_stock[disp_cols]).to_html(index=False, border=1, classes='report-table'))
             with open(report_file_stock, "r", encoding="utf-8") as file:
                 st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
         else:
@@ -2417,6 +2417,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_del.columns]
                 if date_cols:
                     d_col = date_cols[0]
+                    # FIX: Compare safely with explicit Timestamps
                     df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce')
                     d_start_ts = pd.to_datetime(d_start)
                     d_end_ts = pd.to_datetime(d_end)
