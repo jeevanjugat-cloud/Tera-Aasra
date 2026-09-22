@@ -141,9 +141,9 @@ def format_dates_in_df(df):
     date_columns = ['date', 'txn_date', 'cheque_date', 'procurement_date', 'issued_date', 'join_date', 'distribution_date', 'usage_date', 'created_at', 'Date', 'date_added']
     for col in date_columns:
         if col in df_copy.columns:
-            df_copy[col] = pd.to_datetime(df_copy[col], errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y').fillna(df_copy[col])
+            df_copy[col] = pd.to_datetime(df_copy[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna(df_copy[col])
     if 'last_updated' in df_copy.columns:
-        df_copy['last_updated'] = pd.to_datetime(df_copy['last_updated'], errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y %I:%M %p').fillna(df_copy['last_updated'])
+        df_copy['last_updated'] = pd.to_datetime(df_copy['last_updated'], errors='coerce').dt.strftime('%d/%m/%Y %I:%M %p').fillna(df_copy['last_updated'])
     return df_copy
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
@@ -897,7 +897,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     }).execute()
                     
                     current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ جوੜੋ (Add to Stock)" and final_item_ik and s_qty_ik > 0:
+                    if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)" and final_item_ik and s_qty_ik > 0:
                         res_stock = supabase.table("stock").select("*").eq("item_name", final_item_ik).execute()
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
@@ -1518,7 +1518,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         filter_opt = st.radio("ਫਿਲਟਰ (Filter):", ["ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ (All)", "ਸਿਰਫ਼ ਦਾਨ (Donations)", "ਸਿਰਫ਼ ਖਰਚੇ (Expenses)", "ਸਿਰਫ਼ ਬੈਂਕ (Bank Ledger)"], horizontal=True)
         
         col_d1, col_d2 = st.columns(2)
-        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), key="md_start", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, 1, 1), key="md_start", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
         with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), key="md_end", min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
 
         main_entries = []
@@ -1534,17 +1534,17 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
-            df_main['Date'] = pd.to_datetime(df_main['Date'], dayfirst=True, errors='coerce')
-            df_main = df_main.dropna(subset=['Date'])
-            df_main = df_main.sort_values(by='Date')
+            df_main['DateObj'] = pd.to_datetime(df_main['Date'], errors='coerce').dt.date
+            df_main = df_main.dropna(subset=['DateObj'])
+            df_main = df_main.sort_values(by='DateObj')
             
-            start_ts = pd.to_datetime(start_date)
-            end_ts = pd.to_datetime(end_date)
+            start_ts = start_date
+            end_ts = end_date
             
-            df_before = df_main[df_main['Date'] < start_ts]
+            df_before = df_main[df_main['DateObj'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
             
-            df_period = df_main[(df_main['Date'] >= start_ts) & (df_main['Date'] <= end_ts)].copy()
+            df_period = df_main[(df_main['DateObj'] >= start_ts) & (df_main['DateObj'] <= end_ts)].copy()
             running_bal = opening_bal
             balances = []
             for _, row in df_period.iterrows():
@@ -1571,7 +1571,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
         selected_bank = st.selectbox("ਬੈਂਕ ਚੁਣੋ (Select Bank)", BANK_ACCOUNTS)
         col_d1, col_d2 = st.columns(2)
-        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, date.today().month, 1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ (Start Date)", value=date(date.today().year, 1, 1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
         with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ (End Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
 
         search_banks = [selected_bank, "Kotak Bank"] if selected_bank == "Kotak Bank Regular" else [selected_bank]
@@ -1579,26 +1579,41 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         ledger_entries = []
         if not df_don.empty:
             df_don['add_to_mirror'] = df_don.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_don[(df_don['bank_account'].isin(search_banks)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
+            if selected_bank == "ਨਕਦ (Cash)":
+                valid_don = df_don[(df_don['bank_account'] == selected_bank) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)')]
+            else:
+                valid_don = df_don[(df_don['bank_account'].isin(search_banks)) & (df_don['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don['add_to_mirror'] == True)]
+                
+            for _, row in valid_don.iterrows(): 
+                ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']}", 'Credit': float(row['amount']), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
+                
         if not df_exp.empty:
             df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', False).fillna(False).astype(bool)
-            for _, row in df_exp[(df_exp['bank_account'].isin(search_banks)) & (df_exp['add_to_mirror'] == True)].iterrows(): ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
+            if selected_bank == "ਨਕਦ (Cash)":
+                valid_exp = df_exp[df_exp['bank_account'] == selected_bank]
+            else:
+                valid_exp = df_exp[(df_exp['bank_account'].isin(search_banks)) & (df_exp['add_to_mirror'] == True)]
+                
+            for _, row in valid_exp.iterrows(): 
+                ledger_entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Credit': 0.0, 'Debit': float(row['amount']), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
+                
         if not df_ledg.empty and 'bank_name' in df_ledg.columns:
-            for _, row in df_ledg[df_ledg['bank_name'].isin(search_banks)].iterrows(): ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual')})
+            for _, row in df_ledg[df_ledg['bank_name'].isin(search_banks)].iterrows(): 
+                ledger_entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Credit': float(row.get('credit', 0)), 'Debit': float(row.get('debit', 0)), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual')})
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
-            df_compiled['Date'] = pd.to_datetime(df_compiled['Date'], dayfirst=True, errors='coerce')
-            df_compiled = df_compiled.dropna(subset=['Date'])
-            df_compiled = df_compiled.sort_values(by='Date')
+            df_compiled['DateObj'] = pd.to_datetime(df_compiled['Date'], errors='coerce').dt.date
+            df_compiled = df_compiled.dropna(subset=['DateObj'])
+            df_compiled = df_compiled.sort_values(by='DateObj')
             
-            start_ts = pd.to_datetime(start_date)
-            end_ts = pd.to_datetime(end_date)
+            start_ts = start_date
+            end_ts = end_date
             
-            df_before = df_compiled[df_compiled['Date'] < start_ts]
+            df_before = df_compiled[df_compiled['DateObj'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
             
-            df_period = df_compiled[(df_compiled['Date'] >= start_ts) & (df_compiled['Date'] <= end_ts)].copy()
+            df_period = df_compiled[(df_compiled['DateObj'] >= start_ts) & (df_compiled['DateObj'] <= end_ts)].copy()
             running_bal = opening_bal
             balances = []
             for _, row in df_period.iterrows():
@@ -1649,7 +1664,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
 
     if selected_mode == "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)":
         st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ (Current Stock Inventory)")
-        st.info("💡 ਨਵਾਂ ਸਟਾਕ ਸਿਰਫ਼ 'ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind)' ਜਾਂ 'ਖਰਚਾ (Payment)' ਵਾਲੇ ਫਾਰਮ ਰਾਹੀਂ ਹੀ ਜੋੜਿਆ ਜਾ ਸਕਦਾ ਹੈ।")
+        st.info("💡 ਨਵਾਂ ਸਟਾਕ ਸਿਰਫ਼ 'ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind)' ਜਾਂ 'ਖਰਚਾ (Payment)' ਵਾਲੇ ਫਾਰਮ ਰਾਹੀਂ ਹੀ جوੜਿਆ ਜਾ ਸਕਦਾ ਹੈ।")
         try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
         except Exception: stock_res = []
         if stock_res:
@@ -1657,7 +1672,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
             disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
             st.dataframe(format_dates_in_df(df_stock[disp_cols]), hide_index=True, use_container_width=True)
             
-            report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ স্টক)", format_dates_in_df(df_stock[disp_cols]).to_html(index=False, border=1, classes='report-table'))
+            report_file_stock = generate_html_report("Current Stock Inventory (ਮੌਜੂਦਾ ਸਟਾਕ)", format_dates_in_df(df_stock[disp_cols]).to_html(index=False, border=1, classes='report-table'))
             with open(report_file_stock, "r", encoding="utf-8") as file:
                 st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
         else:
