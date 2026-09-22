@@ -141,9 +141,9 @@ def format_dates_in_df(df):
     date_columns = ['date', 'txn_date', 'cheque_date', 'procurement_date', 'issued_date', 'join_date', 'distribution_date', 'usage_date', 'created_at', 'Date', 'date_added']
     for col in date_columns:
         if col in df_copy.columns:
-            df_copy[col] = pd.to_datetime(df_copy[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna(df_copy[col])
+            df_copy[col] = pd.to_datetime(df_copy[col], errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y').fillna(df_copy[col])
     if 'last_updated' in df_copy.columns:
-        df_copy['last_updated'] = pd.to_datetime(df_copy['last_updated'], errors='coerce').dt.strftime('%d/%m/%Y %I:%M %p').fillna(df_copy['last_updated'])
+        df_copy['last_updated'] = pd.to_datetime(df_copy['last_updated'], errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y %I:%M %p').fillna(df_copy['last_updated'])
     return df_copy
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
@@ -1624,6 +1624,11 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             df_disp_bank = format_dates_in_df(df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']])
             st.dataframe(df_disp_bank.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
 
+            st.markdown("---")
+            report_file_bank = generate_html_report(f"ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book) - {selected_bank}", df_disp_bank.to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_bank, "r", encoding="utf-8") as file: 
+                st.download_button("🖨️ ਬੈਂਕ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ (Print Bank Ledger)", data=file.read(), file_name=report_file_bank, mime="text/html", type="primary")
+
     elif selected_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)":
         st.write("### 📊 CA ਆਡਿਟ ਅਤੇ ਐਕਸਲ ਬੈਕਅੱਪ")
         st.info("ਆਪਣੇ CA (Chartered Accountant) ਨੂੰ ਆਡਿਟ ਅਤੇ ਰਿਟਰਨ ਭਰਨ ਲਈ ਇਹ ਮੁਕੰਮਲ ਮਲਟੀ-ਸ਼ੀਟ ਐਕਸਲ ਫਾਈਲ ਭੇਜੋ।")
@@ -1664,7 +1669,7 @@ elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾ�
 
     if selected_mode == "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)":
         st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ (Current Stock Inventory)")
-        st.info("💡 ਨਵਾਂ ਸਟਾਕ ਸਿਰਫ਼ 'ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind)' ਜਾਂ 'ਖਰਚਾ (Payment)' ਵਾਲੇ ਫਾਰਮ ਰਾਹੀਂ ਹੀ جوੜਿਆ ਜਾ ਸਕਦਾ ਹੈ।")
+        st.info("💡 ਨਵਾਂ ਸਟਾਕ ਸਿਰਫ਼ 'ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind)' ਜਾਂ 'ਖਰਚਾ (Payment)' ਵਾਲੇ ਫਾਰਮ ਰਾਹੀਂ ਹੀ ਜੋੜਿਆ ਜਾ ਸਕਦਾ ਹੈ।")
         try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).execute().data or []
         except Exception: stock_res = []
         if stock_res:
