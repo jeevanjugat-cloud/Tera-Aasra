@@ -671,6 +671,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)", 
         "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)", 
         "📉 ਖਰਚਾ (Payment Debit)", 
+        "🏦 ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Entry)",
         "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)", 
         "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", 
         "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)"
@@ -1041,7 +1042,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         if res_stock.data:
                             old_qty = float(res_stock.data[0].get('quantity', 0) or 0)
                             old_val = float(res_stock.data[0].get('estimated_value', 0) or 0)
-                            new_qty = old_qty + s_qty_exp
+                            new_qty = old_qty + s_qty_ik
                             new_val = old_val + exp_amount
                             supabase.table("stock").update({
                                 "quantity": new_qty, 
@@ -1118,6 +1119,47 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     with open(rep_file, "r", encoding="utf-8") as f:
                         st.download_button("🖨️ ਸਾਰੇ ਖਰਚੇ ਪ੍ਰਿੰਟ ਕਰੋ (Print Full Register)", data=f.read(), file_name=rep_file, mime="text/html", type="primary")
             except: pass
+        else:
+            st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
+
+    elif selected_mode == "🏦 ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Entry)":
+        if not is_mgmt:
+            with st.form("manual_bank_form", clear_on_submit=True):
+                st.write("### 🏦 ਮੈਨੂਅਲ ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Transaction)")
+                b_acc = st.selectbox("ਬੈਂਕ ਖਾਤਾ (Bank Account)", BANK_ACCOUNTS)
+                b_date = st.date_input("ਮਿਤੀ (Date)", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+                b_desc = st.text_input("ਵੇਰਵਾ (Description)")
+                
+                c1, c2 = st.columns(2)
+                with c1: b_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ (Transaction Type)", ["ਖਾਤੇ ਵਿੱਚ ਆਏ (Credit / Deposit)", "ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਟੇ (Debit / Withdrawal)"])
+                with c2: b_amt = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
+                
+                if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ (Save Entry)", type="primary"):
+                    if not b_desc:
+                        st.error("❌ ਵੇਰਵਾ (Description) ਭਰਨਾ ਜ਼ਰੂਰੀ ਹੈ!")
+                    else:
+                        debit_val = b_amt if "Debit" in b_type or "ਕੱਟੇ" in b_type else 0.0
+                        credit_val = b_amt if "Credit" in b_type or "ਆਏ" in b_type else 0.0
+                        
+                        supabase.table("bank_ledger").insert({
+                            "txn_date": b_date.strftime("%Y-%m-%d"),
+                            "description": b_desc,
+                            "bank_name": b_acc,
+                            "debit": float(debit_val),
+                            "credit": float(credit_val),
+                            "balance": 0.0,
+                            "source": "Manual Entry"
+                        }).execute()
+                        st.success(f"✅ ਬੈਂਕ ਐਂਟਰੀ ({b_acc}) ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਈ!")
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਮੈਨੂਅਲ ਬੈਂਕ ਐਂਟਰੀਆਂ (Recent Manual Entries)")
+            try:
+                recents = supabase.table("bank_ledger").select("*").eq("source", "Manual Entry").order("txn_date", desc=True).limit(50).execute().data
+                if recents: 
+                    df_b_disp = pd.DataFrame(recents)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit']]
+                    st.dataframe(format_dates_in_df(df_b_disp), hide_index=True, use_container_width=True)
+            except Exception: pass
         else:
             st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -2375,7 +2417,6 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_del.columns]
                 if date_cols:
                     d_col = date_cols[0]
-                    # FIX: Compare safely with explicit Timestamps
                     df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce')
                     d_start_ts = pd.to_datetime(d_start)
                     d_end_ts = pd.to_datetime(d_end)
