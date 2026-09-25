@@ -133,7 +133,7 @@ st.markdown("""
 # --- DATE FORMAT HELPERS (DD/MM/YYYY) ---
 def to_ddmmyyyy(date_val):
     if pd.isna(date_val) or not date_val: return ""
-    try: return pd.to_datetime(date_val).strftime("%d/%m/%Y")
+    try: return pd.to_datetime(date_val, dayfirst=True).strftime("%d/%m/%Y")
     except: return str(date_val)
 
 def format_dates_in_df(df):
@@ -1319,7 +1319,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             if 'asset_type' not in df_assets.columns:
                 df_assets['asset_type'] = 'ਹੋਰ (Other)'
             else:
-                df_assets['asset_type'] = df_assets['asset_type'].fillna('ਹੋਰ (Other)')
+                df_assets['asset_type'] = df_assets['asset_type'].fillna('ਹੋਰ (Other)' )
             asset_totals = df_assets.groupby('asset_type')['value'].sum().to_dict()
             fixed_assets_val = df_assets['value'].sum()
         else:
@@ -1534,7 +1534,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
-            df_main['DateObj'] = pd.to_datetime(df_main['Date'], errors='coerce').dt.date
+            df_main['DateObj'] = pd.to_datetime(df_main['Date'], errors='coerce', dayfirst=True).dt.date
             df_main = df_main.dropna(subset=['DateObj'])
             df_main = df_main.sort_values(by='DateObj')
             
@@ -1603,7 +1603,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
-            df_compiled['DateObj'] = pd.to_datetime(df_compiled['Date'], errors='coerce').dt.date
+            df_compiled['DateObj'] = pd.to_datetime(df_compiled['Date'], errors='coerce', dayfirst=True).dt.date
             df_compiled = df_compiled.dropna(subset=['DateObj'])
             df_compiled = df_compiled.sort_values(by='DateObj')
             
@@ -1966,7 +1966,7 @@ elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Wido
                 with w_col1:
                     st.write(f"**ਫਾਰਮ ਨੰ:** {w_d.get('form_no', '')} | **ਕਾਰਡ ਨੰ:** {w_d.get('card_no', '')}")
                     st.write(f"**ਨਾਮ:** {w_d.get('name', '')} | **ਉਮਰ:** {w_d.get('age', '')}")
-                    st.write(f"**ਪਤੀ ਦਾ ਨਾਮ:** {w_d.get('husband_name', '')} (ਮੌਤ: {w_d.get('husband_death_date', '')})")
+                    st.write(f"**ਪਤੀ ਦਾ param ਨਾਮ:** {w_d.get('husband_name', '')} (ਮੌਤ: {w_d.get('husband_death_date', '')})")
                     st.write(f"**ਫ਼ੋਨ:** {w_d.get('phone', '')}")
                     st.write(f"**ਪਤਾ:** {w_d.get('address', '')}")
                     st.write(f"**ਲੜਕੇ:** {w_d.get('boys_details', '')} | **ਲੜਕੀਆਂ:** {w_d.get('girls_details', '')}")
@@ -2438,9 +2438,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 if date_cols:
                     d_col = date_cols[0]
                     # FIX: Compare safely with explicit Timestamps
-                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col], errors='coerce')
-                    d_start_ts = pd.to_datetime(d_start)
-                    d_end_ts = pd.to_datetime(d_end)
+                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col], dayfirst=True, errors='coerce')
+                    d_start_ts = pd.to_datetime(d_start, dayfirst=True)
+                    d_end_ts = pd.to_datetime(d_end, dayfirst=True)
                     df_del = df_del[(df_del['__temp_date'] >= d_start_ts) & (df_del['__temp_date'] <= d_end_ts)]
                     df_del = df_del.drop(columns=['__temp_date'])
                     
@@ -2553,9 +2553,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 if date_cols:
                     d_col = date_cols[0]
                     # FIX: Compare safely with explicit Timestamps
-                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], errors='coerce')
-                    d_start_ts = pd.to_datetime(d_start)
-                    d_end_ts = pd.to_datetime(d_end)
+                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col], dayfirst=True, errors='coerce')
+                    d_start_ts = pd.to_datetime(d_start, dayfirst=True)
+                    d_end_ts = pd.to_datetime(d_end, dayfirst=True)
                     df_edit = df_edit[(df_edit['__temp_date'] >= d_start_ts) & (df_edit['__temp_date'] <= d_end_ts)]
                     df_edit = df_edit.drop(columns=['__temp_date'])
                     
