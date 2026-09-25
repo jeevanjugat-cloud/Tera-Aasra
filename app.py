@@ -39,8 +39,8 @@ ASSET_TYPES = ["ਬਿਲਡਿੰਗ (Building)", "ਫਰਨੀਚਰ (Furnitur
 # CREDENTIALS (DIRECTLY IN CODE)
 # ==========================================
 USERS = {
-    "admin1": {"password": "Japnik@3315", "role": "admin"},
-    "staff": {"password": "123456", "role": "staff"},
+    "admin": {"password": "Japnik@3315", "role": "admin"},
+    "staff": {"password": "12345", "role": "staff"},
     "management": {"password": "view@123", "role": "management"},
     "emp1": {"password": "emp1", "role": "employee"},
     "emp2": {"password": "emp2", "role": "employee"},
@@ -130,21 +130,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- STRICT DATE FORMAT HELPERS (DD/MM/YYYY) ---
+# --- STRICT DATE FORMAT HELPERS (DD/MM/YYYY) ROW-BY-ROW ---
 def to_ddmmyyyy(date_val):
-    if pd.isna(date_val) or not date_val: return ""
-    try: return pd.to_datetime(str(date_val), dayfirst=True).strftime("%d/%m/%Y")
-    except: return str(date_val)
+    if pd.isna(date_val) or str(date_val).strip() in ["", "NaT", "None", "nan"]: return ""
+    try: 
+        return pd.to_datetime(str(date_val).strip(), dayfirst=True).strftime("%d/%m/%Y")
+    except: 
+        return str(date_val)
 
 def format_dates_in_df(df):
     df_copy = df.copy()
-    date_columns = ['date', 'txn_date', 'cheque_date', 'procurement_date', 'issued_date', 'join_date', 'distribution_date', 'usage_date', 'created_at', 'Date', 'date_added']
+    date_columns = ['date', 'txn_date', 'cheque_date', 'procurement_date', 'issued_date', 'join_date', 'distribution_date', 'usage_date', 'created_at', 'Date', 'date_added', 'DateObj']
+    
     for col in date_columns:
         if col in df_copy.columns:
-            # Convert to string first to unify format, then apply to_datetime
-            df_copy[col] = pd.to_datetime(df_copy[col].astype(str), errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y').fillna(df_copy[col])
+            # Applying function to each cell guarantees it catches mixed formats properly
+            df_copy[col] = df_copy[col].apply(to_ddmmyyyy)
+            
     if 'last_updated' in df_copy.columns:
-        df_copy['last_updated'] = pd.to_datetime(df_copy['last_updated'].astype(str), errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y %I:%M %p').fillna(df_copy['last_updated'])
+        def parse_dt_time(d):
+            if pd.isna(d) or str(d).strip() in ["", "NaT", "None", "nan"]: return ""
+            try: return pd.to_datetime(str(d).strip(), dayfirst=True).strftime('%d/%m/%Y %I:%M %p')
+            except: return str(d)
+        df_copy['last_updated'] = df_copy['last_updated'].apply(parse_dt_time)
+        
     return df_copy
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
@@ -1419,7 +1428,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             with ac1:
                 with st.form("add_asset"):
                     st.write("**Fixed Asset (ਪੱਕੀ ਸੰਪਤੀ ਜੋੜੋ)**")
-                    a_name = st.text_input("ਸੰਪਤੀ ਦਾ ਨਾਮ (e.g. Building, Furniture)")
+                    a_name = st.text_input("ਸੰਪਤੀ ਦਾ নাস (e.g. Building, Furniture)")
                     a_type = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ (Asset Type)", ASSET_TYPES)
                     a_qty = st.number_input("ਮਾਤਰਾ (Quantity)", min_value=1.0, step=1.0)
                     a_val = st.number_input("ਕੁੱਲ ਮੁੱਲ (Total Value ₹)", min_value=0.0)
@@ -1535,13 +1544,12 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_main = pd.DataFrame(main_entries)
         if not df_main.empty:
-            # Strictly parse to uniform date objects
-            df_main['DateObj'] = pd.to_datetime(df_main['Date'].astype(str), errors='coerce', dayfirst=True).dt.date
+            df_main['DateObj'] = pd.to_datetime(df_main['Date'].astype(str).str.strip(), errors='coerce', dayfirst=True).dt.date
             df_main = df_main.dropna(subset=['DateObj'])
             df_main = df_main.sort_values(by='DateObj')
             
-            start_ts = pd.to_datetime(str(start_date)).date()
-            end_ts = pd.to_datetime(str(end_date)).date()
+            start_ts = start_date
+            end_ts = end_date
             
             df_before = df_main[df_main['DateObj'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
@@ -1554,7 +1562,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 balances.append(running_bal)
             df_period['ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)'] = balances
             
-            # FORCE STRICT DD/MM/YYYY Output format
             df_period['Date'] = pd.to_datetime(df_period['DateObj']).dt.strftime('%d/%m/%Y')
             
             disp_cols = ['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']
@@ -1608,13 +1615,12 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 
         df_compiled = pd.DataFrame(ledger_entries)
         if not df_compiled.empty:
-            # Strictly parse to uniform date objects
-            df_compiled['DateObj'] = pd.to_datetime(df_compiled['Date'].astype(str), errors='coerce', dayfirst=True).dt.date
+            df_compiled['DateObj'] = pd.to_datetime(df_compiled['Date'].astype(str).str.strip(), errors='coerce', dayfirst=True).dt.date
             df_compiled = df_compiled.dropna(subset=['DateObj'])
             df_compiled = df_compiled.sort_values(by='DateObj')
             
-            start_ts = pd.to_datetime(str(start_date)).date()
-            end_ts = pd.to_datetime(str(end_date)).date()
+            start_ts = start_date
+            end_ts = end_date
             
             df_before = df_compiled[df_compiled['DateObj'] < start_ts]
             opening_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
@@ -1627,7 +1633,6 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
                 balances.append(running_bal)
             df_period['ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)'] = balances
             
-            # FORCE STRICT DD/MM/YYYY Output format
             df_period['Date'] = pd.to_datetime(df_period['DateObj']).dt.strftime('%d/%m/%Y')
             
             df_disp_bank = df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']]
@@ -2446,10 +2451,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_del.columns]
                 if date_cols:
                     d_col = date_cols[0]
-                    # FIX: Strict string casting before parsing to safely handle mixed formats
-                    df_del['__temp_date'] = pd.to_datetime(df_del[d_col].astype(str), dayfirst=True, errors='coerce')
-                    d_start_ts = pd.to_datetime(str(d_start), dayfirst=True)
-                    d_end_ts = pd.to_datetime(str(d_end), dayfirst=True)
+                    df_del['__temp_date'] = df_del[d_col].apply(lambda x: pd.to_datetime(str(x).strip(), dayfirst=True, errors='coerce'))
+                    d_start_ts = pd.to_datetime(d_start)
+                    d_end_ts = pd.to_datetime(d_end)
                     df_del = df_del[(df_del['__temp_date'] >= d_start_ts) & (df_del['__temp_date'] <= d_end_ts)]
                     df_del = df_del.drop(columns=['__temp_date'])
                     
@@ -2561,10 +2565,10 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 date_cols = [c for c in ['date', 'txn_date', 'created_at', 'cheque_date', 'last_updated', 'join_date', 'distribution_date', 'issued_date', 'date_added', 'usage_date'] if c in df_edit.columns]
                 if date_cols:
                     d_col = date_cols[0]
-                    # FIX: Strict string casting before parsing to safely handle mixed formats
-                    df_edit['__temp_date'] = pd.to_datetime(df_edit[d_col].astype(str), dayfirst=True, errors='coerce')
-                    d_start_ts = pd.to_datetime(str(d_start), dayfirst=True)
-                    d_end_ts = pd.to_datetime(str(d_end), dayfirst=True)
+                    # FIX: Compare safely with explicit Timestamps
+                    df_edit['__temp_date'] = df_edit[d_col].apply(lambda x: pd.to_datetime(str(x).strip(), errors='coerce', dayfirst=True))
+                    d_start_ts = pd.to_datetime(d_start)
+                    d_end_ts = pd.to_datetime(d_end)
                     df_edit = df_edit[(df_edit['__temp_date'] >= d_start_ts) & (df_edit['__temp_date'] <= d_end_ts)]
                     df_edit = df_edit.drop(columns=['__temp_date'])
                     
