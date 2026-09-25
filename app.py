@@ -39,8 +39,8 @@ ASSET_TYPES = ["ਬਿਲਡਿੰਗ (Building)", "ਫਰਨੀਚਰ (Furnitur
 # CREDENTIALS (DIRECTLY IN CODE)
 # ==========================================
 USERS = {
-    "admin": {"password": "Japnik@3315", "role": "admin"},
-    "staff": {"password": "12345", "role": "staff"},
+    "admin1": {"password": "Japnik@3315", "role": "admin"},
+    "staff": {"password": "123456", "role": "staff"},
     "management": {"password": "view@123", "role": "management"},
     "emp1": {"password": "emp1", "role": "employee"},
     "emp2": {"password": "emp2", "role": "employee"},
