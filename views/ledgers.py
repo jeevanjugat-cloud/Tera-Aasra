@@ -6,40 +6,37 @@ import time
 import config
 import utils
 
-# === 100% ACCURATE BANK BALANCE CALCULATION ===
+# === EXACT FORMULA: EXCEL UPLOADED LAST BALANCE - PENDING CHEQUES ===
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
     for bank in config.BANK_ACCOUNTS:
-        b_in, b_out = 0.0, 0.0
-        
-        # 1. Donations (In)
-        if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
-            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
-            if bank != "ਨਕਦ (Cash)": mask_don = mask_don & (df_don_safe['add_to_mirror'] == True)
-            b_in += df_don_safe[mask_don]['amount'].sum()
+        # ਨਕਦ (Cash) ਦਾ ਬੈਲੇਂਸ ਆਮ ਵਾਂਗ ਰਹੇਗਾ
+        if bank == "ਨਕਦ (Cash)":
+            b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
+            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
+            b_out = df_exp_safe[df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))]['amount'].sum() if not df_exp_safe.empty else 0.0
+            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum() if not df_ledg_safe.empty else 0.0
+            bank_balances[bank] = b_in - b_out
+            continue
             
-        # 2. Bank Ledger Credits (In - Excel Uploads & Manual)
+        # ਬੈਂਕਾਂ ਲਈ: 1. ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ ਚੁੱਕਣਾ
+        latest_excel_bal = 0.0
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum()
-            
-        # 3. Expenses (Out)
-        if not df_exp_safe.empty and 'bank_account' in df_exp_safe.columns:
-            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
-            if bank != "ਨਕਦ (Cash)": mask_exp = mask_exp & (df_exp_safe['add_to_mirror'] == True)
-            b_out += df_exp_safe[mask_exp]['amount'].sum()
-            
-        # 4. Bank Ledger Debits (Out - Excel Uploads & Manual)
-        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum()
-            
-        # 5. Pending Cheques (Subtract)
+            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] == 'Bulk Excel')
+            df_excel = df_ledg_safe[mask_excel].copy()
+            if not df_excel.empty:
+                df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
+                latest_excel_bal = float(df_excel.iloc[-1].get('balance', 0.0) or 0.0)
+                
+        # 2. ਕਲੀਅਰ ਹੋਣ ਵਾਲੇ ਚੈੱਕ (Pending Cheques) ਲੱਭਣੇ
         pending_chq = 0.0
         if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
             mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        # FINAL FORMULA
-        bank_balances[bank] = b_in - b_out - pending_chq
+        # 3. ਫਾਈਨਲ ਫਾਰਮੂਲਾ (Last Uploaded Balance - Pending Cheques)
+        bank_balances[bank] = latest_excel_bal - pending_chq
         
     return bank_balances
 
@@ -260,7 +257,6 @@ def show_page(is_admin):
 
     elif st.session_state.acc_mode == "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)":
         st.write("### 📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ ਰਜਿਸਟਰ")
-        
         p_col1, p_col2 = st.columns(2)
         with p_col1:
             st.subheader("ਪਾਰਟੀਆਂ (Parties)")
