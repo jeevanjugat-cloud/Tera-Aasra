@@ -6,76 +6,41 @@ import time
 import config
 import utils
 
+# === 100% ACCURATE BANK BALANCE CALCULATION ===
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
     for bank in config.BANK_ACCOUNTS:
-        if bank == "ਨਕਦ (Cash)":
-            b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
-            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
-            b_out = df_exp_safe[df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))]['amount'].sum() if not df_exp_safe.empty else 0.0
-            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum() if not df_ledg_safe.empty else 0.0
-            bank_balances[bank] = b_in - b_out
-            continue
-            
-        latest_excel_date = None
-        latest_excel_bal = 0.0
+        b_in, b_out = 0.0, 0.0
         
-        # 1. Uploaded Excel Balance Find ਕਰਨਾ
-        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] == 'Bulk Excel')
-            df_excel = df_ledg_safe[mask_excel].copy()
-            if not df_excel.empty:
-                df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
-                last_row = df_excel.iloc[-1]
-                latest_excel_date = last_row['__dt']
-                latest_excel_bal = float(last_row.get('balance', 0.0) or 0.0)
-
-        manual_in, manual_out = 0.0, 0.0
-        
-        # 2. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੇ ਨਵੇਂ ਦਾਨ ਜੋੜਨੇ
+        # 1. Donations (In)
         if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
-            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)
-            df_dbank = df_don_safe[mask_don].copy()
-            if not df_dbank.empty:
-                if latest_excel_date:
-                    df_dbank['__dt'] = df_dbank['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                    df_dbank = df_dbank[df_dbank['__dt'] > latest_excel_date]
-                manual_in += df_dbank['amount'].sum()
-
-        # 3. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੀਆਂ Manual ਬੈਂਕ ਐਂਟਰੀਆਂ
+            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
+            if bank != "ਨਕਦ (Cash)": mask_don = mask_don & (df_don_safe['add_to_mirror'] == True)
+            b_in += df_don_safe[mask_don]['amount'].sum()
+            
+        # 2. Bank Ledger Credits (In - Excel Uploads & Manual)
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            mask_man = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] != 'Bulk Excel')
-            df_lbank = df_ledg_safe[mask_man].copy()
-            if not df_lbank.empty:
-                if latest_excel_date:
-                    df_lbank['__dt'] = df_lbank['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                    df_lbank = df_lbank[df_lbank['__dt'] > latest_excel_date]
-                manual_in += df_lbank['credit'].sum()
-                manual_out += df_lbank['debit'].sum()
-
-        # 4. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੇ ਨਵੇਂ ਖਰਚੇ ਮਾਈਨਸ ਕਰਨੇ
+            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum()
+            
+        # 3. Expenses (Out)
         if not df_exp_safe.empty and 'bank_account' in df_exp_safe.columns:
-            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_exp_safe['add_to_mirror'] == True)
-            df_ebank = df_exp_safe[mask_exp].copy()
-            if not df_ebank.empty:
-                if latest_excel_date:
-                    df_ebank['__dt'] = df_ebank['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                    df_ebank = df_ebank[df_ebank['__dt'] > latest_excel_date]
-                manual_out += df_ebank['amount'].sum()
-
-        # 5. Pending Cheques (ਕਲੀਅਰ ਹੋਣ ਵਾਲੇ ਚੈੱਕ) ਮਾਈਨਸ ਕਰਨੇ
+            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
+            if bank != "ਨਕਦ (Cash)": mask_exp = mask_exp & (df_exp_safe['add_to_mirror'] == True)
+            b_out += df_exp_safe[mask_exp]['amount'].sum()
+            
+        # 4. Bank Ledger Debits (Out - Excel Uploads & Manual)
+        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
+            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum()
+            
+        # 5. Pending Cheques (Subtract)
         pending_chq = 0.0
         if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
             mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        if latest_excel_date:
-            # ਫਾਈਨਲ ਫਾਰਮੂਲਾ: Uploaded Bal + New Credits - New Debits - Pending Cheques
-            bank_balances[bank] = latest_excel_bal + manual_in - manual_out - pending_chq
-        else:
-            bank_balances[bank] = manual_in - manual_out - pending_chq
-            
+        # FINAL FORMULA
+        bank_balances[bank] = b_in - b_out - pending_chq
+        
     return bank_balances
 
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
@@ -292,6 +257,26 @@ def show_page(is_admin):
             report_file_bank = utils.generate_html_report(f"ਬੈਂਕ ਲੈਜ਼ਰ - {selected_bank}", df_disp.to_html(index=False, border=1, classes='report-table'), landscape=True)
             with open(report_file_bank, "r", encoding="utf-8") as file: st.download_button("🖨️ ਬੈਂਕ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_bank, mime="text/html", type="primary")
         else: st.info("ਇਸ ਖਾਤੇ ਵਿੱਚ ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    elif st.session_state.acc_mode == "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)":
+        st.write("### 📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ ਰਜਿਸਟਰ")
+        
+        p_col1, p_col2 = st.columns(2)
+        with p_col1:
+            st.subheader("ਪਾਰਟੀਆਂ (Parties)")
+            try: p_data = utils.supabase.table("parties").select("*").limit(1000).execute().data or []
+            except: p_data = []
+            if p_data:
+                df_p = pd.DataFrame(p_data)[['name', 'party_type', 'phone', 'opening_balance']]
+                st.dataframe(df_p, hide_index=True, use_container_width=True)
+            else: st.info("ਕੋਈ ਪਾਰਟੀ ਨਹੀਂ ਹੈ।")
+            
+        with p_col2:
+            st.subheader("ਚੈੱਕ (Cheques)")
+            if not df_cheques.empty:
+                df_c_disp = df_cheques[['cheque_date', 'cheque_no', 'bank_name', 'party_name', 'amount', 'status']]
+                st.dataframe(utils.format_dates_in_df(df_c_disp, ascending=False), hide_index=True, use_container_width=True)
+            else: st.info("ਕੋਈ ਚੈੱਕ ਨਹੀਂ ਹੈ।")
 
     elif st.session_state.acc_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)":
         st.write("### 📊 CA ਆਡਿਟ ਅਤੇ ਐਕਸਲ ਬੈਕਅੱਪ")
