@@ -58,11 +58,21 @@ def format_dates_in_df(df, ascending=False):
 def is_bank_match(record_bank, target_bank):
     rb = "kotak bank regular" if pd.isna(record_bank) or str(record_bank).strip() in ["", "None", "nan", "null"] else str(record_bank).strip().lower()
     tb = str(target_bank).strip().lower()
+    
     if rb == tb: return True
+    
+    # Strict matching for individual Cash accounts
+    is_rb_cash = "ਨਕਦ" in rb or "cash" in rb
+    is_tb_cash = "ਨਕਦ" in tb or "cash" in tb
+    if is_rb_cash and is_tb_cash:
+        if "-" in tb or "-" in rb:
+            return rb == tb
+        return True
+        
     if "kotak" in tb and "corpus" not in tb: return ("kotak" in rb) and ("corpus" not in rb)
     if "corpus" in tb: return "corpus" in rb
     if "punjab" in tb or "sind" in tb or "psb" in tb: return ("punjab" in rb) or ("sind" in rb) or ("psb" in rb)
-    if "ਨਕਦ" in tb or "cash" in tb: return ("ਨਕਦ" in rb) or ("cash" in rb)
+    
     return False
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
