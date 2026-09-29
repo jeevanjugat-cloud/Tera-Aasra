@@ -67,16 +67,12 @@ def show_page(is_mgmt):
                 if not df_rec.empty:
                     disp_cols = [c for c in ['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name'] if c in df_rec.columns]
                     df_rec = utils.format_dates_in_df(df_rec[disp_cols], ascending=False)
-                    
-                    # SELECT COLUMN FOR INDIVIDUAL PRINT/WHATSAPP
                     df_rec.insert(0, "Select", False)
                     edited_df = st.data_editor(df_rec, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=disp_cols, hide_index=True, use_container_width=True, key="editor_donations")
-                    
                     utils.create_print_button(df_rec.drop(columns=['Select']), "Recent Donations", "🖨 ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
 
                     selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
                     if selected_ids:
-                        st.write("**ਚੁਣੀ ਗਈ ਰਸੀਦ (Selected Receipts):**")
                         for sid in selected_ids:
                             row_data = next(r for r in don_data if r['id'] == sid)
                             hf = utils.generate_html_receipt(
@@ -168,7 +164,6 @@ def show_page(is_mgmt):
                     
                     df_disp.insert(0, "Select", False)
                     edited_ik_df = st.data_editor(df_disp, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=disp_cols_ik, hide_index=True, use_container_width=True, key="editor_inkind")
-                    
                     utils.create_print_button(df_disp.drop(columns=['Select']), "In-Kind Donations", "🖨️ ਸਮਾਨ ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
 
                     selected_ik_ids = edited_ik_df[edited_ik_df["Select"] == True]['id'].tolist()
@@ -183,14 +178,21 @@ def show_page(is_mgmt):
                             )
                             with open(hf, "r", encoding="utf-8") as f:
                                 st.download_button(f"🖨️ ਰਸੀਦ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_ik_{sid}")
-
         else: st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
     elif st.session_state.entry_mode == "📉 ਖਰਚਾ (Payment Debit)":
         if not is_mgmt:
+            st.write("### 📉 ਖਰਚਾ ਜਾਂ ਪੇਮੈਂਟ ਦਰਜ ਕਰੋ")
+            try: exp_data_list = utils.supabase.table("expenses").select("payee_name").limit(100000).execute().data or []
+            except: exp_data_list = []
+            
+            # --- PAYEE DROPDOWN LOGIC ---
+            unique_payees = sorted(list({e.get('payee_name') for e in exp_data_list if e.get('payee_name') and str(e.get('payee_name')).strip() != ""}))
+            sel_payee = st.selectbox("ਪੁਰਾਣਾ ਪ੍ਰਾਪਤ ਕਰਤਾ ਲੱਭੋ (Select Payee)", ["➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)"] + unique_payees)
+            
             with st.form("expense_form", clear_on_submit=True):
-                st.write("### 📉 ਖਰਚਾ ਜਾਂ ਪੇਮੈਂਟ ਦਰਜ ਕਰੋ")
-                payee_name = st.text_input("ਭੁਗਤਾਨ ਕਿਸ ਨੂੰ ਕੀਤਾ / ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee / Paid To Name)")
+                # Auto-fill Payee Name if selected from Dropdown
+                payee_name = st.text_input("ਭੁਗਤਾਨ ਕਿਸ ਨੂੰ ਕੀਤਾ / ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee Name)", value=sel_payee if sel_payee != "➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)" else "")
                 desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description)")
                 
                 cat_options = [c for c in config.EXPENSE_CATEGORIES if not c.startswith("---")] + ["➕ ਹੋਰ ਨਵਾਂ ਖਰਚਾ ਹੈੱਡ (Add New Expense Head)"]
@@ -240,7 +242,6 @@ def show_page(is_mgmt):
                     
                     df_exp_disp.insert(0, "Select", False)
                     edited_exp_df = st.data_editor(df_exp_disp, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=[c for c in df_exp_disp.columns if c != 'Select'], hide_index=True, use_container_width=True, key="editor_expenses")
-                    
                     utils.create_print_button(df_exp_disp.drop(columns=['Select']), "Expense List", "🖨️ ਖਰਚਾ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
 
                     selected_exp_ids = edited_exp_df[edited_exp_df["Select"] == True]['id'].tolist()
