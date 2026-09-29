@@ -6,11 +6,16 @@ import time
 import config
 import utils
 
-# === EXACT FORMULA: EXCEL UPLOADED LAST BALANCE - PENDING CHEQUES ===
+# === EXACT FORMULA: LAST UPLOADED EXCEL BALANCE - PENDING CHEQUES ===
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
+    
+    # Ensure balance column is numeric
+    if not df_ledg_safe.empty and 'balance' in df_ledg_safe.columns:
+        df_ledg_safe['balance'] = pd.to_numeric(df_ledg_safe['balance'], errors='coerce').fillna(0.0)
+
     for bank in config.BANK_ACCOUNTS:
-        # ਨਕਦ (Cash) ਦਾ ਬੈਲੇਂਸ ਆਮ ਵਾਂਗ ਰਹੇਗਾ
+        # ਨਕਦ (Cash) ਦਾ ਬੈਲੇਂਸ ਆਮ ਵਾਂਗ (Credits - Debits) ਰਹੇਗਾ
         if bank == "ਨਕਦ (Cash)":
             b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
             b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
@@ -19,15 +24,15 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
             bank_balances[bank] = b_in - b_out
             continue
             
-        # ਬੈਂਕਾਂ ਲਈ: 1. ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ ਚੁੱਕਣਾ
+        # 1. ਬੈਂਕ ਲਈ ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ ਚੁੱਕਣਾ (ਜਿੱਥੇ balance > 0 ਹੋਵੇ)
         latest_excel_bal = 0.0
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] == 'Bulk Excel')
+            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['balance'] != 0.0)
             df_excel = df_ledg_safe[mask_excel].copy()
             if not df_excel.empty:
-                df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
-                latest_excel_bal = float(df_excel.iloc[-1].get('balance', 0.0) or 0.0)
+                # ID ਮੁਤਾਬਕ Sort ਕਰਾਂਗੇ ਤਾਂ ਜੋ ਅਸਲ ਆਖਰੀ ਅਪਲੋਡ ਹੋਈ ਲਾਈਨ ਮਿਲੇ
+                df_excel = df_excel.sort_values(by='id', ascending=True)
+                latest_excel_bal = float(df_excel.iloc[-1]['balance'])
                 
         # 2. ਕਲੀਅਰ ਹੋਣ ਵਾਲੇ ਚੈੱਕ (Pending Cheques) ਲੱਭਣੇ
         pending_chq = 0.0
@@ -168,6 +173,8 @@ def show_page(is_admin):
 
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Cash & Bank Balances)":
         st.write("### 💰 ਮੌਜੂਦਾ ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ")
+        st.success("✅ **ਨਵਾਂ ਫਾਰਮੂਲਾ ਲਾਗੂ ਹੈ:** Bank Balance = (ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ) - (ਪੈਂਡਿੰਗ ਚੈੱਕ)")
+        
         df_don_safe = df_don.copy()
         if not df_don_safe.empty: df_don_safe['amount'] = pd.to_numeric(df_don_safe['amount'], errors='coerce').fillna(0)
         df_exp_safe = df_exp.copy()
