@@ -10,12 +10,10 @@ import utils
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
     
-    # Ensure balance column is numeric
     if not df_ledg_safe.empty and 'balance' in df_ledg_safe.columns:
         df_ledg_safe['balance'] = pd.to_numeric(df_ledg_safe['balance'], errors='coerce').fillna(0.0)
 
     for bank in config.BANK_ACCOUNTS:
-        # ਨਕਦ (Cash) ਦਾ ਬੈਲੇਂਸ ਆਮ ਵਾਂਗ (Credits - Debits) ਰਹੇਗਾ
         if bank == "ਨਕਦ (Cash)":
             b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
             b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
@@ -24,23 +22,21 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
             bank_balances[bank] = b_in - b_out
             continue
             
-        # 1. ਬੈਂਕ ਲਈ ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ ਚੁੱਕਣਾ (ਜਿੱਥੇ balance > 0 ਹੋਵੇ)
         latest_excel_bal = 0.0
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
             mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['balance'] != 0.0)
             df_excel = df_ledg_safe[mask_excel].copy()
             if not df_excel.empty:
-                # ID ਮੁਤਾਬਕ Sort ਕਰਾਂਗੇ ਤਾਂ ਜੋ ਅਸਲ ਆਖਰੀ ਅਪਲੋਡ ਹੋਈ ਲਾਈਨ ਮਿਲੇ
-                df_excel = df_excel.sort_values(by='id', ascending=True)
+                if '__dt' not in df_excel.columns:
+                    df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
                 latest_excel_bal = float(df_excel.iloc[-1]['balance'])
                 
-        # 2. ਕਲੀਅਰ ਹੋਣ ਵਾਲੇ ਚੈੱਕ (Pending Cheques) ਲੱਭਣੇ
         pending_chq = 0.0
         if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
             mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        # 3. ਫਾਈਨਲ ਫਾਰਮੂਲਾ (Last Uploaded Balance - Pending Cheques)
         bank_balances[bank] = latest_excel_bal - pending_chq
         
     return bank_balances
@@ -172,25 +168,48 @@ def show_page(is_admin):
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
 
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Cash & Bank Balances)":
-        st.write("### 💰 ਮੌਜੂਦਾ ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ")
+        st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ")
         st.success("✅ **ਨਵਾਂ ਫਾਰਮੂਲਾ ਲਾਗੂ ਹੈ:** Bank Balance = (ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ) - (ਪੈਂਡਿੰਗ ਚੈੱਕ)")
         
+        col_d1, _ = st.columns([1, 2])
+        with col_d1:
+            as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦਾ ਬੈਲੇਂਸ ਦੇਖਣਾ ਹੈ? (As of Date)", value=date.today(), format="DD/MM/YYYY")
+            
         df_don_safe = df_don.copy()
-        if not df_don_safe.empty: df_don_safe['amount'] = pd.to_numeric(df_don_safe['amount'], errors='coerce').fillna(0)
+        if not df_don_safe.empty: 
+            df_don_safe['amount'] = pd.to_numeric(df_don_safe['amount'], errors='coerce').fillna(0)
+            df_don_safe['__dt'] = df_don_safe['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+            df_don_safe = df_don_safe[df_don_safe['__dt'] <= as_of_date]
+            
         df_exp_safe = df_exp.copy()
-        if not df_exp_safe.empty: df_exp_safe['amount'] = pd.to_numeric(df_exp_safe['amount'], errors='coerce').fillna(0)
+        if not df_exp_safe.empty: 
+            df_exp_safe['amount'] = pd.to_numeric(df_exp_safe['amount'], errors='coerce').fillna(0)
+            df_exp_safe['__dt'] = df_exp_safe['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+            df_exp_safe = df_exp_safe[df_exp_safe['__dt'] <= as_of_date]
+            
         df_ledg_safe = df_ledg.copy()
         if not df_ledg_safe.empty:
             df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
             df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
+            df_ledg_safe['__dt'] = df_ledg_safe['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+            df_ledg_safe = df_ledg_safe[df_ledg_safe['__dt'] <= as_of_date]
 
-        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques)
-        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ (Account Name)", "ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"])
-        total_bal = df_bals["ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"].sum()
+        df_chq_safe = df_cheques.copy()
+        if not df_chq_safe.empty:
+            df_chq_safe['__dt'] = df_chq_safe['cheque_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+            df_chq_safe = df_chq_safe[df_chq_safe['__dt'] <= as_of_date]
+
+        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe)
         
-        st.dataframe(df_bals.style.format({'ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)': '{:,.2f}'}), hide_index=True, use_container_width=True)
-        st.markdown(f"**ਕੁੱਲ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
-        rep_file = utils.generate_html_report("Cash & Bank Balances", df_bals.to_html(index=False, border=1, classes='report-table') + f"<br><h4 style='text-align: right; color: #D92B2B;'>ਕੁੱਲ: Rs. {total_bal:,.2f}</h4>")
+        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ (Account Name)", "ਬੈਲੇਂਸ (Balance ₹)"])
+        total_bal = df_bals["ਬੈਲੇਂਸ (Balance ₹)"].sum()
+        
+        st.dataframe(df_bals.style.format({'ਬੈਲੇਂਸ (Balance ₹)': '{:,.2f}'}), hide_index=True, use_container_width=True)
+        
+        display_dt = utils.clean_date_to_display(as_of_date)
+        st.markdown(f"**{display_dt} ਤੱਕ ਕੁੱਲ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
+        
+        rep_file = utils.generate_html_report(f"Cash & Bank Balances (As of {display_dt})", df_bals.to_html(index=False, border=1, classes='report-table') + f"<br><h4 style='text-align: right; color: #D92B2B;'>ਕੁੱਲ: Rs. {total_bal:,.2f}</h4>")
         with open(rep_file, "r", encoding="utf-8") as f: st.download_button("🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=rep_file, mime="text/html", type="primary")
 
     elif st.session_state.acc_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
