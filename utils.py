@@ -171,3 +171,22 @@ def generate_html_expense_voucher(voucher_no, desc, amount, date_str, cat, bank_
     filename = f"Expense_Voucher_{voucher_no}.html"
     with open(filename, "w", encoding="utf-8") as f: f.write(html_content)
     return filename
+# --- PRINT BUTTON HELPER ---
+def create_print_button(df, title, btn_label, landscape=False):
+    if df.empty: return
+    html = df.to_html(index=False, border=1, classes='report-table', escape=False)
+    fname = generate_html_report(title, html, landscape)
+    with open(fname, "r", encoding="utf-8") as f:
+        st.download_button(btn_label, data=f.read(), file_name=fname, mime="text/html", type="secondary")
+
+# --- WHATSAPP HELPERS ---
+def format_wa_num(phone):
+    num = ''.join(filter(str.isdigit, str(phone)))
+    if len(num) == 10: return "91" + num
+    return num if len(num) > 10 else None
+
+import urllib.parse
+def wa_link(phone, text):
+    num = format_wa_num(phone)
+    if num: return f"https://wa.me/{num}?text={urllib.parse.quote(text)}"
+    return None
