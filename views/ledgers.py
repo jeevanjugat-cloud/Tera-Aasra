@@ -6,23 +6,76 @@ import time
 import config
 import utils
 
-def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe):
+def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
     for bank in config.BANK_ACCOUNTS:
-        b_in, b_out = 0.0, 0.0
+        if bank == "ਨਕਦ (Cash)":
+            b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
+            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
+            b_out = df_exp_safe[df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))]['amount'].sum() if not df_exp_safe.empty else 0.0
+            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum() if not df_ledg_safe.empty else 0.0
+            bank_balances[bank] = b_in - b_out
+            continue
+            
+        latest_excel_date = None
+        latest_excel_bal = 0.0
+        
+        # 1. Uploaded Excel Balance Find ਕਰਨਾ
+        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
+            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] == 'Bulk Excel')
+            df_excel = df_ledg_safe[mask_excel].copy()
+            if not df_excel.empty:
+                df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
+                last_row = df_excel.iloc[-1]
+                latest_excel_date = last_row['__dt']
+                latest_excel_bal = float(last_row.get('balance', 0.0) or 0.0)
+
+        manual_in, manual_out = 0.0, 0.0
+        
+        # 2. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੇ ਨਵੇਂ ਦਾਨ ਜੋੜਨੇ
         if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
-            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
-            if bank != "ਨਕਦ (Cash)": mask_don = mask_don & (df_don_safe['add_to_mirror'] == True)
-            b_in += df_don_safe[mask_don]['amount'].sum()
+            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)') & (df_don_safe['add_to_mirror'] == True)
+            df_dbank = df_don_safe[mask_don].copy()
+            if not df_dbank.empty:
+                if latest_excel_date:
+                    df_dbank['__dt'] = df_dbank['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                    df_dbank = df_dbank[df_dbank['__dt'] > latest_excel_date]
+                manual_in += df_dbank['amount'].sum()
+
+        # 3. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੀਆਂ Manual ਬੈਂਕ ਐਂਟਰੀਆਂ
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum()
+            mask_man = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['source'] != 'Bulk Excel')
+            df_lbank = df_ledg_safe[mask_man].copy()
+            if not df_lbank.empty:
+                if latest_excel_date:
+                    df_lbank['__dt'] = df_lbank['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                    df_lbank = df_lbank[df_lbank['__dt'] > latest_excel_date]
+                manual_in += df_lbank['credit'].sum()
+                manual_out += df_lbank['debit'].sum()
+
+        # 4. Uploaded ਤਾਰੀਖ ਤੋਂ ਬਾਅਦ ਦੇ ਨਵੇਂ ਖਰਚੇ ਮਾਈਨਸ ਕਰਨੇ
         if not df_exp_safe.empty and 'bank_account' in df_exp_safe.columns:
-            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
-            if bank != "ਨਕਦ (Cash)": mask_exp = mask_exp & (df_exp_safe['add_to_mirror'] == True)
-            b_out += df_exp_safe[mask_exp]['amount'].sum()
-        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum()
-        bank_balances[bank] = b_in - b_out
+            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_exp_safe['add_to_mirror'] == True)
+            df_ebank = df_exp_safe[mask_exp].copy()
+            if not df_ebank.empty:
+                if latest_excel_date:
+                    df_ebank['__dt'] = df_ebank['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
+                    df_ebank = df_ebank[df_ebank['__dt'] > latest_excel_date]
+                manual_out += df_ebank['amount'].sum()
+
+        # 5. Pending Cheques (ਕਲੀਅਰ ਹੋਣ ਵਾਲੇ ਚੈੱਕ) ਮਾਈਨਸ ਕਰਨੇ
+        pending_chq = 0.0
+        if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
+            mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
+            pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
+            
+        if latest_excel_date:
+            # ਫਾਈਨਲ ਫਾਰਮੂਲਾ: Uploaded Bal + New Credits - New Debits - Pending Cheques
+            bank_balances[bank] = latest_excel_bal + manual_in - manual_out - pending_chq
+        else:
+            bank_balances[bank] = manual_in - manual_out - pending_chq
+            
     return bank_balances
 
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
@@ -57,13 +110,23 @@ def show_page(is_admin):
     st.session_state.acc_mode = st.radio("ਖਾਤਾ ਚੁਣੋ:", modes, index=modes.index(st.session_state.acc_mode), horizontal=True)
     st.markdown("---")
 
-    df_don = pd.DataFrame(utils.supabase.table("donations").select("*").limit(100000).execute().data or [])
-    df_exp = pd.DataFrame(utils.supabase.table("expenses").select("*").limit(100000).execute().data or [])
-    df_ledg = pd.DataFrame(utils.supabase.table("bank_ledger").select("*").limit(100000).execute().data or [])
+    don_data = utils.supabase.table("donations").select("*").limit(100000).execute().data or []
+    exp_data = utils.supabase.table("expenses").select("*").limit(100000).execute().data or []
+    try: ledg_data = utils.supabase.table("bank_ledger").select("*").limit(100000).execute().data or []
+    except: ledg_data = []
+    try: chq_data = utils.supabase.table("cheques").select("*").limit(100000).execute().data or []
+    except: chq_data = []
+    
+    df_don = pd.DataFrame(don_data)
+    df_exp = pd.DataFrame(exp_data)
+    df_ledg = pd.DataFrame(ledg_data)
+    df_cheques = pd.DataFrame(chq_data)
 
     if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
-        df_assets = pd.DataFrame(utils.supabase.table("assets").select("*").limit(100000).execute().data or [])
-        df_liab = pd.DataFrame(utils.supabase.table("liabilities").select("*").limit(100000).execute().data or [])
+        assets_data = utils.supabase.table("assets").select("*").limit(100000).execute().data or []
+        liab_data = utils.supabase.table("liabilities").select("*").limit(100000).execute().data or []
+        df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value', 'asset_type'])
+        df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value'])
         
         total_income = df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)']['amount'].astype(float).sum() if not df_don.empty else 0.0
         total_income += df_ledg['credit'].astype(float).sum() if not df_ledg.empty and 'credit' in df_ledg.columns else 0.0
@@ -96,7 +159,7 @@ def show_page(is_admin):
             df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
             df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
 
-        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe)
+        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques)
         total_assets = fixed_assets_val + sum(bank_balances.values())
         total_liabilities = other_liab_val + surplus
         
@@ -152,7 +215,7 @@ def show_page(is_admin):
             df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
             df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
 
-        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe)
+        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques)
         df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ (Account Name)", "ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"])
         total_bal = df_bals["ਮੌਜੂਦਾ ਬੈਲੇਂਸ (Current Balance ₹)"].sum()
         
@@ -238,14 +301,21 @@ def show_page(is_admin):
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                 utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("donations").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Donations_Receipts', index=False)
                 utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("expenses").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Expenses', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("bank_ledger").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Bank_Ledger', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("parties").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Creditors_Debtors', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("cheques").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Cheque_Register', index=False)
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("bank_ledger").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Bank_Ledger', index=False)
+                except: pass
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("parties").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Creditors_Debtors', index=False)
+                except: pass
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("cheques").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Cheque_Register', index=False)
+                except: pass
                 utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("stock").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Stock', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("assets").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Fixed_Assets', index=False)
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("assets").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Fixed_Assets', index=False)
+                except: pass
                 utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("students").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Students', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("widows").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Widows', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("ration_distribution").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Ration', index=False)
-                utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("stock_usage").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Stock_Usage', index=False)
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("widows").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Widows', index=False)
+                except: pass
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("ration_distribution").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Ration', index=False)
+                except: pass
+                try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("stock_usage").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Stock_Usage', index=False)
+                except: pass
                 utils.format_dates_in_df(pd.DataFrame(utils.supabase.table("receipt_books").select("*").limit(100000).execute().data or []), ascending=True).to_excel(writer, sheet_name='Receipt_Books', index=False)
             st.download_button("📥 ਕਲਿੱਕ ਕਰਕੇ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"CA_Audit_Data_{date.today().strftime('%d-%m-%Y')}.xlsx", type="primary")
