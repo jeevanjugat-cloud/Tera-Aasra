@@ -58,21 +58,11 @@ def format_dates_in_df(df, ascending=False):
 def is_bank_match(record_bank, target_bank):
     rb = "kotak bank regular" if pd.isna(record_bank) or str(record_bank).strip() in ["", "None", "nan", "null"] else str(record_bank).strip().lower()
     tb = str(target_bank).strip().lower()
-    
     if rb == tb: return True
-    
-    # Strict matching for individual Cash accounts
-    is_rb_cash = "ਨਕਦ" in rb or "cash" in rb
-    is_tb_cash = "ਨਕਦ" in tb or "cash" in tb
-    if is_rb_cash and is_tb_cash:
-        if "-" in tb or "-" in rb:
-            return rb == tb
-        return True
-        
     if "kotak" in tb and "corpus" not in tb: return ("kotak" in rb) and ("corpus" not in rb)
     if "corpus" in tb: return "corpus" in rb
     if "punjab" in tb or "sind" in tb or "psb" in tb: return ("punjab" in rb) or ("sind" in rb) or ("psb" in rb)
-    
+    if "ਨਕਦ" in tb or "cash" in tb: return ("ਨਕਦ" in rb) or ("cash" in rb)
     return False
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
@@ -181,22 +171,3 @@ def generate_html_expense_voucher(voucher_no, desc, amount, date_str, cat, bank_
     filename = f"Expense_Voucher_{voucher_no}.html"
     with open(filename, "w", encoding="utf-8") as f: f.write(html_content)
     return filename
-# --- PRINT BUTTON HELPER ---
-def create_print_button(df, title, btn_label, landscape=False):
-    if df.empty: return
-    html = df.to_html(index=False, border=1, classes='report-table', escape=False)
-    fname = generate_html_report(title, html, landscape)
-    with open(fname, "r", encoding="utf-8") as f:
-        st.download_button(btn_label, data=f.read(), file_name=fname, mime="text/html", type="secondary")
-
-# --- WHATSAPP HELPERS ---
-def format_wa_num(phone):
-    num = ''.join(filter(str.isdigit, str(phone)))
-    if len(num) == 10: return "91" + num
-    return num if len(num) > 10 else None
-
-import urllib.parse
-def wa_link(phone, text):
-    num = format_wa_num(phone)
-    if num: return f"https://wa.me/{num}?text={urllib.parse.quote(text)}"
-    return None
