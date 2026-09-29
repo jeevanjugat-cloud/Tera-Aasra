@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import calendar
 import urllib.parse
 import io
@@ -16,28 +16,13 @@ from supabase import create_client, Client
 NGO_NAME_PB = "ਸ਼ਬਦ ਕੀਰਤਨ-ਨਾਮ ਸਿਮਰਨ ਸਤਿਸੰਗ (ਰਜਿ.)"
 NGO_TAGLINE_PB = "ਸੇਵਾ ਵਿਸਥਾਰ: ਤੇਰਾ ਆਸਰਾ (ਸੇਵਾ-ਸਹਿਯੋਗ-ਭਲਾਈ)"
 NGO_ADDRESS_PB = "ਸੀ.ਬੀ. ਟਾਵਰ, ਜੀ.ਟੀ. ਰੋਡ, ਅੰਮ੍ਰਿਤਸਰ"
+NGO_LAT, NGO_LON = 31.6120, 74.8677
 
-# --- GEO-FENCING (ATTENDANCE LOCATION) ---
-NGO_LAT = 31.6120 
-NGO_LON = 74.8677
-
-# --- CATEGORIES & ACCOUNTS ---
 BANK_ACCOUNTS = ["ਨਕਦ (Cash)", "Kotak Bank Regular", "Kotak Bank Corpus Fund", "Punjab & Sind Bank"]
-EXPENSE_CATEGORIES = [
-    "--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---",
-    "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", 
-    "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)",
-    "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---",
-    "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", 
-    "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", 
-    "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"
-]
+EXPENSE_CATEGORIES = ["--- ਕੀਰਤਨ ਸਮਾਗਮ (Samagams) ---", "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)", "--- ਤੇਰਾ ਆਸਰਾ (Tera Aasra) ---", "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)", "ਹੋਰ ਖਰਚੇ (Others)"]
 STOCK_UNITS = ["ਕਿਲੋ (Kg)", "ਲੀਟਰ (Liter)", "ਪੀਸ (Pcs)", "ਗ੍ਰਾਮ (Gram)", "ਬੈਗ/ਬੋਰੀਆਂ (Bags)"]
 ASSET_TYPES = ["ਬਿਲਡਿੰਗ (Building)", "ਫਰਨੀਚਰ (Furniture)", "ਇਲੈਕਟ੍ਰੋਨਿਕਸ (Electronics/IT)", "ਵਾਹਨ (Vehicles)", "ਮਸ਼ੀਨਰੀ (Machinery)", "ਹੋਰ (Other)"]
 
-# ==========================================
-# CREDENTIALS
-# ==========================================
 USERS = {
     "admin": {"password": "Japnik@3315", "role": "admin"},
     "staff": {"password": "12345", "role": "staff"},
@@ -45,47 +30,37 @@ USERS = {
     "emp1": {"password": "emp1", "role": "employee"},
     "emp2": {"password": "emp2", "role": "employee"},
     "emp3": {"password": "emp3", "role": "employee"},
-    "emp4": {"password": "emp4", "role": "employee"},
-    "emp5": {"password": "emp5", "role": "employee"}
+    "emp4": {"password": "emp4", "role": "employee"}
 }
 SUPABASE_URL = "https://jbvtvrhzzucggqhwjzuu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpidnR2cmh6enVjZ2dxaHdqenV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2OTkyMjAsImV4cCI6MjEwMjI3NTIyMH0.ynHuvuCDD3Spa6b0P6SIUecuB6sxrIbDDCQQVfiiwTs"
 
-st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ (Sabha Manager Pro)", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="ਸਭਾ ਮੈਨੇਜਰ ਪ੍ਰੋ", page_icon="logo.png", layout="wide")
 
 st.markdown("""
     <style>
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;} .stAppDeployButton {display:none !important;}
-        [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 18px !important; font-weight: 600 !important; padding-bottom: 5px; }
-        div[data-testid="stWidgetLabel"] p { font-size: 16px !important; font-weight: 600 !important; }
-        h2 { font-size: 26px !important; font-weight: 700 !important; padding-bottom: 5px !important; }
-        h3 { font-size: 20px !important; font-weight: 600 !important; }
-        [data-testid="stMetricLabel"] p { font-size: 16px !important; font-weight: bold !important; }
-        [data-testid="stMetricValue"] { font-size: 26px !important; }
-        .pro-header-flex { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #F8F1D1 0%, #ffffff 100%); padding: 15px 20px; border-radius: 12px; border: 2px solid #4A1B15; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .pro-logo { width: 85px; height: auto; margin-right: 20px; }
-        .pro-title { font-size: 28px; font-weight: bold; color: #4A1B15 !important; margin: 0; letter-spacing: 0.5px; }
-        .pro-tagline { font-size: 17px; font-weight: bold; color: #D92B2B !important; margin: 4px 0; }
-        .pro-sub { font-size: 13px; font-weight: bold; color: #0F4C81 !important; margin: 0; }
-        div.stButton > button { font-size: 18px !important; font-weight: bold !important; padding: 16px 10px !important; margin-bottom: 10px !important; border-radius: 10px !important; width: 100% !important; }
-        div.row-widget.stRadio > div { background-color: #F8F1D1; padding: 8px 15px; border-radius: 10px; border: 1px solid #4A1B15; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
-        div.row-widget.stRadio p { color: #4A1B15 !important; font-weight: bold !important; }
-        .bs-box { border: 2px solid var(--text-color); border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: transparent; }
-        .bs-header { text-align: center; color: var(--text-color); font-size: 22px; font-weight: bold; border-bottom: 2px solid var(--text-color); padding-bottom: 10px; margin-bottom: 15px; }
-        .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; color: var(--text-color); }
-        .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #E53935; border-top: 1px solid var(--text-color); padding-top: 8px; margin-top: 10px; }
-        .whatsapp-btn { display: inline-block; padding: 10px 20px; background-color: #25D366; color: white !important; text-align: center; text-decoration: none; font-size: 17px; border-radius: 8px; font-weight: bold; margin-top: 6px; border: 1.5px solid #128C7E; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
+        #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+        div[data-testid="stSidebar"] p {font-size: 16px !important; font-weight: 600 !important;}
+        .pro-header-flex { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #F8F1D1, #fff); padding: 15px 20px; border-radius: 12px; border: 2px solid #4A1B15; margin-bottom: 20px;}
+        .pro-logo { width: 85px; margin-right: 20px; }
+        .pro-title { font-size: 28px; font-weight: bold; color: #4A1B15; margin: 0; }
+        .pro-tagline { font-size: 17px; font-weight: bold; color: #D92B2B; margin: 4px 0; }
+        .bs-box { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .bs-header { text-align: center; font-size: 22px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .bs-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
+        .bs-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #E53935; border-top: 1px solid #333; padding-top: 8px; }
+        .whatsapp-btn { display: inline-block; padding: 10px 20px; background-color: #25D366; color: white !important; font-size: 17px; border-radius: 8px; font-weight: bold; text-decoration: none;}
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# ADVANCED DATE PARSER (1 April 2026 Format)
+# STRICT DATE PARSER (Outputs: 1 April 2026) & DB HELPERS
 # ==========================================
 def parse_date_to_obj(val):
     if pd.isna(val) or str(val).strip() in ["", "NaT", "None", "nan", "null"]: return None
     s = str(val).strip().split(" ")[0].split("T")[0]
     try:
-        # dayfirst=False prioritizes 04/01 as April 1st (as requested)
+        # dayfirst=False forcefully reads 04/01/2026 as April 1, 2026 and 15/04/2026 as April 15
         dt = pd.to_datetime(s, dayfirst=False, errors='coerce')
         if pd.notna(dt): return dt.date()
     except: pass
@@ -93,8 +68,8 @@ def parse_date_to_obj(val):
 
 def clean_date_to_display(val):
     d = parse_date_to_obj(val)
-    if d: return f"{d.day} {d.strftime('%B %Y')}" # output: "1 April 2026"
-    return str(val) if pd.notna(val) and str(val).strip() not in ["None", "nan", ""] else ""
+    if d: return f"{d.day} {d.strftime('%B %Y')}" # Returns Format: 1 April 2026
+    return str(val) if pd.notna(val) else ""
 
 def format_dates_in_df(df, ascending=False):
     df_copy = df.copy()
@@ -106,25 +81,20 @@ def format_dates_in_df(df, ascending=False):
         df_copy = df_copy.sort_values(by='__sort_dt', ascending=ascending).drop(columns=['__sort_dt'])
         
     for col in date_columns:
-        if col in df_copy.columns:
-            df_copy[col] = df_copy[col].apply(clean_date_to_display)
+        if col in df_copy.columns: df_copy[col] = df_copy[col].apply(clean_date_to_display)
             
     if 'last_updated' in df_copy.columns:
         def parse_dt_time(d):
             dt_obj = parse_date_to_obj(d)
             if dt_obj:
-                try: 
-                    t_str = pd.to_datetime(str(d)).strftime('%I:%M %p')
-                    return f"{dt_obj.day} {dt_obj.strftime('%B %Y')} {t_str}"
+                try: return f"{dt_obj.day} {dt_obj.strftime('%B %Y')} {pd.to_datetime(str(d)).strftime('%I:%M %p')}"
                 except: return f"{dt_obj.day} {dt_obj.strftime('%B %Y')}"
             return str(d)
         df_copy['last_updated'] = df_copy['last_updated'].apply(parse_dt_time)
-        
     return df_copy
 
 def is_bank_match(record_bank, target_bank):
-    if pd.isna(record_bank) or str(record_bank).strip() in ["", "None", "nan", "null"]: rb = "kotak bank regular"
-    else: rb = str(record_bank).strip().lower()
+    rb = "kotak bank regular" if pd.isna(record_bank) or str(record_bank).strip() in ["", "None", "nan", "null"] else str(record_bank).strip().lower()
     tb = str(target_bank).strip().lower()
     if rb == tb: return True
     if "kotak" in tb and "corpus" not in tb: return ("kotak" in rb) and ("corpus" not in rb)
@@ -160,140 +130,94 @@ def init_connection(): return create_client(SUPABASE_URL, SUPABASE_KEY)
 try: supabase: Client = init_connection()
 except: st.error("Supabase Error.")
 
-# --- CONSOLIDATED HTML TEMPLATE ---
-def get_html_template(title, content, is_landscape=False):
-    logo_base64 = get_base64_image("logo.png")
-    img_html = f'<img src="data:image/png;base64,{logo_base64}" style="height: 80px; margin-bottom: 10px;">' if logo_base64 else ''
-    page_style = "@page { size: landscape; margin: 10mm; }" if is_landscape else ""
-    return f"""
-    <!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>{title}</title>
-    <style>
-        {page_style}
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; text-align: center; }}
-        .header {{ margin-bottom: 20px; border-bottom: 2px solid #4A1B15; padding-bottom: 15px; }}
-        .title {{ font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px; }}
-        .tagline {{ font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px; }}
-        .report-title {{ font-size: 18px; font-weight: bold; color: #0F4C81; margin-top: 10px; }}
-        .report-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: left; }}
-        .report-table th, .report-table td {{ border: 1px solid #aaa; padding: 8px; color: #000; }}
-        .report-table th {{ background-color: #F8F1D1; color: #4A1B15; font-weight: bold; }}
-        .bs-box {{ width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; text-align: left; margin: 1%;}}
-        .table-img {{ width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; }}
-        @media print {{ body {{ padding: 0; }} }}
-    </style></head><body>
-        <div class="header">{img_html}<div class="title">{NGO_NAME_PB}</div><div class="tagline">{NGO_TAGLINE_PB}</div>
-        <div style="font-size: 13px;">{NGO_ADDRESS_PB}</div><div class="report-title">{title}</div></div>
-        <div style="{'overflow-x: auto;' if is_landscape else 'text-align: left;'}">{content}</div>
-        <script>window.onload = function() {{ window.print(); }}</script>
-    </body></html>
-    """
+# ==========================================
+# REPORT GENERATORS (COMBINED TO SAVE SPACE)
+# ==========================================
+def generate_html_report(title, content, landscape=False):
+    logo_b64 = get_base64_image("logo.png")
+    img = f'<img src="data:image/png;base64,{logo_b64}" style="height:80px;margin-bottom:10px;">' if logo_b64 else ''
+    page_css = "@page { size: landscape; margin: 10mm; }" if landscape else ""
+    overflow = "overflow-x: auto;" if landscape else "text-align: left;"
+    html = f"""<!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>{title}</title>
+    <style>{page_css} body {{font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; text-align: center;}}
+    .header {{border-bottom: 2px solid #4A1B15; padding-bottom: 15px; margin-bottom: 20px;}}
+    .title {{font-size: 24px; font-weight: bold; color: #4A1B15; margin-bottom: 2px;}}
+    .tagline {{font-size: 17px; font-weight: bold; color: #D92B2B; margin-bottom: 5px;}}
+    .report-table {{width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; text-align: {'center' if landscape else 'left'};}}
+    .report-table th, .report-table td {{border: 1px solid #aaa; padding: 8px;}}
+    .report-table th {{background-color: #F8F1D1; color: #4A1B15; font-weight: bold;}}
+    .bs-box {{width: 48%; display: inline-block; vertical-align: top; border: 1px solid #333; padding: 10px; box-sizing: border-box; text-align: left;}}
+    .table-img {{width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc;}}
+    @media print {{ body {{padding: 0;}} }}</style></head>
+    <body><div class="header">{img}<div class="title">{NGO_NAME_PB}</div><div class="tagline">{NGO_TAGLINE_PB}</div>
+    <div style="font-size: 13px;">{NGO_ADDRESS_PB}</div><h3 style="color:#0F4C81;margin-top:10px;">{title}</h3></div>
+    <div style="{overflow}">{content}</div><script>window.onload=function(){{window.print();}}</script></body></html>"""
+    fname = f"Report_{title.replace(' ', '_')}.html"
+    with open(fname, "w", encoding="utf-8") as f: f.write(html)
+    return fname
 
 def generate_html_receipt(receipt_no, name, phone, amount, date_str, payment_mode, don_type, item_details, bank_acc, on_account_of, collector="", address="ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ", cheque_no="", cheque_bank=""):
     logo_base64 = get_base64_image("logo.png")
-    img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo">' if logo_base64 else ''
+    img_html = f'<img src="data:image/png;base64,{logo_base64}" style="position: absolute; left: 0; top: 0; width: 100px; height: auto;">' if logo_base64 else ''
     amount_text = f"Rs. {amount}/-" if don_type == "ਪੈਸੇ (Monetary)" else f"ਕੀਮਤ: Rs. {amount}/-" if amount > 0 else f"{item_details}"
     amount_in_words = f"Rupees {amount} Only" if don_type == "ਪੈਸੇ (Monetary)" else f"{item_details} (In-Kind Donation)"
-    display_phone = phone if phone else "________________"
     pay_display = f"Cheque (ਨੰ: {cheque_no}, ਬੈਂਕ: {cheque_bank})" if payment_mode == "Cheque" and cheque_no else payment_mode
     
-    html_content = f"""
-    <!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>Receipt #{receipt_no}</title>
-        <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; padding: 20px; }}
-            .receipt-box {{ max-width: 850px; margin: auto; padding: 20px 30px; background-color: #F8F1D1; border-top: 25px solid #4A1B15; border-bottom: 25px solid #4A1B15; color: #333; position: relative; box-sizing: border-box; }}
+    html_content = f"""<!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>Receipt #{receipt_no}</title>
+        <style>body {{ font-family: 'Segoe UI', sans-serif; background-color: #fff; padding: 20px; }}
+            .receipt-box {{ max-width: 850px; margin: auto; padding: 20px 30px; background-color: #F8F1D1; border-top: 25px solid #4A1B15; border-bottom: 25px solid #4A1B15; position: relative; }}
             .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 5px; }}
-            .logo-img {{ position: absolute; left: 0; top: 0; width: 100px; height: auto; }}
-            .header-text {{ text-align: center; width: 100%; padding-left: 110px; box-sizing: border-box; }}
-            .title-pa {{ font-size: 26px; font-weight: bold; color: #4A1B15; margin: 0; letter-spacing: 0.5px; }}
-            .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 4px 0; text-align: center; width: 100%; display: block; }}
-            .sub-title-en {{ font-size: 13px; font-weight: bold; color: #0F4C81; margin: 3px 0; }}
-            .phones {{ font-size: 13px; font-weight: bold; color: #333; margin: 2px 0; }}
+            .header-text {{ text-align: center; width: 100%; padding-left: 110px; }}
+            .title-pa {{ font-size: 26px; font-weight: bold; color: #4A1B15; margin: 0; }}
+            .sub-title-pa {{ font-size: 16px; color: #D92B2B; font-weight: bold; margin: 4px 0; }}
             .reg-row {{ display: flex; justify-content: space-between; border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; padding: 5px 0; font-size: 13px; font-weight: bold; margin-bottom: 12px; margin-top: 10px; }}
             .main-content {{ font-size: 15px; line-height: 2.0; font-weight: bold; color: #222; }}
             .row-inline {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
-            .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 16px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 10px; font-weight: bold; }}
-            .receipt-no {{ color: #D92B2B; font-size: 20px; font-weight: bold; font-family: monospace; }}
+            .field-value {{ font-family: monospace; font-size: 16px; color: #0F4C81; border-bottom: 1px solid #666; padding: 0 10px; font-weight: bold; }}
+            .receipt-no {{ color: #D92B2B; font-size: 20px; }}
             .footer-flex {{ display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; }}
-            .bank-details-box {{ font-size: 11px; font-weight: bold; line-height: 1.4; background-color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px; width: 65%; }}
-            .amount-box {{ font-size: 18px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 20px; border-radius: 15px; background-color: rgba(255,255,255,0.5); display: inline-block; }}
-            .sign-box {{ text-align: right; margin-top: 15px; font-size: 14px; padding-bottom: 10px; }}
-            .bottom-note {{ position: absolute; bottom: 0; left: 0; right: 0; background-color: #4A1B15; color: white; text-align: center; font-size: 11px; padding: 4px 0; font-weight: bold; }}
-            @media print {{ body {{ padding: 0; }} .receipt-box {{ border: 2px solid #4A1B15; box-shadow: none; }} }}
-        </style></head>
-    <body>
-        <div class="receipt-box">
-            <div class="header-flex">
-                {img_html}
-                <div class="header-text">
-                    <p class="title-pa">{NGO_NAME_PB}</p>
-                    <div style="text-align: center; width: 100%;">
-                        <span class="sub-title-pa">{NGO_TAGLINE_PB}</span>
-                    </div>
-                    <p class="sub-title-en">ਸੇਵਾ ਵਿਸਥਾਰ: ਰਾਧਾ ਕ੍ਰਿਸ਼ਨ ਕਲੋਨੀ (ਮੂਲੇ ਚੱਕ), ਨੇੜੇ ਭਗਤਾਂ ਵਾਲਾ ਦਾਣਾ ਮੰਡੀ, ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ</p>
-                    <p class="sub-title-en">Regd. Office: C. B. Tower, Opp. Side Alpha One Mall, G. T. Road, Sri Amritsar Sahib - 143001</p>
-                    <p class="phones">(M) 099150-07697, 78953-33290, 98157-55883</p>
-                </div>
-            </div>
-            <div class="reg-row"><div>Regd. No.: ASR/26/2024-25 &nbsp;|&nbsp; PAN NO. ABKTS7853G</div><div>ਕਲੈਕਟਰ: {collector} &nbsp;|&nbsp; On Account of: <span class="field-value" style="font-size:14px;">{on_account_of}</span></div></div>
-            <div class="main-content">
-                <div class="row-inline"><div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no" style="padding-left: 15px;">{receipt_no:04d}</span></div><div>ਮਿਤੀ <span class="field-value">{date_str}</span></div></div>
-                <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value" style="display:inline-block; width: 45%;">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{display_phone}</span></div>
-                <div style="margin-top: 10px;">ਪਤਾ (Address) <span class="field-value" style="display:inline-block; width: 75%;">{address}</span></div>
-                <div style="margin-top: 10px;">ਰਕਮ ਅੱਖਰੀ <span class="field-value" style="display:inline-block; width: 65%;">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।</div>
-                <div style="margin-top: 10px;">ਮੋਡ <span class="field-value" style="display:inline-block; width: 35%;">{pay_display}</span> ਬੈਂਕ <span class="field-value" style="display:inline-block; width: 15%;">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str}</span></div>
-            </div>
-            <div class="footer-flex">
-                <div class="bank-details-box"><div style="background-color: #333; color: white; padding: 2px 10px; display: inline-block; border-radius: 5px 5px 0 0; margin-bottom: 2px;">BANK A/C DETAILS :</div><br><strong>PUNJAB & SIND BANK</strong> A/c No. <span style="color: #D92B2B;">06181000012550</span> IFSC : <span style="color: #D92B2B;">PSIB0000618</span><br><span style="color:#333; font-weight:normal;">Sultanwind Road, Amritsar</span><br><strong>KOTAK MAHINDRA BANK</strong> A/c No. <span style="color: #D92B2B;">4350934312</span> IFSC : <span style="color: #D92B2B;">KKBK0004001</span><br><span style="color:#333; font-weight:normal;">East Mohan Nagar, Amritsar</span></div>
-                <div style="text-align: center;"><div class="amount-box">{amount_text}</div><div class="sign-box">ਪ੍ਰਾਪਤ ਕਰਤਾ</div></div>
-            </div>
-            <div class="bottom-note">Note : If you transfer any amount direct to the account please intimate on Mob : 9915007697</div>
-        </div>
-        <script>window.onload = function() {{ window.print(); }}</script>
-    </body></html>
-    """
+            .amount-box {{ font-size: 18px; font-weight: bold; color: #0F4C81; border: 2px solid #333; padding: 5px 20px; border-radius: 15px; background-color: rgba(255,255,255,0.5); }}
+            @media print {{ body {{ padding: 0; }} .receipt-box {{ border: 2px solid #4A1B15; box-shadow: none; }} }}</style></head>
+    <body><div class="receipt-box"><div class="header-flex">{img_html}<div class="header-text"><p class="title-pa">{NGO_NAME_PB}</p><div class="sub-title-pa">{NGO_TAGLINE_PB}</div>
+    <p style="font-size:13px; color:#0F4C81; margin: 3px 0; font-weight:bold;">Regd. Office: {NGO_ADDRESS_PB}<br>(M) 099150-07697, 78953-33290</p></div></div>
+    <div class="reg-row"><div>Regd. No.: ASR/26/2024-25</div><div>ਕਲੈਕਟਰ: {collector} | On Account of: <span class="field-value">{on_account_of}</span></div></div>
+    <div class="main-content"><div class="row-inline"><div>ਰਸੀਦ ਨੰ. <span class="field-value receipt-no">{receipt_no:04d}</span></div><div>ਮਿਤੀ <span class="field-value">{date_str}</span></div></div>
+    <div style="margin-top: 10px;">ਸਤਿਕਾਰ ਯੋਗ <span class="field-value">{name}</span> ਜੀ ਪਾਸੋਂ, ਮੋ.ਨੰ: <span class="field-value">{phone if phone else '________'}</span></div>
+    <div style="margin-top: 10px;">ਪਤਾ <span class="field-value">{address}</span></div>
+    <div style="margin-top: 10px;">ਰਕਮ ਅੱਖਰੀ <span class="field-value">{amount_in_words}</span> ਧੰਨਵਾਦ ਸਹਿਤ ਵਸੂਲ ਪਾਏ।</div>
+    <div style="margin-top: 10px;">ਮੋਡ <span class="field-value">{pay_display}</span> ਬੈਂਕ <span class="field-value">{bank_acc}</span> ਮਿਤੀ <span class="field-value">{date_str}</span></div></div>
+    <div class="footer-flex">
+    <div style="font-size:11px; font-weight:bold; background-color:rgba(255,255,255,0.4); padding:5px; border-radius:5px; width:65%;">
+    <div style="background-color:#333; color:white; padding:2px 10px; display:inline-block;">BANK A/C DETAILS :</div><br>
+    <strong>PUNJAB & SIND BANK</strong> A/c: <span style="color:#D92B2B;">06181000012550</span> IFSC: <span style="color:#D92B2B;">PSIB0000618</span><br>
+    <strong>KOTAK MAHINDRA BANK</strong> A/c: <span style="color:#D92B2B;">4350934312</span> IFSC: <span style="color:#D92B2B;">KKBK0004001</span></div>
+    <div style="text-align:center;"><div class="amount-box">{amount_text}</div><div style="margin-top:15px;font-size:14px;">ਪ੍ਰਾਪਤ ਕਰਤਾ</div></div></div>
+    </div><script>window.onload = function() {{ window.print(); }}</script></body></html>"""
     filename = f"Receipt_{receipt_no}.html"
     with open(filename, "w", encoding="utf-8") as f: f.write(html_content)
     return filename
 
 def generate_html_expense_voucher(voucher_no, desc, amount, date_str, cat, bank_acc):
     logo_base64 = get_base64_image("logo.png")
-    img_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="Logo" style="position: absolute; left: 0; top: 0; width: 80px; height: auto;">' if logo_base64 else ''
-    html_content = f"""
-    <!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>Expense Voucher #{voucher_no}</title>
-        <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; padding: 20px; }}
-            .receipt-box {{ max-width: 800px; margin: auto; padding: 20px 30px; border: 2px solid #333; color: #333; position: relative; }}
-            .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }}
-            .title-pa {{ font-size: 24px; font-weight: bold; color: #333; margin: 0; text-align: center; width: 100%;}}
-            .sub-title-pa {{ font-size: 14px; font-weight: bold; margin: 4px 0; text-align: center; width: 100%;}}
-            .voucher-title {{ font-size: 20px; font-weight: bold; text-align: center; margin: 10px 0; text-decoration: underline; }}
-            .main-content {{ font-size: 16px; line-height: 2.0; font-weight: bold; }}
-            .row-inline {{ display: flex; justify-content: space-between; margin-bottom: 10px; }}
-            .field-value {{ font-family: 'Courier New', Courier, monospace; font-size: 16px; border-bottom: 1px dashed #666; padding: 0 10px; font-weight: bold; color: #0F4C81; }}
-            .amount-box {{ font-size: 18px; font-weight: bold; border: 2px solid #333; padding: 5px 20px; border-radius: 5px; display: inline-block; background-color: #f9f9f9; }}
-            .sign-box {{ display: flex; justify-content: space-between; margin-top: 60px; font-size: 14px; font-weight: bold; }}
-            @media print {{ body {{ padding: 0; }} }}
-        </style></head>
-    <body>
-        <div class="receipt-box">
-            <div class="header-flex">{img_html}<div><p class="title-pa">{NGO_NAME_PB}</p><p class="sub-title-pa">{NGO_TAGLINE_PB}</p></div></div>
-            <div class="voucher-title">PAYMENT / EXPENSE VOUCHER</div>
-            <div class="main-content">
-                <div class="row-inline"><div>ਵਾਊਚਰ ਨੰ. (Voucher No.): <span class="field-value" style="color: #D92B2B;">{voucher_no}</span></div><div>ਮਿਤੀ (Date): <span class="field-value">{date_str}</span></div></div>
-                <div style="margin-top: 15px;">ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description): <span class="field-value">{desc}</span></div>
-                <div style="margin-top: 15px;">ਕੈਟਾਗਰੀ (Category): <span class="field-value">{cat}</span></div>
-                <div style="margin-top: 15px;">ਬੈਂਕ/ਖਾਤਾ (Paid From): <span class="field-value">{bank_acc}</span></div>
-                <div style="margin-top: 25px; text-align: left;"><div class="amount-box">ਰਕਮ (Amount): Rs. {amount}/-</div></div>
-            </div>
-            <div class="sign-box"><div style="text-align: center;">______________________<br><br>ਪ੍ਰਾਪਤ ਕਰਤਾ (Receiver)</div><div style="text-align: center;">______________________<br><br>ਪ੍ਰਵਾਨ ਕਰਤਾ (Authorized By)</div></div>
-        </div>
-        <script>window.onload = function() {{ window.print(); }}</script>
-    </body></html>
-    """
+    img_html = f'<img src="data:image/png;base64,{logo_base64}" style="position: absolute; left: 0; top: 0; width: 80px; height: auto;">' if logo_base64 else ''
+    html_content = f"""<!DOCTYPE html><html lang="pa"><head><meta charset="UTF-8"><title>Expense Voucher #{voucher_no}</title>
+        <style>body {{ font-family: sans-serif; padding: 20px; }} .receipt-box {{ max-width: 800px; margin: auto; padding: 20px 30px; border: 2px solid #333; position: relative; }}
+        .header-flex {{ display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }}
+        .main-content {{ font-size: 16px; line-height: 2.0; font-weight: bold; }} .field-value {{ font-family: monospace; font-size: 16px; border-bottom: 1px dashed #666; padding: 0 10px; color: #0F4C81; }}
+        </style></head><body><div class="receipt-box"><div class="header-flex">{img_html}<div style="text-align:center; width:100%;"><h2 style="margin:0;">{NGO_NAME_PB}</h2><p style="margin:4px 0;">{NGO_TAGLINE_PB}</p></div></div>
+        <h3 style="text-align:center;text-decoration:underline;">PAYMENT / EXPENSE VOUCHER</h3>
+        <div class="main-content"><div style="display:flex; justify-content:space-between;"><div>ਵਾਊਚਰ ਨੰ: <span class="field-value" style="color:#D92B2B;">{voucher_no}</span></div><div>ਮਿਤੀ: <span class="field-value">{date_str}</span></div></div>
+        <div style="margin-top:15px;">ਵੇਰਵਾ (Description): <span class="field-value">{desc}</span></div>
+        <div style="margin-top:15px;">ਕੈਟਾਗਰੀ (Category): <span class="field-value">{cat}</span></div>
+        <div style="margin-top:15px;">ਬੈਂਕ/ਖਾਤਾ (Paid From): <span class="field-value">{bank_acc}</span></div>
+        <div style="margin-top:25px;"><div style="font-size:18px; border:2px solid #333; padding:5px 20px; display:inline-block;">ਰਕਮ (Amount): Rs. {amount}/-</div></div></div>
+        <div style="display:flex; justify-content:space-between; margin-top:60px; font-weight:bold; font-size:14px;"><div style="text-align:center;">______________________<br><br>ਪ੍ਰਾਪਤ ਕਰਤਾ</div><div style="text-align:center;">______________________<br><br>ਪ੍ਰਵਾਨ ਕਰਤਾ</div></div></div>
+        <script>window.onload = function() {{ window.print(); }}</script></body></html>"""
     filename = f"Expense_Voucher_{voucher_no}.html"
     with open(filename, "w", encoding="utf-8") as f: f.write(html_content)
     return filename
 
+# --- LEDGER CALCULATIONS ---
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe):
     bank_balances = {bank: 0.0 for bank in BANK_ACCOUNTS}
     for bank in BANK_ACCOUNTS:
@@ -344,26 +268,24 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
             b_acc = row.get('bank_name')
             if pd.isna(b_acc) or str(b_acc).strip() in ["", "None", "nan"]: b_acc = "Kotak Bank Regular"
             if target_bank and not is_bank_match(b_acc, target_bank): continue
-            src = row.get('source', 'Manual Entry')
-            entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': b_acc, 'Credit': float(row.get('credit') or 0.0), 'Debit': float(row.get('debit') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': src})
-            
+            entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': b_acc, 'Credit': float(row.get('credit') or 0.0), 'Debit': float(row.get('debit') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual Entry')})
     return pd.DataFrame(entries)
 
-# --- SESSION STATE INITIALIZATION ---
+# ==========================================
+# AUTH & ROUTING
+# ==========================================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
-    st.session_state.role = None
-    st.session_state.username = None
+    st.session_state.role = st.session_state.username = None
 
 for state_key, def_val in [('current_tab', "🏠 ਹੋਮ ਪੇਜ (Home)"), ('entry_mode', "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"), ('acc_mode', "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"), ('other_mode', "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)"), ('admin_mode', "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)")]:
     if state_key not in st.session_state: st.session_state[state_key] = def_val
 
-# --- LOGIN SCREEN ---
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if os.path.exists("logo.png"): st.image("logo.png", width=100)
-        st.markdown(f"<div style='text-align: center; margin-bottom: 20px;'><h2 style='color: var(--text-color); margin: 0; font-size: 26px;'>{NGO_NAME_PB}</h2><p style='color: #E53935; font-weight: bold; font-size: 16px; margin: 5px 0;'>{NGO_TAGLINE_PB}</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; margin-bottom: 20px;'><h2 style='color:#4A1B15;'>{NGO_NAME_PB}</h2><p style='color: #E53935; font-weight: bold;'>{NGO_TAGLINE_PB}</p></div>", unsafe_allow_html=True)
         with st.form("login_form"):
             username_input = st.text_input("ਯੂਜ਼ਰਨੇਮ (Username)").lower()
             password_input = st.text_input("ਪਾਸਵਰਡ (Password)", type="password")
@@ -374,7 +296,7 @@ if not st.session_state.logged_in:
                     st.session_state.username = username_input
                     st.session_state.current_tab = "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My Attendance)" if st.session_state.role == "employee" else "🏠 ਹੋਮ ਪੇਜ (Home)"
                     st.rerun()
-                else: st.error("ਗਲਤ ਪਾਸਵਰਡ! (Incorrect Password!)")
+                else: st.error("ਗਲਤ ਪਾਸਵਰਡ!")
     st.stop()
 
 is_admin = st.session_state.role == "admin"
@@ -382,7 +304,6 @@ is_mgmt = st.session_state.role == "management"
 is_staff = st.session_state.role == "staff"
 is_employee = st.session_state.role == "employee"
 
-# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.title("👤 ਪ੍ਰੋਫਾਈਲ (Profile)")
     role_display = {"admin": "ਐਡਮਿਨ ਮੋਡ (Admin)", "management": "ਮੈਨੇਜਮੈਂਟ (View Only)", "staff": "ਕਰਮਚਾਰੀ ਮੋਡ (Staff)", "employee": "ਸਟਾਫ ਹਾਜ਼ਰੀ ਮੋਡ (Employee)"}.get(st.session_state.role, "")
@@ -392,23 +313,16 @@ with st.sidebar:
         st.session_state.role = st.session_state.username = None
         st.rerun()
     st.markdown("---")
-    st.subheader("ਮੁੱਖ ਮੀਨੂ (Main Menu)")
-    
-    if is_employee: menu_options = ["⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My Attendance)"]
-    else:
-        menu_options = ["🏠 ਹੋਮ ਪੇਜ (Home)", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)", "🎓 ਵਿਦਿਆਰਥੀ (Students)", "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)", "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)"]
-        if is_admin or is_staff: menu_options.append("⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)")
-        
-    current_idx = menu_options.index(st.session_state.current_tab) if st.session_state.current_tab in menu_options else 0
-    st.session_state.current_tab = st.radio("ਚੁਣੋ (Select)", menu_options, index=current_idx, label_visibility="collapsed")
+    st.subheader("ਮੁੱਖ ਮੀਨੂ")
+    menu_opts = ["⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My Attendance)"] if is_employee else ["🏠 ਹੋਮ ਪੇਜ (Home)", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)", "🎓 ਵਿਦਿਆਰਥੀ (Students)", "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)", "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)"]
+    if is_admin or is_staff: menu_opts.append("⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)")
+    c_idx = menu_opts.index(st.session_state.current_tab) if st.session_state.current_tab in menu_opts else 0
+    st.session_state.current_tab = st.radio("ਚੁਣੋ", menu_opts, index=c_idx, label_visibility="collapsed")
 
-# --- PROFESSIONAL HEADER ---
-logo_base64 = get_base64_image("logo.png")
-st.markdown(f"<div class='pro-header-flex'>{f'<img src=\"data:image/png;base64,{logo_base64}\" class=\"pro-logo\">' if logo_base64 else ''}<div class='pro-text-box'><div class='pro-title'>{NGO_NAME_PB}</div><div class='pro-tagline'>{NGO_TAGLINE_PB}</div><div class='pro-sub'>{NGO_ADDRESS_PB}</div></div></div>", unsafe_allow_html=True)
-
+logo_b64 = get_base64_image("logo.png")
+st.markdown(f"<div class='pro-header-flex'>{f'<img src=\"data:image/png;base64,{logo_b64}\" class=\"pro-logo\">' if logo_b64 else ''}<div class='pro-text-box'><div class='pro-title'>{NGO_NAME_PB}</div><div class='pro-tagline'>{NGO_TAGLINE_PB}</div><div class='pro-sub'>{NGO_ADDRESS_PB}</div></div></div>", unsafe_allow_html=True)
 if st.session_state.current_tab != "🏠 ਹੋਮ ਪੇਜ (Home)" and not is_employee:
-    if st.button("🏠 ਹੋਮ ਪੇਜ 'ਤੇ ਜਾਓ (Back to Home Dashboard)", type="secondary"):
-        st.session_state.current_tab = "🏠 ਹੋਮ ਪੇਜ (Home)"; st.rerun()
+    if st.button("🏠 ਹੋਮ ਪੇਜ 'ਤੇ ਜਾਓ", type="secondary"): st.session_state.current_tab = "🏠 ਹੋਮ ਪੇਜ (Home)"; st.rerun()
     st.markdown("---")
 
 # ==========================================
@@ -424,7 +338,6 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
         clean_name = my_profile[0].get('name', 'Unknown')
         st.success(f"ਜੀ ਆਇਆਂ ਨੂੰ, **{clean_name}** ਜੀ!")
         att_e_tab1, att_e_tab2 = st.tabs(["⏱️ ਅੱਜ ਦੀ ਹਾਜ਼ਰੀ (Punch In/Out)", "📝 ਛੁੱਟੀ ਬੇਨਤੀ (Leave Request)"])
-        
         with att_e_tab1:
             today_str = str(date.today())
             current_time = datetime.now().strftime("%I:%M %p")
@@ -437,12 +350,10 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
                 loc = streamlit_geolocation()
                 if loc and loc.get('latitude') and loc.get('longitude'):
                     dist = get_distance_meters(loc['latitude'], loc['longitude'], NGO_LAT, NGO_LON)
-                    st.write(f"📍 ਤੁਹਾਡੀ ਮੌਜੂਦਾ ਦੂਰੀ: **{dist:.0f} ਮੀਟਰ**")
+                    st.write(f"📍 ਮੌਜੂਦਾ ਦੂਰੀ: **{dist:.0f} ਮੀਟਰ**")
                     if dist <= 100:
                         st.success("✅ ਲੋਕੇਸ਼ਨ ਮੈਚ ਹੋ ਗਈ! ਹੁਣ ਤੁਸੀਂ ਹਾਜ਼ਰੀ ਲਗਾ ਸਕਦੇ ਹੋ।")
-                        st.markdown("---")
                         if not today_record:
-                            st.info(f"ਹਾਜ਼ਰੀ ਹਾਲੇ ਨਹੀਂ ਲੱਗੀ। (Time: {current_time})")
                             if st.button("🟢 Punch IN (ਆਉਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
                                 supabase.table("attendance").insert({"staff_name": clean_name, "date": today_str, "in_time": current_time, "out_time": "", "status": "Present"}).execute()
                                 st.success("✅ ਹਾਜ਼ਰੀ ਲੱਗ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
@@ -453,11 +364,10 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
                                 if st.button("🔴 Punch OUT (ਜਾਣ ਦਾ ਸਮਾਂ)", type="primary", use_container_width=True):
                                     supabase.table("attendance").update({"out_time": current_time}).eq("id", rec['id']).execute()
                                     st.success("✅ ਜਾਣ ਦਾ ਸਮਾਂ ਲੱਗ ਗਿਆ ਹੈ!"); time.sleep(1.5); st.rerun()
-                            else:
-                                st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
-                    else: st.error(f"❌ ਤੁਸੀਂ TERA AASRA ਤੋਂ ਬਾਹਰ ਹੋ (ਦੂਰੀ: {dist:.0f} ਮੀਟਰ)।")
+                            else: st.error(f"🔴 Punch OUT Time: {rec.get('out_time', '')}")
+                    else: st.error(f"❌ ਤੁਸੀਂ TERA AASRA ਤੋਂ ਬਾਹਰ ਹੋ।")
             except: st.error("🚨 `pip install streamlit-geolocation` ਚਲਾਓ")
-
+            
             st.markdown("---")
             st.write(f"#### 📅 ਪਿਛਲੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ")
             try:
@@ -466,10 +376,9 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
             except: pass
 
         with att_e_tab2:
-            st.write("### 📝 ਛੁੱਟੀ ਬੇਨਤੀ")
             with st.form("emp_manual_att_form", clear_on_submit=True):
                 m_date = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                m_status = st.selectbox("ਕੀ ਲਗਾਉਣਾ ਹੈ?", ["Present (ਹਾਜ਼ਰ)", "Absent (ਛੁੱਟੀ/ਗੈਰ-ਹਾਜ਼ਰ)", "Half Day (ਅੱਧਾ ਦਿਨ)"])
+                m_status = st.selectbox("ਕੀ ਲਗਾਉਣਾ ਹੈ?", ["Present", "Absent", "Half Day"])
                 m_reason = st.text_input("ਕਾਰਨ (Reason)")
                 if st.form_submit_button("ਬੇਨਤੀ ਭੇਜੋ", type="primary"):
                     supabase.table("attendance_requests").insert({"staff_name": clean_name, "date": str(m_date), "requested_status": m_status, "reason": m_reason, "status": "Pending"}).execute()
@@ -479,8 +388,7 @@ if st.session_state.current_tab == "⏱️ ਮੇਰੀ ਹਾਜ਼ਰੀ (My A
 # 0. HOME PAGE DASHBOARD
 # ==========================================
 elif st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
-    st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold;'>ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਸੈਕਸ਼ਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਇੱਕ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
-    
+    st.markdown("<p style='text-align: center; font-size: 20px; font-weight: bold;'>ਸੈਕਸ਼ਨ ਚੁਣੋ ਜੀ:</p>", unsafe_allow_html=True)
     def render_nav_row(title, buttons_data):
         st.markdown(f"### {title}")
         cols = st.columns(len(buttons_data))
@@ -490,34 +398,11 @@ elif st.session_state.current_tab == "🏠 ਹੋਮ ਪੇਜ (Home)":
                 if mode_key: st.session_state[mode_key] = mode_val
                 st.rerun()
 
-    render_nav_row("📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦਾਂ", [
-        ("💰 ਨਵਾਂ ਦਾਨ / ਰਸੀਦ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"),
-        ("📦 ਸਮਾਨ ਦਾ ਦਾਨ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)"),
-        ("📉 ਖਰਚਾ (Payment)", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "📉 ਖਰਚਾ (Payment Debit)"),
-        ("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)")
-    ])
-    
-    render_nav_row("🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਆਡਿਟ", [
-        ("⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"),
-        ("📖 ਮੁੱਖ ਲੈਜ਼ਰ (Daybook)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)"),
-        ("🏦 ਬੈਂਕ ਲੈਜ਼ਰ", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"),
-        ("📁 ਪਾਰਟੀਆਂ (Parties)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)"),
-        ("📊 CA ਐਕਸਪੋਰਟ", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)")
-    ])
-
-    render_nav_row("📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ, ਵਿਧਵਾ ਰਾਸ਼ਨ ਅਤੇ ਪ੍ਰਬੰਧ", [
-        ("📦 ਸਟਾਕ ਭੰਡਾਰ", "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)", "other_mode", "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)"),
-        ("🎓 ਵਿਦਿਆਰਥੀ", "🎓 ਵਿਦਿਆਰਥੀ (Students)", None, None),
-        ("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ", "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)", None, None),
-        ("🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ", "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)", None, None)
-    ])
-    
-    if is_admin:
-        if st.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True):
-            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"; st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"; st.rerun()
-    elif is_staff:
-        if st.button("🗑️ ਡਿਲੀਟ ਬੇਨਤੀ", use_container_width=True):
-            st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"; st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)"; st.rerun()
+    render_nav_row("📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦਾਂ", [("💰 ਨਵਾਂ ਦਾਨ / ਰਸੀਦ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)"), ("📦 ਸਮਾਨ ਦਾ ਦਾਨ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)"), ("📉 ਖਰਚਾ (Payment)", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "📉 ਖਰਚਾ (Payment Debit)"), ("🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ", "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ (Voucher Entry)", "entry_mode", "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)")])
+    render_nav_row("🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਆਡਿਟ", [("⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)"), ("📖 ਮੁੱਖ ਲੈਜ਼ਰ", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)"), ("🏦 ਬੈਂਕ ਲੈਜ਼ਰ", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"), ("📁 ਪਾਰਟੀਆਂ (Parties)", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ (Parties & Cheques)"), ("📊 CA ਐਕਸਪੋਰਟ", "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ CA ਰਿਪੋਰਟਾਂ (Ledgers & CA Reports)", "acc_mode", "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit Export)")])
+    render_nav_row("📦 ਸਟਾਕ, ਵਿਦਿਆਰਥੀ, ਵਿਧਵਾ ਰਾਸ਼ਨ ਅਤੇ ਪ੍ਰਬੰਧ", [("📦 ਸਟਾਕ ਭੰਡਾਰ", "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)", "other_mode", "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)"), ("🎓 ਵਿਦਿਆਰਥੀ", "🎓 ਵਿਦਿਆਰਥੀ (Students)", None, None), ("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ", "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)", None, None), ("🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ", "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)", None, None)])
+    if is_admin and st.button("📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ", use_container_width=True): st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"; st.session_state.admin_mode = "📂 ਬਲਕ ਐਕਸਲ ਅੱਪਲੋਡ (Bulk Upload)"; st.rerun()
+    elif is_staff and st.button("🗑️ ਡਿਲੀਟ ਬੇਨਤੀ", use_container_width=True): st.session_state.current_tab = "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)"; st.session_state.admin_mode = "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)"; st.rerun()
 
 # ==========================================
 # 1. VOUCHER & RECEIPT ENTRY
@@ -534,50 +419,40 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.write("### 💰 ਨਵਾਂ ਦਾਨ ਦਰਜ ਕਰੋ ਅਤੇ ਰਸੀਦ ਬਣਾਓ")
             try: don_data = supabase.table("donations").select("*").limit(100000).execute().data or []
             except: don_data = []
-            
             unique_donors = list({d['name']: d for d in don_data if d.get('name') and str(d.get('name')).strip() != ""}.keys())
             sel_donor = st.selectbox("ਪੁਰਾਣਾ ਦਾਨੀ ਲੱਭੋ", ["➕ ਨਵਾਂ ਦਾਨੀ (New Donor)"] + unique_donors)
             match = next((d for d in reversed(don_data) if d.get('name') == sel_donor), {}) if sel_donor != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else {}
             
             with st.form("donation_form", clear_on_submit=True):
                 donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ", value=sel_donor if sel_donor != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else "")
-                donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ", value=match.get('phone', ''))
+                donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (WhatsApp ਲਈ ਜ਼ਰੂਰੀ)", value=match.get('phone', ''))
                 donor_address = st.text_input("ਪਤਾ", value=match.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'))
                 on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (e.g. Monthly Donation)")
                 rec_no_input = st.number_input("ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1)
-                
                 col_m1, col_m2 = st.columns(2)
-                with col_m1:
-                    amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
-                    pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
-                with col_m2:
-                    bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ?", BANK_ACCOUNTS)
-                    receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                
+                with col_m1: amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0); pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
+                with col_m2: bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ?", BANK_ACCOUNTS); receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
                 cq_no, cq_bank = "", ""
                 if pay_mode == "Cheque":
                     cc1, cc2 = st.columns(2)
                     with cc1: cq_no = st.text_input("ਚੈੱਕ ਨੰਬਰ")
                     with cc2: cq_bank = st.text_input("ਬੈਂਕ ਦਾ ਨਾਮ")
-                
-                st.markdown("---")
                 add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=True)
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਤਿਆਰ ਕਰੋ", type="primary")
                 
             if submitted and donor_name:
                 books = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
                 matched_book = next((b for b in books if int(b['start_no']) <= int(rec_no_input) <= int(b['end_no'])), None)
+                existing_rec = supabase.table("donations").select("id").eq("id", int(rec_no_input)).execute().data
                 if not matched_book: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਕਿਸੇ ਵੀ ਜਾਰੀ ਕੀਤੀ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
-                elif supabase.table("donations").select("id").eq("id", int(rec_no_input)).execute().data: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਮੌਜੂਦ ਹੈ!")
+                elif existing_rec: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਮੌਜੂਦ ਹੈ!")
                 else:
                     collector = matched_book['collector_name']
                     formatted_date = receipt_date.strftime("%Y-%m-%d")
                     supabase.table("donations").insert({"id": int(rec_no_input), "name": donor_name, "phone": donor_phone, "address": donor_address, "amount": amount, "date": formatted_date, "payment_mode": pay_mode, "donation_type": "ਪੈਸੇ (Monetary)", "item_details": "", "bank_account": bank_acc, "on_account_of": on_account_of, "add_to_mirror": add_to_mirror, "collector_name": collector, "cheque_no": cq_no, "cheque_bank": cq_bank}).execute()
-                    
                     st.success(f"✅ ਰਸੀਦ #{rec_no_input} ਸੇਵ ਹੋ ਗਈ!")
                     html_file = generate_html_receipt(int(rec_no_input), donor_name, donor_phone, amount, clean_date_to_display(formatted_date), pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of, collector, donor_address, cq_no, cq_bank)
                     with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ/ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html", type="primary")
-            
             st.markdown("---")
             st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ")
             if don_data:
@@ -591,7 +466,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     if selected_ids:
                         for sid in selected_ids:
                             row_data = next(r for r in don_data if r['id'] == sid)
-                            h_file = generate_html_receipt(row_data['id'], row_data.get('name',''), row_data.get('phone',''), float(row_data.get('amount',0)), clean_date_to_display(row_data.get('date','')), row_data.get('payment_mode','N/A'), "ਪੈਸੇ (Monetary)", "", row_data.get('bank_account','N/A'), row_data.get('on_account_of',''), row_data.get('collector_name', ''), row_data.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'), row_data.get('cheque_no', ''), row_data.get('cheque_bank', ''))
+                            h_file = generate_html_receipt(row_data['id'], row_data.get('name',''), row_data.get('phone',''), float(row_data.get('amount',0) or 0), clean_date_to_display(row_data.get('date','')), row_data.get('payment_mode','N/A'), "ਪੈਸੇ (Monetary)", "", row_data.get('bank_account','N/A'), row_data.get('on_account_of',''), row_data.get('collector_name', ''), row_data.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'), row_data.get('cheque_no', ''), row_data.get('cheque_bank', ''))
                             with open(h_file, "r", encoding="utf-8") as f: st.download_button(f"🖨️ Print #{row_data['id']}", data=f.read(), file_name=h_file, mime="text/html", key=f"dl_mon_{sid}")
         else: st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
@@ -600,45 +475,37 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
             st.write("### 📦 ਸਮਾਨ ਦਾ ਦਾਨ ਦਰਜ ਕਰੋ")
             try: ik_data = supabase.table("donations").select("*").limit(100000).execute().data or []
             except: ik_data = []
-            
             unique_donors_ik = list({d['name']: d for d in ik_data if d.get('name') and str(d.get('name')).strip() != ""}.keys())
             sel_donor_ik = st.selectbox("ਪੁਰਾਣਾ ਦਾਨੀ ਲੱਭੋ", ["➕ ਨਵਾਂ ਦਾਨੀ (New Donor)"] + unique_donors_ik, key="ik_donor_sel")
             match_ik = next((d for d in reversed(ik_data) if d.get('name') == sel_donor_ik), {}) if sel_donor_ik != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else {}
             
             with st.form("inkind_form", clear_on_submit=True):
                 donor_name_ik = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ", value=sel_donor_ik if sel_donor_ik != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else "", key="ik_name")
-                donor_phone_ik = st.text_input("ਫ਼ੋਨ ਨੰਬਰ", value=match_ik.get('phone', ''), key="ik_phone")
+                donor_phone_ik = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional Phone)", value=match_ik.get('phone', ''), key="ik_phone")
                 donor_address_ik = st.text_input("ਪਤਾ", value=match_ik.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'), key="ik_addr")
                 item_details_ik = st.text_input("ਰਸੀਦ 'ਤੇ ਛਾਪਣ ਲਈ ਸਮਾਨ ਦਾ ਵੇਰਵਾ", key="ik_item")
                 rec_no_ik = st.number_input("ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1, key="ik_rec")
-                
                 col_k1, col_k2 = st.columns(2)
                 with col_k1: amount_ik = st.number_input("ਅੰਦਾਜ਼ਨ ਕੀਮਤ (₹)", min_value=0.0, key="ik_amt")
                 with col_k2: receipt_date_ik = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                
-                st.markdown("---")
                 add_destination = st.radio("ਦਾਨ ਕੀਤੇ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ?", ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ (Add to Stock)", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ (Add to Fixed Asset)"], horizontal=True)
                 
                 try: stock_opts_ik = [s['item_name'] for s in supabase.table("stock").select("item_name").limit(50000).execute().data] + ["➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ"]
                 except: stock_opts_ik = ["➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ"]
-                
                 col_s1, col_s2 = st.columns(2)
-                with col_s1: 
-                    s_item_sel_ik = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ", stock_opts_ik, key="s_item_sel_ik")
-                    s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
-                with col_s2: 
-                    s_item_new_ik = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ", key="s_item_new_ik")
-                    s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
+                with col_s1: s_item_sel_ik = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ", stock_opts_ik, key="s_item_sel_ik"); s_qty_ik = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_ik")
+                with col_s2: s_item_new_ik = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ", key="s_item_new_ik"); s_unit_ik = st.selectbox("ਇਕਾਈ (Unit)", STOCK_UNITS, key="s_unit_ik")
                 s_type_ik = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ", ASSET_TYPES, key="s_type_ik")
-                
                 submitted_ik = st.form_submit_button("ਸਮਾਨ ਦੀ ਰਸੀਦ ਬਣਾਓ", type="primary")
                 
             if submitted_ik and donor_name_ik and item_details_ik:
                 final_item_ik = s_item_new_ik.strip() if s_item_sel_ik == "➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ" else s_item_sel_ik.strip()
+                is_whole_ik = any(u in s_unit_ik for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
                 books_ik = supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
                 matched_book_ik = next((b for b in books_ik if int(b['start_no']) <= int(rec_no_ik) <= int(b['end_no'])), None)
                 
                 if add_destination != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and not final_item_ik: st.error("❌ ਗਲਤੀ: ਕਿਰਪਾ ਕਰਕੇ ਸਮਾਨ ਦਾ ਨਾਮ ਦਿਓ!")
+                elif add_destination != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and is_whole_ik and not float(s_qty_ik).is_integer(): st.error(f"❌ ਗਲਤੀ: ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
                 elif not matched_book_ik: st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਜਾਰੀ ਕੀਤੀ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
                 elif supabase.table("donations").select("id").eq("id", int(rec_no_ik)).execute().data: st.error(f"❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਮੌਜੂਦ ਹੈ!")
                 else:
@@ -660,9 +527,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                     else: st.success(f"✅ ਰਸੀਦ #{rec_no_ik} ਤਿਆਰ ਹੈ।")
                     
                     html_file_ik = generate_html_receipt(int(rec_no_ik), donor_name_ik, donor_phone_ik, amount_ik, clean_date_to_display(formatted_date_ik), "N/A", "ਸਮਾਨ (In-Kind / Ration)", item_details_ik, "N/A", "ਸਮਾਨ ਦਾਨ", collector_ik, donor_address_ik)
-                    with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file_ik, mime="text/html", type="primary")
-            
-            st.markdown("---")
+                    with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file_ik, mime="text/html", key="ik_dl", type="primary")
             st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ")
             if ik_data: 
                 df_ik = pd.DataFrame([d for d in ik_data if d.get('donation_type') == "ਸਮਾਨ (In-Kind / Ration)"])
@@ -680,8 +545,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 exp_amount = st.number_input("ਰਕਮ (₹)", min_value=1.0)
                 bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ?", BANK_ACCOUNTS)
                 exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                
-                st.markdown("---")
                 add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=True)
                 add_destination_exp = st.radio("ਖਰੀਦੇ ਗਏ ਸਮਾਨ ਨੂੰ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ?", ["ਕਿਤੇ ਨਹੀਂ (Do not add)", "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ ਜੋੜੋ"], horizontal=True)
                 
@@ -689,23 +552,19 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 except: stock_opts_exp = ["➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ"]
                 
                 col_es1, col_es2 = st.columns(2)
-                with col_es1: 
-                    s_item_sel_exp = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ", stock_opts_exp, key="s_item_sel_exp")
-                    s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
-                with col_es2: 
-                    s_item_new_exp = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ", key="s_item_new_exp")
-                    s_unit_exp = st.selectbox("ਇਕਾਈ", STOCK_UNITS, key="s_unit_exp")
+                with col_es1: s_item_sel_exp = st.selectbox("ਮੌਜੂਦਾ ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ", stock_opts_exp, key="s_item_sel_exp"); s_qty_exp = st.number_input("ਮਾਤਰਾ (Qty)", min_value=0.0, step=0.5, key="s_qty_exp")
+                with col_es2: s_item_new_exp = st.text_input("ਜਾਂ ਨਵਾਂ ਨਾਮ ਲਿਖੋ", key="s_item_new_exp"); s_unit_exp = st.selectbox("ਇਕਾਈ", STOCK_UNITS, key="s_unit_exp")
                 s_type_exp = st.selectbox("ਸੰਪਤੀ ਦੀ ਕਿਸਮ", ASSET_TYPES, key="s_type_exp")
-                
                 submitted_exp = st.form_submit_button("ਖਰਚਾ ਸੇਵ ਕਰੋ", type="primary")
                 
             if submitted_exp and desc:
                 final_item_exp = s_item_new_exp.strip() if s_item_sel_exp == "➕ ਨਵਾਂ ਨਾਮ ਲਿਖੋ" else s_item_sel_exp.strip()
+                is_whole_exp = any(u in s_unit_exp for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
                 if add_destination_exp != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and not final_item_exp: st.error("❌ ਗਲਤੀ: ਸਮਾਨ ਦਾ ਨਾਮ ਦਿਓ!")
+                elif add_destination_exp != "ਕਿਤੇ ਨਹੀਂ (Do not add)" and is_whole_exp and not float(s_qty_exp).is_integer(): st.error(f"❌ ਗਲਤੀ: ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
                 else:
                     res_ins = supabase.table("expenses").insert({"description": desc, "amount": exp_amount, "date": exp_date.strftime("%Y-%m-%d"), "category": cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp}).execute()
                     inserted_id = res_ins.data[0]['id'] if res_ins.data else "N/A"
-                    
                     if add_destination_exp == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ" and final_item_exp and s_qty_exp > 0:
                         res_stock = supabase.table("stock").select("*").eq("item_name", final_item_exp).execute()
                         if res_stock.data:
@@ -745,7 +604,7 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                 st.write("### 🏦 ਮੈਨੂਅਲ ਬੈਂਕ ਐਂਟਰੀ")
                 b_acc = st.selectbox("ਬੈਂਕ ਖਾਤਾ", BANK_ACCOUNTS)
                 b_date = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                b_desc = st.text_input("ਵੇਰਵਾ (Description)")
+                b_desc = st.text_input("ਵੇਰਵਾ")
                 col1, col2 = st.columns(2)
                 with col1: b_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ", ["ਖਾਤੇ ਵਿੱਚ ਆਏ (Credit)", "ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਟੇ (Debit)"])
                 with col2: b_amt = st.number_input("ਰਕਮ (₹)", min_value=1.0)
@@ -757,7 +616,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
                         supabase.table("bank_ledger").insert({"txn_date": b_date.strftime("%Y-%m-%d"), "description": b_desc, "bank_name": b_acc, "debit": float(debit_val), "credit": float(credit_val), "balance": 0.0, "source": "Manual Entry"}).execute()
                         st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
             st.markdown("---")
-            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ")
             try:
                 recents = supabase.table("bank_ledger").select("*").eq("source", "Manual Entry").order("id", desc=True).limit(50).execute().data
                 if recents: st.dataframe(format_dates_in_df(pd.DataFrame(recents)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit']], ascending=False), hide_index=True, use_container_width=True)
@@ -807,7 +665,6 @@ elif st.session_state.current_tab == "📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀ
         st.write("### 🖨️ ਪੁਰਾਣੀ ਰਸੀਦ ਜਾਂ ਖਰਚਾ ਵਾਊਚਰ ਪ੍ਰਿੰਟ ਕਰੋ")
         rep_type = st.radio("ਕੀ ਪ੍ਰਿੰਟ ਕਰਨਾ ਹੈ?", ["ਦਾਨ ਰਸੀਦ (Donation Receipt)", "ਖਰਚਾ ਵਾਊਚਰ (Expense Voucher)"], horizontal=True)
         col_search1, col_search2 = st.columns(2)
-        
         if rep_type == "ਦਾਨ ਰਸੀਦ (Donation Receipt)":
             with col_search1:
                 search_id = st.number_input("ਰਸੀਦ ਨੰਬਰ ਭਰੋ", min_value=1, step=1)
@@ -859,7 +716,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
     don_data = supabase.table("donations").select("*").limit(100000).execute().data or []
     exp_data = supabase.table("expenses").select("*").limit(100000).execute().data or []
     try: ledg_data = supabase.table("bank_ledger").select("*").limit(100000).execute().data or []
-    except Exception: ledg_data = []
+    except: ledg_data = []
     
     df_don = pd.DataFrame(don_data)
     df_exp = pd.DataFrame(exp_data)
@@ -960,7 +817,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
         df_main = get_ledger_data(df_don, df_exp, df_ledg)
         if not df_main.empty:
             df_main['DateObj'] = df_main['Date'].apply(parse_date_to_obj).fillna(date.today())
-            df_main = df_main.sort_values(by=['DateObj', 'ID'], ascending=True) # Ascending for running balance
+            df_main = df_main.sort_values(by=['DateObj', 'ID'], ascending=True) 
             
             if show_all_dates_md:
                 df_period = df_main.copy()
@@ -984,7 +841,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             
             df_disp = df_period[['ID', 'Date', 'Description', 'Account', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']]
             st.dataframe(df_disp.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
-            report_file_main = generate_html_report(f"ਮੁੱਖ ਲੈਜ਼ਰ ({filter_opt})", df_disp.to_html(index=False, border=1, classes='report-table'))
+            report_file_main = generate_html_report(f"ਮੁੱਖ ਲੈਜ਼ਰ ({filter_opt})", df_disp.to_html(index=False, border=1, classes='report-table'), landscape=True)
             with open(report_file_main, "r", encoding="utf-8") as file: st.download_button("🖨️ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_main, mime="text/html", type="primary")
 
     elif st.session_state.acc_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)":
@@ -1020,7 +877,7 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             st.dataframe(df_disp_bank.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
             
             st.markdown("---")
-            report_file_bank = generate_html_report(f"ਬੈਂਕ ਲੈਜ਼ਰ - {selected_bank}", df_disp_bank.to_html(index=False, border=1, classes='report-table'))
+            report_file_bank = generate_html_report(f"ਬੈਂਕ ਲੈਜ਼ਰ - {selected_bank}", df_disp_bank.to_html(index=False, border=1, classes='report-table'), landscape=True)
             with open(report_file_bank, "r", encoding="utf-8") as file: st.download_button("🖨️ ਬੈਂਕ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_bank, mime="text/html", type="primary")
         else: st.info("ਇਸ ਖਾਤੇ ਵਿੱਚ ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
@@ -1052,7 +909,293 @@ elif st.session_state.current_tab == "🏦 ਖਾਤੇ, ਬੈਂਕ ਅਤੇ 
             st.download_button("📥 ਕਲਿੱਕ ਕਰਕੇ ਡਾਊਨਲੋਡ ਕਰੋ", data=buffer.getvalue(), file_name=f"CA_Audit_Data_{datetime.now().strftime('%d-%m-%Y')}.xlsx", type="primary")
 
 # ==========================================
-# ADMIN & BULK UPLOAD MANAGEMENT
+# 3. STOCK & RECEIPT BOOKS
+# ==========================================
+elif st.session_state.current_tab == "📦 ਸਟਾਕ ਅਤੇ ਕਿਤਾਬਾਂ (Stock & Receipt Books)":
+    st.header("📦 ਸਟਾਕ ਅਤੇ ਰਸੀਦ ਕਿਤਾਬਾਂ (Stock & Books)")
+    modes = ["📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)", "📤 ਸਟਾਕ ਵੰਡ (Stock Issuance)", "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)"]
+    if st.session_state.other_mode not in modes: st.session_state.other_mode = modes[0]
+    st.session_state.other_mode = st.radio("ਸੈਕਸ਼ਨ ਚੁਣੋ:", modes, index=modes.index(st.session_state.other_mode), horizontal=True)
+    st.markdown("---")
+
+    if st.session_state.other_mode == "📑 ਮੌਜੂਦਾ ਸਟਾਕ (Current Stock)":
+        st.write("### 📑 ਮੌਜੂਦਾ ਸਟਾਕ ਰਿਪੋਰਟ")
+        try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).limit(100000).execute().data or []
+        except: stock_res = []
+        if stock_res:
+            df_stock = pd.DataFrame(stock_res)
+            disp_cols = [c for c in ['item_name', 'quantity', 'unit', 'estimated_value', 'procurement_date', 'last_updated'] if c in df_stock.columns]
+            st.dataframe(format_dates_in_df(df_stock[disp_cols]), hide_index=True, use_container_width=True)
+            report_file_stock = generate_html_report("Current Stock Inventory", format_dates_in_df(df_stock[disp_cols]).to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_stock, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸਟਾਕ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stock, mime="text/html")
+        else: st.warning("ਸਟਾਕ ਵਿੱਚ ਕੋਈ ਸਮਾਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    elif st.session_state.other_mode == "📤 ਸਟਾਕ ਵੰਡ (Stock Issuance)":
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if not is_mgmt:
+                with st.form("stock_issue_form", clear_on_submit=True):
+                    st.write("### 📤 ਸਟਾਕ ਵੰਡੋ ਜਾਂ ਵਰਤੋ")
+                    try: stock_res = supabase.table("stock").select("*").gt("quantity", 0).limit(100000).execute().data or []
+                    except: stock_res = []
+                    if stock_res:
+                        s_dict = {s['item_name']: float(s.get('quantity', 0) or 0) for s in stock_res}
+                        s_units = {s['item_name']: s.get('unit', '') for s in stock_res}
+                        s_items = list(s_dict.keys())
+                        item_name = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਵੰਡਣਾ ਹੈ?", s_items)
+                        item_unit = s_units.get(item_name, '')
+                        is_whole_issue = any(u in item_unit for u in ["Pcs", "Bags", "ਪੀਸ", "ਬੈਗ"])
+                        qty = st.number_input(f"ਮਾਤਰਾ ({item_unit}) - ਮੌਜੂਦ: {s_dict.get(item_name, 0)}", min_value=0.5 if not is_whole_issue else 1.0, step=1.0 if is_whole_issue else 0.5)
+                        purpose_input = st.text_input("ਵਰਤੋਂ ਦਾ ਕਾਰਨ / ਕਿਸਨੂੰ ਦਿੱਤਾ?")
+                        proc_date = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                        if st.form_submit_button("ਸਟਾਕ ਜਾਰੀ ਕਰੋ", type="primary"):
+                            if not purpose_input.strip(): st.error("❌ ਕਿਰਪਾ ਕਰਕੇ ਵਰਤੋਂ ਦਾ ਕਾਰਨ ਦੱਸੋ!")
+                            elif is_whole_issue and not float(qty).is_integer(): st.error(f"❌ ਗਲਤੀ: '{item_unit}' ਲਈ ਮਾਤਰਾ ਪੂਰਾ ਨੰਬਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ!")
+                            else:
+                                old_qty = s_dict.get(item_name, 0)
+                                if qty > old_qty: st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {old_qty} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                                else:
+                                    new_qty = old_qty - qty
+                                    curr_stock = supabase.table("stock").select("*").eq("item_name", item_name).execute().data
+                                    old_val = float(curr_stock[0].get('estimated_value', 0) or 0) if curr_stock else 0.0
+                                    new_val = (old_val * (new_qty / old_qty)) if old_qty > 0 else 0.0
+                                    supabase.table("stock").update({"quantity": new_qty, "estimated_value": round(new_val, 2), "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}).eq("item_name", item_name).execute()
+                                    supabase.table("stock_usage").insert({"item_name": item_name, "quantity": qty, "unit": item_unit, "purpose": purpose_input, "usage_date": str(proc_date)}).execute()
+                                    st.success(f"✅ '{item_name}' ਜਾਰੀ ਕਰ ਦਿੱਤਾ ਗਿਆ ਹੈ!"); time.sleep(1.2); st.rerun()
+                    else: st.warning("ਸਟਾਕ ਖਾਲੀ ਹੈ।")
+        with col2:
+            st.write("### 📝 ਵਰਤੋਂ ਦਾ ਰਿਕਾਰਡ")
+            try: usage_res = supabase.table("stock_usage").select("*").order("id", desc=True).limit(50).execute().data or []
+            except: usage_res = []
+            if usage_res:
+                df_usage = pd.DataFrame(usage_res)[['usage_date', 'item_name', 'quantity', 'unit', 'purpose']]
+                st.dataframe(format_dates_in_df(df_usage, ascending=False), hide_index=True, use_container_width=True)
+            else: st.info("ਕੋਈ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।")
+
+    elif st.session_state.other_mode == "📖 ਰਸੀਦ ਕਿਤਾਬਾਂ (Receipt Books)":
+        if is_admin:
+            with st.form("book_issue_form", clear_on_submit=True):
+                st.write("### 📖 ਨਵੀਂ ਰਸੀਦ ਕਿਤਾਬ ਜਾਰੀ ਕਰੋ")
+                col_b1, col_b2 = st.columns(2)
+                with col_b1: collector_input = st.text_input("ਕਲੈਕਟਰ ਦਾ ਨਾਮ"); start_ser = st.number_input("ਸ਼ੁਰੂਆਤੀ ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1, value=1)
+                with col_b2: end_ser = st.number_input("ਆਖਰੀ ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1, value=100); issue_date = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                if st.form_submit_button("ਕਿਤਾਬ ਜਾਰੀ ਕਰੋ (Issue)", type="primary"):
+                    if collector_input and end_ser >= start_ser:
+                        existing_books = supabase.table("receipt_books").select("*").execute().data or []
+                        if any(int(start_ser) <= int(b['end_no']) and int(end_ser) >= int(b['start_no']) for b in existing_books): st.error("❌ ਗਲਤੀ: ਇਹ ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਜਾਰੀ ਕੀਤੇ ਜਾ ਚੁੱਕੇ ਹਨ!")
+                        else:
+                            supabase.table("receipt_books").insert({"collector_name": collector_input, "start_no": int(start_ser), "end_no": int(end_ser), "issued_date": issue_date.strftime("%Y-%m-%d"), "status": "Active"}).execute()
+                            st.success("✅ ਕਿਤਾਬ ਜਾਰੀ ਕਰ ਦਿੱਤੀ ਗਈ ਹੈ!")
+        st.write("### 📑 ਜਾਰੀ ਕੀਤੀਆਂ ਗਈਆਂ ਕਿਤਾਬਾਂ")
+        try: books_all = supabase.table("receipt_books").select("*").order("id", desc=True).limit(100000).execute().data or []
+        except: books_all = []
+        if books_all:
+            df_books = pd.DataFrame(books_all)[['collector_name', 'start_no', 'end_no', 'issued_date', 'status']]
+            st.dataframe(format_dates_in_df(df_books, ascending=False), hide_index=True, use_container_width=True)
+            report_file_books = generate_html_report("Issued Receipt Books", format_dates_in_df(df_books).to_html(index=False, border=1, classes='report-table'))
+            with open(report_file_books, "r", encoding="utf-8") as file: st.download_button("🖨️ ਕਿਤਾਬਾਂ ਦੀ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_books, mime="text/html")
+
+# ==========================================
+# 4. STUDENTS
+# ==========================================
+elif st.session_state.current_tab == "🎓 ਵਿਦਿਆਰਥੀ (Students)":
+    st.header("🎓 ਵਿਦਿਆਰਥੀਆਂ ਦਾ ਰਿਕਾਰਡ")
+    s_tab1, s_tab2 = st.tabs(["➕ ਨਵਾਂ ਵਿਦਿਆਰਥੀ ਦਰਜ ਕਰੋ", "📋 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ"])
+    
+    with s_tab1:
+        if not is_mgmt:
+            with st.form("student_form", clear_on_submit=True):
+                col_s1, col_s2 = st.columns(2)
+                with col_s1: stu_name = st.text_input("ਵਿਦਿਆਰਥੀ ਦਾ ਨਾਮ"); stu_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
+                with col_s2: stu_course = st.selectbox("ਕਲਾਸ", ["ਕੰਪਿਊਟਰ ਸਿੱਖਿਆ", "ਸਿਲਾਈ ਸੈਂਟਰ"]); join_date = st.date_input("ਦਾਖਲਾ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                s_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ", type=['png', 'jpg', 'jpeg'])
+
+                if st.form_submit_button("ਸੇਵ ਕਰੋ", type="primary") and stu_name:
+                    supabase.table("students").insert({"name": stu_name, "phone": stu_phone, "course": stu_course, "join_date": join_date.strftime("%Y-%m-%d"), "pass_date": "ਪੜ੍ਹਾਈ ਜਾਰੀ ਹੈ", "photo_base64": compress_image(s_photo)}).execute()
+                    st.success(f"✅ '{stu_name}' ਦਾ ਰਿਕਾਰਡ ਸੇਵ ਹੋ ਗਿਆ!")
+        else: st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
+
+    with s_tab2:
+        st.write("### 📑 ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੂਚੀ")
+        try: student_data = supabase.table("students").select("*").limit(100000).execute().data or []
+        except: student_data = []
+        if student_data:
+            df_stu = pd.DataFrame(student_data)
+            display_cols = [c for c in ['name', 'phone', 'course', 'join_date', 'pass_date'] if c in df_stu.columns]
+            st.dataframe(format_dates_in_df(df_stu[display_cols], ascending=False), hide_index=True, use_container_width=True)
+            
+            df_print = format_dates_in_df(df_stu, ascending=False).copy()
+            df_print['ਫੋਟੋ (Photo)'] = df_print['photo_base64'].apply(lambda x: f'<img src="data:image/jpeg;base64,{x}" class="table-img">' if x else 'No Photo') if 'photo_base64' in df_print.columns else 'No Photo'
+            print_cols_map = {'name': 'ਨਾਮ', 'phone': 'ਫ਼ੋਨ', 'course': 'ਕਲਾਸ', 'join_date': 'ਦਾਖਲਾ ਮਿਤੀ', 'pass_date': 'ਸਟੇਟਸ', 'ਫੋਟੋ (Photo)': 'ਫੋਟੋ'}
+            df_print = df_print.rename(columns={k: v for k, v in print_cols_map.items() if k in df_print.columns})
+            html_table = df_print[[v for k, v in print_cols_map.items() if v in df_print.columns]].to_html(index=False, border=1, classes='report-table', escape=False)
+            report_file_stu = generate_html_report_landscape("Students List", html_table)
+            with open(report_file_stu, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_stu, mime="text/html", type="primary")
+        else: st.info("ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+# ==========================================
+# 5. WIDOWS RATION
+# ==========================================
+elif st.session_state.current_tab == "👵 ਵਿਧਵਾ ਰਾਸ਼ਨ (Widows Ration)":
+    st.header("👵 ਵਿਧਵਾ ਰਾਸ਼ਨ ਡਾਟਾਬੇਸ")
+    w_tab1, w_tab2, w_tab3 = st.tabs(["➕ ਨਵਾਂ ਕਾਰਡ ਬਣਾਓ", "📋 ਡਾਟਾਬੇਸ ਸੂਚੀ", "🛍️ ਰਾਸ਼ਨ ਵੰਡ"])
+    
+    with w_tab1:
+        if not is_mgmt:
+            with st.form("widow_form", clear_on_submit=True):
+                c_w1, c_w2, c_w3 = st.columns(3)
+                with c_w1: w_form_no = st.text_input("ਫਾਰਮ ਨੰ:"); w_name = st.text_input("ਨਾਮ ਬੀਬੀ: *ਜ਼ਰੂਰੀ*"); w_husband = st.text_input("ਪਤੀ ਦਾ ਨਾਮ:"); w_death_date = st.text_input("ਪਤੀ ਦੀ ਮੌਤ ਦੀ ਤਾਰੀਖ:")
+                with c_w2: w_card_no = st.text_input("ਕਾਰਡ ਨੰ:"); w_age = st.text_input("ਉਮਰ / ਸਾਲ:"); w_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ: *ਜ਼ਰੂਰੀ*"); w_issued_by = st.text_input("ਜਾਰੀ ਕਰਤਾ:")
+                with c_w3: w_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ", type=['png', 'jpg', 'jpeg']); w_card_date = st.date_input("ਸ਼ੁਰੂਆਤ ਮਿਤੀ:", value=date.today(), format="DD/MM/YYYY")
+                w_address = st.text_area("ਪਤਾ (Address):")
+                cb1, cb2 = st.columns(2)
+                with cb1: w_boys = st.text_area("ਲੜਕੇ (ਉਮਰ, ਕਲਾਸ):")
+                with cb2: w_girls = st.text_area("ਲੜਕੀਆਂ (ਉਮਰ, ਕਲਾਸ):")
+                
+                if st.form_submit_button("ਕਾਰਡ ਸੇਵ ਕਰੋ", type="primary") and w_name:
+                    supabase.table("widows").insert({"form_no": w_form_no, "card_no": w_card_no, "name": w_name, "age": w_age, "husband_name": w_husband, "husband_death_date": w_death_date, "phone": w_phone, "address": w_address, "boys_details": w_boys, "girls_details": w_girls, "issued_by": w_issued_by, "join_date": str(w_card_date), "photo_base64": compress_image(w_photo)}).execute()
+                    st.success(f"✅ '{w_name}' ਦਾ ਕਾਰਡ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!")
+        else: st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
+
+    with w_tab2:
+        st.write("### 📑 ਰਜਿਸਟਰਡ ਵਿਧਵਾਵਾਂ ਦੀ ਸੂਚੀ")
+        try: widows_data = supabase.table("widows").select("*").limit(100000).execute().data or []
+        except: widows_data = []
+        if widows_data:
+            df_w = pd.DataFrame(widows_data)
+            display_cols = [c for c in ['card_no', 'name', 'age', 'husband_name', 'phone', 'address', 'join_date'] if c in df_w.columns]
+            st.dataframe(format_dates_in_df(df_w[display_cols], ascending=False), hide_index=True, use_container_width=True)
+            
+            df_print_w = format_dates_in_df(df_w, ascending=False).copy()
+            df_print_w['ਫੋਟੋ'] = df_print_w['photo_base64'].apply(lambda x: f'<img src="data:image/jpeg;base64,{x}" class="table-img">' if x else 'No Photo') if 'photo_base64' in df_print_w.columns else 'No Photo'
+            print_cols_map_w = {'card_no': 'ਕਾਰਡ ਨੰ', 'name': 'ਨਾਮ', 'age': 'ਉਮਰ', 'husband_name': 'ਪਤੀ', 'phone': 'ਫ਼ੋਨ', 'address': 'ਪਤਾ', 'ਫੋਟੋ': 'ਫੋਟੋ'}
+            df_print_w = df_print_w.rename(columns={k: v for k, v in print_cols_map_w.items() if k in df_print_w.columns})
+            html_table_w = df_print_w[[v for k, v in print_cols_map_w.items() if v in df_print_w.columns]].to_html(index=False, border=1, classes='report-table', escape=False)
+            report_file_w = generate_html_report_landscape("Widows Database", html_table_w)
+            with open(report_file_w, "r", encoding="utf-8") as file: st.download_button("🖨️ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=report_file_w, mime="text/html", type="primary")
+        else: st.info("ਕੋਈ ਰਿਕਾਰਡ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
+
+    with w_tab3:
+        st.write("### 🛍️ ਮਹੀਨਾਵਾਰ ਰਾਸ਼ਨ ਵੰਡ")
+        try: widows_list = supabase.table("widows").select("*").limit(100000).execute().data or []
+        except: widows_list = []
+        try: stock_list = supabase.table("stock").select("*").gt("quantity", 0).limit(100000).execute().data or []
+        except: stock_list = []
+            
+        if not widows_list: st.warning("⚠️ ਪਹਿਲਾਂ ਵਿਧਵਾਵਾਂ ਦਾ ਪ੍ਰੋਫਾਈਲ ਦਰਜ ਕਰੋ।")
+        elif not stock_list: st.warning("⚠️ ਸਟਾਕ ਖਾਲੀ ਹੈ।")
+        else:
+            if not is_mgmt:
+                w_names = [f"ਕਾਰਡ {w.get('card_no','-')} - {w.get('name','Unknown')} ({w.get('phone','')})" for w in widows_list]
+                s_dict = {s['item_name']: float(s.get('quantity', 0) or 0) for s in stock_list}
+                with st.form("ration_dist_form"):
+                    col1, col2 = st.columns(2)
+                    with col1: selected_widow = st.selectbox("ਕਿਸ ਨੂੰ ਰਾਸ਼ਨ ਦਿੱਤਾ?", w_names); dist_date = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                    with col2: selected_item = st.selectbox("ਕਿਹੜਾ ਸਮਾਨ ਦਿੱਤਾ?", list(s_dict.keys())); qty_to_give = st.number_input(f"ਮਾਤਰਾ - ਸਟਾਕ ਮੌਜੂਦ: {s_dict.get(selected_item, 0)}", min_value=0.5, step=0.5)
+                    if st.form_submit_button("ਰਾਸ਼ਨ ਵੰਡ ਸੇਵ ਕਰੋ", type="primary"):
+                        old_qty = s_dict.get(selected_item, 0)
+                        if qty_to_give > old_qty: st.error(f"❌ ਗਲਤੀ: ਸਟਾਕ ਵਿੱਚ ਸਿਰਫ਼ {old_qty} ਮਾਤਰਾ ਬਾਕੀ ਹੈ!")
+                        else:
+                            new_qty = max(0.0, old_qty - qty_to_give)
+                            curr_stock = supabase.table("stock").select("*").eq("item_name", selected_item).execute().data
+                            if curr_stock:
+                                curr_val = float(curr_stock[0].get('estimated_value', 0) or 0)
+                                supabase.table("stock").update({"quantity": new_qty, "estimated_value": round((curr_val * (new_qty / old_qty)) if old_qty > 0 else 0.0, 2), "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}).eq("item_name", selected_item).execute()
+                                supabase.table("stock_usage").insert({"item_name": selected_item, "quantity": qty_to_give, "unit": curr_stock[0].get('unit', ''), "purpose": f"Ration to: {selected_widow}", "usage_date": str(dist_date)}).execute()
+                            widow_just_name = selected_widow.split(" - ")[1].split(" (")[0] if " - " in selected_widow else selected_widow
+                            supabase.table("ration_distribution").insert({"widow_name": widow_just_name, "item_name": selected_item, "quantity": qty_to_give, "distribution_date": str(dist_date)}).execute()
+                            st.success(f"✅ {widow_just_name} ਨੂੰ {qty_to_give} {selected_item} ਦੇ ਦਿੱਤਾ ਗਿਆ ਹੈ!"); time.sleep(1.5); st.rerun()
+                            
+        st.markdown("---")
+        st.write("#### 📑 ਪਿਛਲੀ ਰਾਸ਼ਨ ਵੰਡ ਦਾ ਰਿਕਾਰਡ")
+        try: dist_data = supabase.table("ration_distribution").select("*").order("id", desc=True).limit(50).execute().data or []
+        except: dist_data = []
+        if dist_data: st.dataframe(format_dates_in_df(pd.DataFrame(dist_data)[['id', 'distribution_date', 'widow_name', 'item_name', 'quantity']], ascending=False), hide_index=True, use_container_width=True)
+
+# ==========================================
+# 🧑‍💼 STAFF & ATTENDANCE MANAGEMENT
+# ==========================================
+elif st.session_state.current_tab == "🧑‍💼 ਸਟਾਫ ਅਤੇ ਹਾਜ਼ਰੀ (Staff & Attendance)":
+    st.header("🧑‍💼 ਸਟਾਫ ਮੈਨੇਜਮੈਂਟ ਅਤੇ ਹਾਜ਼ਰੀ")
+    att_tabs = st.tabs(["👤 ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Profiles)", "🛡️ ਐਡਮਿਨ ਮਨਜ਼ੂਰੀ (Admin Approvals)", "📋 ਸਭ ਦੀ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ (Monthly Report)"])
+    
+    with att_tabs[0]:
+        col_st1, col_st2 = st.columns([1, 2])
+        with col_st1:
+            if is_admin or is_mgmt:
+                with st.form("staff_profile_form", clear_on_submit=True):
+                    st.write("### ➕ ਨਵਾਂ ਸਟਾਫ ਦਰਜ ਕਰੋ")
+                    st_name = st.text_input("ਸਟਾਫ ਦਾ ਨਾਮ *ਜ਼ਰੂਰੀ*")
+                    st_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ")
+                    st_role = st.selectbox("ਡਿਊਟੀ / ਅਹੁਦਾ", ["ਮੈਨੇਜਰ", "ਅਧਿਆਪਕ", "ਕਲਰਕ", "ਸੇਵਾਦਾਰ", "ਡਰਾਈਵਰ", "ਹੋਰ"])
+                    st_login = st.selectbox("ਲਾਗਇਨ ਆਈ.ਡੀ", ["ਕੋਈ ਨਹੀਂ (None)", "emp1", "emp2", "emp3", "emp4", "emp5"])
+                    st_join = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                    st_photo = st.file_uploader("ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ", type=['png', 'jpg', 'jpeg'])
+                    if st.form_submit_button("ਸੇਵ ਕਰੋ", type="primary") and st_name:
+                        supabase.table("staff_profiles").insert({"name": st_name, "phone": st_phone, "role": st_role, "join_date": str(st_join), "photo_base64": compress_image(st_photo), "login_id": st_login if "emp" in st_login else ""}).execute()
+                        st.success(f"✅ '{st_name}' ਸੇਵ ਹੋ ਗਿਆ!")
+            else: st.info("⚠️ ਸਿਰਫ਼ ਐਡਮਿਨ ਲਈ।")
+                
+        with col_st2:
+            st.write("### 📋 ਸਟਾਫ ਦੀ ਸੂਚੀ")
+            try: staff_data = supabase.table("staff_profiles").select("*").limit(100000).execute().data or []
+            except: staff_data = []
+            if staff_data: st.dataframe(format_dates_in_df(pd.DataFrame(staff_data)[['name', 'phone', 'role', 'login_id', 'join_date']], ascending=False), hide_index=True, use_container_width=True)
+
+    with att_tabs[1]:
+        st.write("### 🛡️ ਸਟਾਫ ਦੀਆਂ ਪੈਂਡਿੰਗ ਹਾਜ਼ਰੀ ਬੇਨਤੀਆਂ")
+        try: att_reqs = supabase.table("attendance_requests").select("*").eq("status", "Pending").limit(100000).execute().data or []
+        except: att_reqs = []
+        if att_reqs:
+            st.dataframe(format_dates_in_df(pd.DataFrame(att_reqs)[['id', 'staff_name', 'date', 'requested_status', 'reason', 'created_at']], ascending=False), hide_index=True, use_container_width=True)
+            req_dict = {f"ID: {r.get('id','')} - {r.get('staff_name','')} ({clean_date_to_display(r.get('date',''))} : {r.get('requested_status','')})": r for r in att_reqs}
+            sel_req_str = st.selectbox("ਬੇਨਤੀ ਚੁਣੋ", list(req_dict.keys()))
+            if sel_req_str:
+                target_r = req_dict[sel_req_str]
+                col_aa, col_ar = st.columns(2)
+                with col_aa:
+                    if st.button("✅ ਹਾਜ਼ਰੀ ਮਨਜ਼ੂਰ ਕਰੋ", type="primary"):
+                        existing = supabase.table("attendance").select("*").eq("staff_name", target_r['staff_name']).eq("date", target_r['date']).execute().data
+                        if existing: supabase.table("attendance").update({"status": target_r['requested_status']}).eq("id", existing[0]['id']).execute()
+                        else: supabase.table("attendance").insert({"staff_name": target_r['staff_name'], "date": target_r['date'], "in_time": "Manual", "out_time": "Manual", "status": target_r['requested_status']}).execute()
+                        supabase.table("attendance_requests").update({"status": "Approved"}).eq("id", target_r['id']).execute()
+                        st.success("✅ ਹਾਜ਼ਰੀ ਲੱਗ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
+                with col_ar:
+                    if st.button("❌ ਬੇਨਤੀ ਰੱਦ ਕਰੋ"):
+                        supabase.table("attendance_requests").update({"status": "Rejected"}).eq("id", target_r['id']).execute()
+                        st.error("❌ ਰੱਦ ਕੀਤੀ ਗਈ!"); time.sleep(1.5); st.rerun()
+        else: st.info("ਕੋਈ ਪੈਂਡਿੰਗ ਬੇਨਤੀ ਨਹੀਂ ਹੈ।")
+
+    with att_tabs[2]:
+        st.write("### 📅 ਮਹੀਨਾਵਾਰ ਹਾਜ਼ਰੀ ਰਿਪੋਰਟ")
+        col_m1, col_m2 = st.columns(2)
+        with col_m1: sel_month = st.selectbox("ਮਹੀਨਾ (Month)", range(1, 13), index=date.today().month - 1)
+        with col_m2: sel_year = st.selectbox("ਸਾਲ (Year)", range(2024, 2035), index=date.today().year - 2024)
+        num_days = calendar.monthrange(sel_year, sel_month)[1]
+        
+        try:
+            all_att = supabase.table("attendance").select("*").gte("date", f"{sel_year}-{sel_month:02d}-01").lte("date", f"{sel_year}-{sel_month:02d}-{num_days:02d}").limit(100000).execute().data or []
+            if all_att:
+                df_att = pd.DataFrame(all_att)
+                df_att['date_obj'] = df_att['date'].apply(parse_date_to_obj)
+                df_att = df_att.dropna(subset=['date_obj'])
+                df_att['day'] = df_att['date_obj'].apply(lambda x: x.day)
+                def get_status_code(s):
+                    s = str(s).lower()
+                    if "present" in s or "ਹਾਜ਼ਰ" in s: return "P"
+                    if "absent" in s or "ਛੁੱਟੀ" in s or "ਗੈਰ" in s: return "A"
+                    if "half" in s or "ਅੱਧਾ" in s: return "HD"
+                    return "P"
+                df_att['status_code'] = df_att['status'].apply(get_status_code)
+                pivot_df = df_att.pivot_table(index='staff_name', columns='day', values='status_code', aggfunc='last').reindex(columns=list(range(1, num_days + 1))).fillna("-")
+                pivot_df['Total P'] = (pivot_df[list(range(1, num_days + 1))] == 'P').sum(axis=1) + ((pivot_df[list(range(1, num_days + 1))] == 'HD').sum(axis=1) * 0.5)
+                pivot_df['Total A'] = (pivot_df[list(range(1, num_days + 1))] == 'A').sum(axis=1)
+                st.dataframe(pivot_df.reset_index(), hide_index=True, use_container_width=True)
+            else: st.info("ਇਸ ਮਹੀਨੇ ਦਾ ਕੋਈ ਰਿਕਾਰਡ ਨਹੀਂ ਹੈ।")
+        except: pass
+
+# ==========================================
+# 6. ADMIN & BULK UPLOAD MANAGEMENT
 # ==========================================
 elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ / ਸੋਧ (Admin & Edit)":
     st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
@@ -1066,10 +1209,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
     if st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ")
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
-        
         default_bank_upload = st.selectbox("ਇਹ ਸਟੇਟਮੈਂਟ ਕਿਸ ਬੈਂਕ ਦੀ ਹੈ?", BANK_ACCOUNTS, index=1) if upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)" else "Kotak Bank Regular"
-            
         uploaded_file = st.file_uploader("ਐਕਸਲ ਫਾਈਲ ਚੁਣੋ (.xlsx, .xls)", type=['xlsx', 'xls'])
+        
         if uploaded_file is not None:
             df_upload = pd.read_excel(uploaded_file)
             df_upload.columns = df_upload.columns.str.lower().str.replace(' ', '_').str.replace('-', '_').str.strip()
@@ -1078,15 +1220,9 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
             
             if st.button(f"🚀 ਸਾਰਾ ਡਾਟਾ {upload_type} ਵਿੱਚ ਸੇਵ ਕਰੋ", type="primary"):
                 try:
-                    if upload_type == "ਦਾਨ (Donations)":
-                        allowed_cols = ['id', 'date', 'name', 'phone', 'address', 'amount', 'payment_mode', 'cheque_no', 'cheque_bank', 'donation_type', 'item_details', 'bank_account', 'on_account_of', 'collector_name', 'add_to_mirror', 'balance']
-                        table_name = "donations"
-                    elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)":
-                        allowed_cols = ['name', 'phone', 'course', 'join_date', 'pass_date', 'photo_base64']
-                        table_name = "students"
-                    elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
-                        allowed_cols = ['form_no', 'card_no', 'name', 'age', 'husband_name', 'husband_death_date', 'phone', 'address', 'boys_details', 'girls_details', 'issued_by', 'join_date', 'photo_base64']
-                        table_name = "widows"
+                    if upload_type == "ਦਾਨ (Donations)": allowed_cols, table_name = ['id', 'date', 'name', 'phone', 'address', 'amount', 'payment_mode', 'cheque_no', 'cheque_bank', 'donation_type', 'item_details', 'bank_account', 'on_account_of', 'collector_name', 'add_to_mirror', 'balance'], "donations"
+                    elif upload_type == "ਵਿਦਿਆਰਥੀ (Students)": allowed_cols, table_name = ['name', 'phone', 'course', 'join_date', 'pass_date', 'photo_base64'], "students"
+                    elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)": allowed_cols, table_name = ['form_no', 'card_no', 'name', 'age', 'husband_name', 'husband_death_date', 'phone', 'address', 'boys_details', 'girls_details', 'issued_by', 'join_date', 'photo_base64'], "widows"
                     elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
                         for c in ['withdrawal', 'withdrawals', 'dr']:
                             if c in df_upload.columns and 'debit' not in df_upload.columns: df_upload['debit'] = df_upload[c]
@@ -1105,8 +1241,7 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                             elif 'value_date' in df_upload.columns: df_upload['txn_date'] = df_upload['value_date']
                         if 'txn_date' in df_upload.columns: 
                             df_upload['txn_date'] = df_upload['txn_date'].apply(lambda d: parse_date_to_obj(d).strftime('%Y-%m-%d') if parse_date_to_obj(d) else str(d))
-                        allowed_cols = ['txn_date', 'description', 'bank_name', 'debit', 'credit', 'balance', 'source']
-                        table_name = "bank_ledger"
+                        allowed_cols, table_name = ['txn_date', 'description', 'bank_name', 'debit', 'credit', 'balance', 'source'], "bank_ledger"
 
                     for c in allowed_cols:
                         if c not in df_upload.columns: df_upload[c] = None
@@ -1116,8 +1251,8 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                         for k, v in rec.items():
                             if isinstance(v, float) and math.isnan(v): rec[k] = None
 
-                    for i in range(0, len(records), 500):
-                        supabase.table(table_name).insert(records[i:i+500]).execute()
+                    # Batch insertion to avoid timeouts (500 records per API call)
+                    for i in range(0, len(records), 500): supabase.table(table_name).insert(records[i:i+500]).execute()
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e: st.error(f"❌ ਐਰਰ: {e}")
 
@@ -1198,35 +1333,27 @@ elif st.session_state.current_tab == "⚙️ ਐਡਮਿਨ / ਡਿਲੀਟ /
                 st.success("✅ ਸਿੱਧਾ ਕਲਿੱਕ ਕਰਕੇ ਬਦਲਾਅ ਕਰੋ:")
                 df_edit = format_dates_in_df(df_edit, ascending=False).reset_index(drop=True).where(pd.notnull(df_edit), None)
                 pk_col = 'item_name' if table_name == 'stock' else 'id'
-                disabled_cols = [pk_col] if pk_col in df_edit.columns else []
                 
-                edited_df = st.data_editor(df_edit, hide_index=True, disabled=disabled_cols, use_container_width=True, key=f"editor_edit_{table_name}")
+                edited_df = st.data_editor(df_edit, hide_index=True, disabled=[pk_col] if pk_col in df_edit.columns else [], use_container_width=True, key=f"editor_edit_{table_name}")
                 changed_rows = []
-                orig_records = df_edit.to_dict('records')
-                edited_records = edited_df.to_dict('records')
+                orig_records, edited_records = df_edit.to_dict('records'), edited_df.to_dict('records')
                 
                 for i in range(len(orig_records)):
                     orig, ed = orig_records[i], edited_records[i]
                     changes = {}
                     for k in ed.keys():
-                        ov, ev = orig[k], ed[k]
-                        if str(ov) != str(ev):
-                            # if it's a date field being updated back to DB, convert it back from Display format to ISO string for DB safety
+                        if str(orig[k]) != str(ed[k]):
                             if k in ['date', 'txn_date', 'cheque_date', 'procurement_date', 'issued_date', 'join_date', 'distribution_date', 'usage_date', 'created_at', 'Date', 'date_added']:
-                                obj = parse_date_to_obj(ev)
-                                changes[k] = obj.strftime('%Y-%m-%d') if obj else str(ev)
-                            else:
-                                changes[k] = ev
-                    if changes:
-                        rec_id = orig['item_name'] if table_name == 'stock' else orig['id']
-                        changed_rows.append((rec_id, changes))
+                                obj = parse_date_to_obj(ed[k])
+                                changes[k] = obj.strftime('%Y-%m-%d') if obj else str(ed[k])
+                            else: changes[k] = ed[k]
+                    if changes: changed_rows.append((orig['item_name'] if table_name == 'stock' else orig['id'], changes))
                         
                 if changed_rows:
                     if is_admin:
                         if st.button("💾 ਬਦਲਾਅ ਸੇਵ ਕਰੋ (Save)", type="primary"):
                             for rec_id, changes in changed_rows:
-                                col_name = "item_name" if table_name == "stock" else "id"
-                                supabase.table(table_name).update(changes).eq(col_name, rec_id).execute()
+                                supabase.table(table_name).update(changes).eq("item_name" if table_name == "stock" else "id", rec_id).execute()
                             st.success("✅ ਡਾਟਾਬੇਸ ਅਪਡੇਟ ਹੋ ਗਿਆ!"); time.sleep(1.5); st.rerun()
                     elif is_staff:
                         if st.button("📩 ਐਡਮਿਨ ਮਨਜ਼ੂਰੀ ਲਈ ਭੇਜੋ", type="primary"):
