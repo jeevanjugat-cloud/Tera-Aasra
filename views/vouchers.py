@@ -55,22 +55,47 @@ def show_page(is_mgmt):
                     html_file = utils.generate_html_receipt(int(rec_no_input), donor_name, donor_phone, amount, utils.clean_date_to_display(formatted_date), pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of, collector, donor_address, cq_no, cq_bank)
                     with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ/ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html", type="primary")
                     
-                    # WHATSAPP INTEGRATION
                     wa_msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ ਜੀ।\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ, ਤੁਹਾਡਾ ਦਾਨ (Rs. {amount}) ਪ੍ਰਾਪਤ ਹੋਇਆ ਹੈ। ਰਸੀਦ ਨੰਬਰ: {rec_no_input}। ਤੇਰਾ ਆਸਰਾ ਵੱਲੋਂ ਧੰਨਵਾਦ।"
                     wa_url = utils.wa_link(donor_phone, wa_msg)
                     if wa_url:
-                        # Fixed string formatting syntax error below by using triple quotes """
                         st.markdown(f"""<a href="{wa_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #25D366; color: white; border-radius: 8px; font-weight: bold; text-decoration: none;">💬 WhatsApp 'ਤੇ ਰਸੀਦ ਭੇਜੋ</a>""", unsafe_allow_html=True)
             
             st.markdown("---")
-            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Entries)")
             if don_data:
                 df_rec = pd.DataFrame([d for d in don_data if d.get('donation_type') == "ਪੈਸੇ (Monetary)"])
                 if not df_rec.empty:
                     disp_cols = [c for c in ['id', 'date', 'name', 'phone', 'amount', 'bank_account', 'collector_name'] if c in df_rec.columns]
                     df_rec = utils.format_dates_in_df(df_rec[disp_cols], ascending=False)
-                    st.dataframe(df_rec, hide_index=True, use_container_width=True)
-                    utils.create_print_button(df_rec, "Recent Donations", "🖨️️ ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
+                    
+                    # SELECT COLUMN FOR INDIVIDUAL PRINT/WHATSAPP
+                    df_rec.insert(0, "Select", False)
+                    edited_df = st.data_editor(df_rec, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=disp_cols, hide_index=True, use_container_width=True, key="editor_donations")
+                    
+                    utils.create_print_button(df_rec.drop(columns=['Select']), "Recent Donations", "🖨 ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
+
+                    selected_ids = edited_df[edited_df["Select"] == True]['id'].tolist()
+                    if selected_ids:
+                        st.write("**ਚੁਣੀ ਗਈ ਰਸੀਦ (Selected Receipts):**")
+                        for sid in selected_ids:
+                            row_data = next(r for r in don_data if r['id'] == sid)
+                            hf = utils.generate_html_receipt(
+                                row_data['id'], row_data.get('name',''), row_data.get('phone',''), 
+                                float(row_data.get('amount',0) or 0), utils.clean_date_to_display(row_data.get('date','')), 
+                                row_data.get('payment_mode','N/A'), "ਪੈਸੇ (Monetary)", "", 
+                                row_data.get('bank_account','N/A'), row_data.get('on_account_of',''), 
+                                row_data.get('collector_name', ''), row_data.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'), 
+                                row_data.get('cheque_no', ''), row_data.get('cheque_bank', '')
+                            )
+                            c1, c2 = st.columns([1, 2])
+                            with c1:
+                                with open(hf, "r", encoding="utf-8") as f:
+                                    st.download_button(f"🖨️ ਰਸੀਦ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_don_{sid}")
+                            with c2:
+                                wa_msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ ਜੀ।\nਸਤਿਕਾਰਯੋਗ {row_data.get('name','')} ਜੀ, ਤੁਹਾਡਾ ਦਾਨ (Rs. {row_data.get('amount',0)}) ਪ੍ਰਾਪਤ ਹੋਇਆ ਹੈ। ਰਸੀਦ ਨੰਬਰ: {sid}। ਤੇਰਾ ਆਸਰਾ ਵੱਲੋਂ ਧੰਨਵਾਦ।"
+                                wa_url = utils.wa_link(row_data.get('phone',''), wa_msg)
+                                if wa_url:
+                                    st.markdown(f"""<a href="{wa_url}" target="_blank" style="display: inline-block; padding: 5px 15px; background-color: #25D366; color: white; border-radius: 5px; font-weight: bold; text-decoration: none; font-size: 14px; margin-top: 2px;">💬 WhatsApp #{sid}</a>""", unsafe_allow_html=True)
 
     elif st.session_state.entry_mode == "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)":
         if not is_mgmt:
@@ -118,7 +143,6 @@ def show_page(is_mgmt):
                     utils.supabase.table("donations").insert({"id": int(rec_no_ik), "name": donor_name_ik, "phone": donor_phone_ik, "address": donor_address_ik, "amount": amount_ik, "date": formatted_date_ik, "payment_mode": "N/A", "donation_type": "ਸਮਾਨ (In-Kind / Ration)", "item_details": item_details_ik, "bank_account": "N/A", "on_account_of": "ਸਮਾਨ ਦਾਨ", "add_to_mirror": False, "collector_name": collector_ik}).execute()
                     
                     if add_destination == "📦 ਸਟਾਕ ਵਿੱਚ ਜੋੜੋ" and final_item_ik and s_qty_ik > 0:
-                        from datetime import datetime
                         res_stock = utils.supabase.table("stock").select("*").eq("item_name", final_item_ik).execute()
                         if res_stock.data:
                             old_qty, old_val = float(res_stock.data[0].get('quantity', 0)), float(res_stock.data[0].get('estimated_value', 0))
@@ -132,16 +156,34 @@ def show_page(is_mgmt):
                     else: st.success(f"✅ ਰਸੀਦ #{rec_no_ik} ਤਿਆਰ ਹੈ।")
                     
                     html_file_ik = utils.generate_html_receipt(int(rec_no_ik), donor_name_ik, donor_phone_ik, amount_ik, utils.clean_date_to_display(formatted_date_ik), "N/A", "ਸਮਾਨ (In-Kind / Ration)", item_details_ik, "N/A", "ਸਮਾਨ ਦਾਨ", collector_ik, donor_address_ik)
-                    with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨️️ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file_ik, mime="text/html", type="primary")
+                    with open(html_file_ik, "r", encoding="utf-8") as file: st.download_button("🖨 ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ", data=file.read(), file_name=html_file_ik, mime="text/html", type="primary")
             
             st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Entries)")
             if ik_data: 
                 df_ik = pd.DataFrame([d for d in ik_data if d.get('donation_type') == "ਸਮਾਨ (In-Kind / Ration)"])
                 if not df_ik.empty:
                     disp_cols_ik = [c for c in ['id', 'date', 'name', 'phone', 'item_details', 'amount'] if c in df_ik.columns]
                     df_disp = utils.format_dates_in_df(df_ik[disp_cols_ik], ascending=False)
-                    st.dataframe(df_disp, hide_index=True, use_container_width=True)
-                    utils.create_print_button(df_disp, "In-Kind Donations", "🖨️ ਸਮਾਨ ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
+                    
+                    df_disp.insert(0, "Select", False)
+                    edited_ik_df = st.data_editor(df_disp, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=disp_cols_ik, hide_index=True, use_container_width=True, key="editor_inkind")
+                    
+                    utils.create_print_button(df_disp.drop(columns=['Select']), "In-Kind Donations", "🖨️ ਸਮਾਨ ਦਾਨ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ")
+
+                    selected_ik_ids = edited_ik_df[edited_ik_df["Select"] == True]['id'].tolist()
+                    if selected_ik_ids:
+                        for sid in selected_ik_ids:
+                            row_data = next(r for r in ik_data if r['id'] == sid)
+                            hf = utils.generate_html_receipt(
+                                row_data['id'], row_data.get('name',''), row_data.get('phone',''), 
+                                float(row_data.get('amount',0) or 0), utils.clean_date_to_display(row_data.get('date','')), 
+                                "N/A", "ਸਮਾਨ (In-Kind / Ration)", row_data.get('item_details',''), 
+                                "N/A", "ਸਮਾਨ ਦਾਨ", row_data.get('collector_name',''), row_data.get('address','ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ')
+                            )
+                            with open(hf, "r", encoding="utf-8") as f:
+                                st.download_button(f"🖨️ ਰਸੀਦ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_ik_{sid}")
+
         else: st.info("👁️ ਮੈਨੇਜਮੈਂਟ ਮੋਡ।")
 
     elif st.session_state.entry_mode == "📉 ਖਰਚਾ (Payment Debit)":
@@ -151,7 +193,6 @@ def show_page(is_mgmt):
                 payee_name = st.text_input("ਭੁਗਤਾਨ ਕਿਸ ਨੂੰ ਕੀਤਾ / ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee / Paid To Name)")
                 desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description)")
                 
-                # CUSTOM CATEGORY LOGIC
                 cat_options = [c for c in config.EXPENSE_CATEGORIES if not c.startswith("---")] + ["➕ ਹੋਰ ਨਵਾਂ ਖਰਚਾ ਹੈੱਡ (Add New Expense Head)"]
                 cat = st.selectbox("ਕੈਟਾਗਰੀ", cat_options)
                 new_cat = st.text_input("ਨਵੇਂ ਖਰਚੇ ਦਾ ਹੈੱਡ ਦਰਜ ਕਰੋ (Enter New Expense Head Name)") if cat == "➕ ਹੋਰ ਨਵਾਂ ਖਰਚਾ ਹੈੱਡ (Add New Expense Head)" else ""
@@ -190,13 +231,29 @@ def show_page(is_mgmt):
                         else: utils.supabase.table("stock").insert({"item_name": f_item, "quantity": s_qty, "estimated_value": round(exp_amount, 2), "unit": s_unit, "procurement_date": f_dt, "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}).execute()
 
             st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Entries)")
             try:
                 recents = utils.supabase.table("expenses").select("*").order("id", desc=True).limit(50).execute().data
                 if recents: 
                     df_exp_disp = pd.DataFrame(recents)[['id', 'date', 'payee_name', 'description', 'amount', 'category', 'bank_account']]
                     df_exp_disp = utils.format_dates_in_df(df_exp_disp, ascending=False)
-                    st.dataframe(df_exp_disp, hide_index=True, use_container_width=True)
-                    utils.create_print_button(df_exp_disp, "Expense List", "🖨️ ਖਰਚਾ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
+                    
+                    df_exp_disp.insert(0, "Select", False)
+                    edited_exp_df = st.data_editor(df_exp_disp, column_config={"Select": st.column_config.CheckboxColumn("ਚੁਣੋ", default=False)}, disabled=[c for c in df_exp_disp.columns if c != 'Select'], hide_index=True, use_container_width=True, key="editor_expenses")
+                    
+                    utils.create_print_button(df_exp_disp.drop(columns=['Select']), "Expense List", "🖨️ ਖਰਚਾ ਸੂਚੀ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
+
+                    selected_exp_ids = edited_exp_df[edited_exp_df["Select"] == True]['id'].tolist()
+                    if selected_exp_ids:
+                        for sid in selected_exp_ids:
+                            row_data = next(r for r in recents if r['id'] == sid)
+                            desc_with_payee = str(row_data.get('description','')) + f" (Payee: {row_data.get('payee_name', '')})"
+                            hf = utils.generate_html_expense_voucher(
+                                row_data['id'], desc_with_payee, float(row_data.get('amount',0)), 
+                                utils.clean_date_to_display(row_data.get('date','')), row_data.get('category',''), row_data.get('bank_account','')
+                            )
+                            with open(hf, "r", encoding="utf-8") as f:
+                                st.download_button(f"🖨️ ਵਾਊਚਰ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_exp_{sid}")
             except: pass
 
     elif st.session_state.entry_mode == "🏦 ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Entry)":
@@ -267,6 +324,7 @@ def show_page(is_mgmt):
                     res = utils.supabase.table("expenses").select("*").eq("id", xid).execute().data
                     if res:
                         rec = res[0]
-                        hf = utils.generate_html_expense_voucher(xid, rec.get('description','') + f" (Payee: {rec.get('payee_name', '')})", rec.get('amount',0), utils.clean_date_to_display(rec.get('date','')), rec.get('category',''), rec.get('bank_account','N/A'))
+                        desc_with_payee = str(rec.get('description','')) + f" (Payee: {rec.get('payee_name', '')})"
+                        hf = utils.generate_html_expense_voucher(xid, desc_with_payee, rec.get('amount',0), utils.clean_date_to_display(rec.get('date','')), rec.get('category',''), rec.get('bank_account','N/A'))
                         with open(hf, "r", encoding="utf-8") as f: st.download_button("🖨️ ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", type="primary")
                     else: st.error("❌ ਨਹੀਂ ਮਿਲਿਆ।")
