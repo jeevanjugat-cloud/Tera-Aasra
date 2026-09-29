@@ -7,21 +7,12 @@ import config
 import utils
 
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
-    # Discover all unique dynamic banks and cash accounts
-    all_banks = set(config.BANK_ACCOUNTS)
-    for df, col in [(df_don_safe, 'bank_account'), (df_exp_safe, 'bank_account'), (df_ledg_safe, 'bank_name'), (df_cheques_safe, 'bank_name')]:
-        if not df.empty and col in df.columns:
-            all_banks.update(df[col].dropna().unique())
-    
-    all_banks = sorted(list(all_banks))
-    bank_balances = {bank: 0.0 for bank in all_banks}
-    
+    bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
     if not df_ledg_safe.empty and 'balance' in df_ledg_safe.columns:
         df_ledg_safe['balance'] = pd.to_numeric(df_ledg_safe['balance'], errors='coerce').fillna(0.0)
 
-    for bank in all_banks:
-        is_cash_type = "ਨਕਦ" in bank or "cash" in bank.lower()
-        if is_cash_type:
+    for bank in config.BANK_ACCOUNTS:
+        if bank == "ਨਕਦ (Cash)":
             b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
             b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
             b_out = df_exp_safe[df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))]['amount'].sum() if not df_exp_safe.empty else 0.0
@@ -46,31 +37,6 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
         bank_balances[bank] = latest_excel_bal - pending_chq
     return bank_balances
 
-def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
-    entries = []
-    if not df_don.empty:
-        df_don['add_to_mirror'] = df_don.get('add_to_mirror', True).fillna(True).astype(bool)
-        for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
-            b_acc = row.get('bank_account', 'N/A')
-            if target_bank and not (utils.is_bank_match(b_acc, target_bank) and (row['add_to_mirror'] or "ਨਕਦ" in target_bank)): continue
-            entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': b_acc, 'Credit': float(row.get('amount') or 0.0), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
-    
-    if not df_exp.empty:
-        df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', True).fillna(True).astype(bool)
-        for _, row in df_exp.iterrows():
-            b_acc = row.get('bank_account', 'N/A')
-            if target_bank and not (utils.is_bank_match(b_acc, target_bank) and (row['add_to_mirror'] or "ਨਕਦ" in target_bank)): continue
-            entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Account': b_acc, 'Credit': 0.0, 'Debit': float(row.get('amount') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
-    
-    if not df_ledg.empty:
-        for _, row in df_ledg.iterrows():
-            b_acc = row.get('bank_name')
-            if pd.isna(b_acc) or str(b_acc).strip() in ["", "None", "nan"]: b_acc = "Kotak Bank Regular"
-            if target_bank and not utils.is_bank_match(b_acc, target_bank): continue
-            entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': b_acc, 'Credit': float(row.get('credit') or 0.0), 'Debit': float(row.get('debit') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual Entry')})
-            
-    return pd.DataFrame(entries)
-
 def show_page(is_admin):
     st.header("🏦 ਖਾਤੇ, ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ CA ਰਿਪੋਰਟਾਂ")
     modes = ["⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ", "📝 ਦਾਨੀ ਸਟੇਟਮੈਂਟ (Donor Statement)", "📉 ਖਰਚਾ ਹੈੱਡ ਸਟੇਟਮੈਂਟ", "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)", "🏦 ਬੈਂਕ ਲੈਜ਼ਰ", "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ", "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit)"]
@@ -85,6 +51,7 @@ def show_page(is_admin):
     df_don, df_exp, df_ledg, df_cheques = pd.DataFrame(don_data), pd.DataFrame(exp_data), pd.DataFrame(ledg_data), pd.DataFrame(chq_data)
 
     if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
+        # ... (Keep existing Balance Sheet logic) ...
         st.info("ਪਲੀਜ਼ P&L ਆਪਸ਼ਨ ਵਰਤੋ।")
 
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ":
@@ -93,6 +60,7 @@ def show_page(is_admin):
         col_d1, _ = st.columns([1, 2])
         with col_d1: as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦਾ ਬੈਲੇਂਸ ਦੇਖਣਾ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
         
+        # Filtering logic by date
         df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe = df_don.copy(), df_exp.copy(), df_ledg.copy(), df_cheques.copy()
         for df, col in [(df_don_safe, 'date'), (df_exp_safe, 'date'), (df_ledg_safe, 'txn_date'), (df_chq_safe, 'cheque_date')]:
             if not df.empty:
@@ -100,11 +68,7 @@ def show_page(is_admin):
                 df.drop(df[df['__dt'] > as_of_date].index, inplace=True)
                 
         bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe)
-        
-        # Only show non-zero balances to keep it clean
-        bals_list = [(b, val) for b, val in bank_balances.items() if val != 0.0 or b in config.BANK_ACCOUNTS]
-        
-        df_bals = pd.DataFrame(bals_list, columns=["ਖਾਤਾ", "ਬੈਲੇਂਸ ₹"])
+        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ", "ਬੈਲੇਂਸ ₹"])
         st.dataframe(df_bals.style.format({'ਬੈਲੇਂਸ ₹': '{:,.2f}'}), hide_index=True, use_container_width=True)
         utils.create_print_button(df_bals, f"Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
 
@@ -183,61 +147,11 @@ def show_page(is_admin):
                 utils.create_print_button(grouped, f"Major Heads Summary ({utils.clean_date_to_display(d1)} to {utils.clean_date_to_display(d2)})", "🖨️ ਪ੍ਰਿੰਟ ਖਰਚਾ ਸਮਰੀ")
             else: st.info("ਇਸ ਸਮੇਂ ਦੌਰਾਨ ਕੋਈ ਖਰਚਾ ਨਹੀਂ ਹੈ।")
 
-    elif st.session_state.acc_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ":
-        st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
-        all_banks = set(config.BANK_ACCOUNTS)
-        for df, col in [(df_don, 'bank_account'), (df_exp, 'bank_account'), (df_ledg, 'bank_name')]:
-            if not df.empty and col in df.columns: all_banks.update(df[col].dropna().unique())
-            
-        selected_bank = st.selectbox("ਬੈਂਕ/ਖਾਤਾ ਚੁਣੋ", sorted(list(all_banks)))
-        show_all = st.checkbox("✅ ਸਾਰੀਆਂ ਮਿਤੀਆਂ ਦੀਆਂ ਐਂਟਰੀਆਂ ਦਿਖਾਓ", value=True)
-        col_d1, col_d2 = st.columns(2)
-        with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ", value=date.today().replace(day=1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
-        with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
-
-        df_compiled = get_ledger_data(df_don, df_exp, df_ledg, target_bank=selected_bank)
-        if not df_compiled.empty:
-            df_compiled['DateObj'] = df_compiled['Date'].apply(utils.parse_date_to_obj).fillna(date.today())
-            df_compiled = df_compiled.sort_values(by=['DateObj', 'ID'], ascending=True)
-            
-            if show_all: df_period, running_bal = df_compiled.copy(), 0.0
-            else:
-                df_before = df_compiled[df_compiled['DateObj'] < start_date]
-                running_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
-                df_period = df_compiled[(df_compiled['DateObj'] >= start_date) & (df_compiled['DateObj'] <= end_date)].copy()
-
-            balances = []
-            for _, row in df_period.iterrows():
-                running_bal += (row['Credit'] - row['Debit'])
-                balances.append(running_bal)
-            df_period['ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)'] = balances
-            df_period['Date'] = df_period['Date'].apply(utils.clean_date_to_display)
-            
-            df_disp = df_period[['ID', 'Date', 'Description', 'Source', 'Credit', 'Debit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']]
-            st.dataframe(df_disp.style.format({'Credit': '{:.2f}', 'Debit': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
-            utils.create_print_button(df_disp, f"Bank Ledger - {selected_bank}", "🖨️ ਬੈਂਕ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
-        else: st.info("ਇਸ ਖਾਤੇ ਵਿੱਚ ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
-
-    elif st.session_state.acc_mode == "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ":
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("Parties")
-            try: r = utils.supabase.table("parties").select("*").limit(1000).execute().data
-            except: r = []
-            if r: 
-                dp = pd.DataFrame(r)[['name', 'party_type', 'opening_balance']]
-                st.dataframe(dp, hide_index=True, use_container_width=True); utils.create_print_button(dp, "Parties", "🖨️ Print")
-        with c2:
-            st.subheader("Cheques")
-            if not df_cheques.empty:
-                dc = utils.format_dates_in_df(df_cheques[['cheque_date', 'cheque_no', 'bank_name', 'amount', 'status']], ascending=False)
-                st.dataframe(dc, hide_index=True, use_container_width=True); utils.create_print_button(dc, "Cheques", "🖨️ Print")
-
     elif st.session_state.acc_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit)":
         if st.button("📥 CA ਐਕਸਲ ਡਾਊਨਲੋਡ ਕਰੋ", type="primary"):
             b = io.BytesIO()
             with pd.ExcelWriter(b, engine='openpyxl') as w:
                 for tbl in ["donations", "expenses", "bank_ledger", "parties", "cheques", "stock", "assets", "students", "widows", "ration_distribution", "stock_usage", "receipt_books"]:
-                    try: utils.format_dates_in_df(pd.DataFrame(utils.supabase.table(tbl).select("*").limit(100000).execute().data or []), ascending=True).to_excel(w, sheet_name=tbl[:31], index=False)
+                    try: utils.format_dates_in_df(pd.DataFrame(supabase.table(tbl).select("*").limit(100000).execute().data or []), ascending=True).to_excel(w, sheet_name=tbl[:31], index=False)
                     except: pass
             st.download_button("📥 ਡਾਊਨਲੋਡ", data=b.getvalue(), file_name=f"CA_Audit_{date.today()}.xlsx", type="primary")
