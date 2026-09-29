@@ -42,20 +42,32 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
 
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
     entries = []
+    
+    # 1. Donations
     if not df_don.empty:
         df_don['add_to_mirror'] = df_don.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
             b_acc = row.get('bank_account', 'N/A')
-            if target_bank and not (utils.is_bank_match(b_acc, target_bank) and (row['add_to_mirror'] or target_bank == "ਨਕਦ (Cash)")): continue
+            if target_bank:
+                is_match = utils.is_bank_match(b_acc, target_bank)
+                is_cash = "ਨਕਦ" in target_bank or "cash" in target_bank.lower()
+                if not is_match: continue
+                if not is_cash and not row['add_to_mirror']: continue # Skip if not cash and not mirrored
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': b_acc, 'Credit': float(row.get('amount') or 0.0), 'Debit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
     
+    # 2. Expenses
     if not df_exp.empty:
         df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_exp.iterrows():
             b_acc = row.get('bank_account', 'N/A')
-            if target_bank and not (utils.is_bank_match(b_acc, target_bank) and (row['add_to_mirror'] or target_bank == "ਨਕਦ (Cash)")): continue
+            if target_bank:
+                is_match = utils.is_bank_match(b_acc, target_bank)
+                is_cash = "ਨਕਦ" in target_bank or "cash" in target_bank.lower()
+                if not is_match: continue
+                if not is_cash and not row['add_to_mirror']: continue # Skip if not cash and not mirrored
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Account': b_acc, 'Credit': 0.0, 'Debit': float(row.get('amount') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
     
+    # 3. Bank Ledger (Manual & Excel)
     if not df_ledg.empty:
         for _, row in df_ledg.iterrows():
             b_acc = row.get('bank_name')
@@ -69,14 +81,18 @@ def show_page(is_admin):
     st.header("🏦 ਖਾਤੇ, ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ CA ਰਿਪੋਰਟਾਂ")
     
     modes = [
-        "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ", "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)", 
-        "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", "📝 ਦਾਨੀ ਸਟੇਟਮੈਂਟ (Donor Statement)", "📉 ਖਰਚਾ ਹੈੱਡ ਸਟੇਟਮੈਂਟ", 
-        "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)", "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ", "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit)"
+        "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
+        "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ", 
+        "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)", 
+        "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", 
+        "📝 ਦਾਨੀ ਸਟੇਟਮੈਂਟ (Donor Statement)", 
+        "📉 ਖਰਚਾ ਸਟੇਟਮੈਂਟ (Expense Statement)", 
+        "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)", 
+        "📁 ਪਾਰਟੀਆਂ ਅਤੇ ਚੈੱਕ", 
+        "📊 CA ਆਡਿਟ ਐਕਸਲ"
     ]
     
     if st.session_state.acc_mode not in modes: st.session_state.acc_mode = modes[0]
-    
-    # DROPDOWN HTA DITTA HAI - HORIZONTAL RADIO BUTTONS (SAB KUCH SAHMNE DIKHEGA)
     st.session_state.acc_mode = st.radio("ਖਾਤਾ/ਰਿਪੋਰਟ ਚੁਣੋ:", modes, index=modes.index(st.session_state.acc_mode), horizontal=True)
     st.markdown("---")
 
@@ -176,29 +192,22 @@ def show_page(is_admin):
 
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ":
         st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ")
-        st.success("✅ **ਫਾਰਮੂਲਾ:** Bank Balance = (ਐਕਸਲ ਦਾ ਆਖਰੀ ਬੈਲੇਂਸ) - (ਪੈਂਡਿੰਗ ਚੈੱਕ)")
         col_d1, _ = st.columns([1, 2])
-        with col_d1: as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦਾ ਬੈਲੇਂਸ ਦੇਖਣਾ ਹੈ? (As of Date)", value=date.today(), format="DD/MM/YYYY")
-            
-        df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe = df_don.copy(), df_exp.copy(), df_ledg.copy(), df_cheques.copy()
+        with col_d1: as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦਾ ਬੈਲੇਂਸ ਦੇਖਣਾ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
         
+        df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe = df_don.copy(), df_exp.copy(), df_ledg.copy(), df_cheques.copy()
         for df, col in [(df_don_safe, 'date'), (df_exp_safe, 'date'), (df_ledg_safe, 'txn_date'), (df_chq_safe, 'cheque_date')]:
             if not df.empty:
                 df['__dt'] = df[col].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
                 df.drop(df[df['__dt'] > as_of_date].index, inplace=True)
                 
         bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe)
-        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ (Account Name)", "ਬੈਲੇਂਸ (Balance ₹)"])
-        total_bal = df_bals["ਬੈਲੇਂਸ (Balance ₹)"].sum()
-        
-        st.dataframe(df_bals.style.format({'ਬੈਲੇਂਸ (Balance ₹)': '{:,.2f}'}), hide_index=True, use_container_width=True)
-        display_dt = utils.clean_date_to_display(as_of_date)
-        st.markdown(f"**{display_dt} ਤੱਕ ਕੁੱਲ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
-        
-        rep_file = utils.generate_html_report(f"Cash & Bank Balances (As of {display_dt})", df_bals.to_html(index=False, border=1, classes='report-table') + f"<br><h4 style='text-align: right; color: #D92B2B;'>ਕੁੱਲ: Rs. {total_bal:,.2f}</h4>")
-        with open(rep_file, "r", encoding="utf-8") as f: st.download_button("🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=rep_file, mime="text/html", type="primary")
+        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ", "ਬੈਲੇਂਸ ₹"])
+        st.dataframe(df_bals.style.format({'ਬੈਲੇਂਸ ₹': '{:,.2f}'}), hide_index=True, use_container_width=True)
+        total_bal = df_bals["ਬੈਲੇਂਸ ₹"].sum()
+        st.markdown(f"**ਕੁੱਲ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
+        utils.create_print_button(df_bals, f"Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
 
-    # MUKH LEDGER RESTORED HERE
     elif st.session_state.acc_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ")
         filter_opt = st.radio("ਫਿਲਟਰ (Filter):", ["ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ (All)", "ਸਿਰਫ਼ ਦਾਨ (Donations)", "ਸਿਰਫ਼ ਖਰਚੇ (Expenses)", "ਸਿਰਫ਼ ਬੈਂਕ (Bank Ledger)"], horizontal=True)
@@ -289,11 +298,16 @@ def show_page(is_admin):
                 utils.create_print_button(df_disp, f"Statement for {sel_donor} ({utils.clean_date_to_display(d1)} to {utils.clean_date_to_display(d2)})", "🖨️ ਪ੍ਰਿੰਟ ਸਟੇਟਮੈਂਟ (Print Statement)", landscape=True)
             else: st.info("ਕੋਈ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ।")
 
-    elif st.session_state.acc_mode == "📉 ਖਰਚਾ ਹੈੱਡ ਸਟੇਟਮੈਂਟ":
-        st.write("### 📉 ਖਰਚਾ ਹੈੱਡ ਸਟੇਟਮੈਂਟ (Expense Statement)")
+    elif st.session_state.acc_mode == "📉 ਖਰਚਾ ਸਟੇਟਮੈਂਟ (Expense Statement)":
+        st.write("### 📉 ਖਰਚਾ ਸਟੇਟਮੈਂਟ (Expense Statement)")
         if not df_exp.empty:
             uq_cats = sorted(list({str(c).strip() for c in df_exp['category'].dropna() if str(c).strip() != ""}))
-            sel_cat = st.selectbox("ਖਰਚੇ ਦੀ ਕੈਟਾਗਰੀ ਚੁਣੋ:", ["All Expenses"] + uq_cats)
+            uq_payees = sorted(list({str(p).strip() for p in df_exp.get('payee_name', pd.Series()).dropna() if str(p).strip() != ""}))
+            
+            c_cat, c_payee = st.columns(2)
+            with c_cat: sel_cat = st.selectbox("ਖਰਚੇ ਦੀ ਕੈਟਾਗਰੀ ਚੁਣੋ:", ["All Categories"] + uq_cats)
+            with c_payee: sel_payee = st.selectbox("ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee Name) ਚੁਣੋ:", ["All Payees"] + uq_payees)
+            
             c1, c2 = st.columns(2)
             d1 = c1.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ", value=date.today().replace(day=1), format="DD/MM/YYYY")
             d2 = c2.date_input("ਆਖਰੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
@@ -301,15 +315,19 @@ def show_page(is_admin):
             df_e = df_exp.copy()
             df_e['__dt'] = df_e['date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
             df_e = df_e[(df_e['__dt'] >= d1) & (df_e['__dt'] <= d2)]
-            if sel_cat != "All Expenses": df_e = df_e[df_e['category'].astype(str) == sel_cat]
+            
+            if sel_cat != "All Categories": 
+                df_e = df_e[df_e['category'].astype(str) == sel_cat]
+            if sel_payee != "All Payees":
+                df_e = df_e[df_e['payee_name'].astype(str).str.contains(sel_payee, case=False, na=False)]
             
             if not df_e.empty:
                 df_disp = df_e[['id', 'date', 'payee_name', 'description', 'category', 'bank_account', 'amount']].copy()
                 df_disp = utils.format_dates_in_df(df_disp, ascending=True)
                 st.dataframe(df_disp, hide_index=True, use_container_width=True)
                 total_exp = pd.to_numeric(df_disp['amount'], errors='coerce').sum()
-                st.markdown(f"**ਇਸ ਮੱਦ ਦਾ ਕੁੱਲ ਖਰਚਾ: ₹ {total_exp:,.2f}**")
-                utils.create_print_button(df_disp, f"Expense Statement: {sel_cat}", "🖨️ ਪ੍ਰਿੰਟ ਸਟੇਟਮੈਂਟ", landscape=True)
+                st.markdown(f"**ਕੁੱਲ ਖਰਚਾ (Total Expense): ₹ {total_exp:,.2f}**")
+                utils.create_print_button(df_disp, f"Expense Statement", "🖨️ ਪ੍ਰਿੰਟ ਸਟੇਟਮੈਂਟ", landscape=True)
             else: st.info("ਕੋਈ ਖਰਚਾ ਨਹੀਂ ਮਿਲਿਆ।")
 
     elif st.session_state.acc_mode == "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)":
@@ -356,7 +374,7 @@ def show_page(is_admin):
                 dc = utils.format_dates_in_df(df_cheques[['cheque_date', 'cheque_no', 'bank_name', 'amount', 'status']], ascending=False)
                 st.dataframe(dc, hide_index=True, use_container_width=True); utils.create_print_button(dc, "Cheques", "🖨️ Print")
 
-    elif st.session_state.acc_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ (CA Audit)":
+    elif st.session_state.acc_mode == "📊 CA ਆਡਿਟ ਐਕਸਲ":
         st.write("### 📊 CA ਆਡਿਟ ਅਤੇ ਐਕਸਲ ਬੈਕਅੱਪ")
         st.info("ਆਪਣੇ CA ਨੂੰ ਆਡਿਟ ਲਈ ਇਹ ਪੂਰਾ ਮਲਟੀ-ਸ਼ੀਟ ਐਕਸਲ ਡਾਟਾਬੇਸ ਭੇਜੋ।")
         if st.button("📥 CA ਐਕਸਲ ਬੈਕਅੱਪ ਡਾਊਨਲੋਡ ਕਰੋ", type="primary"):
