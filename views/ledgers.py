@@ -7,41 +7,59 @@ import config
 import utils
 
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
-    bank_balances = {bank: 0.0 for bank in config.BANK_ACCOUNTS}
+    # ਸਾਰੇ ਬੈਂਕ ਖਾਤਿਆਂ ਦੀ ਲਿਸਟ (Dynamically fetch all banks)
+    all_banks_dynamic = set(config.BANK_ACCOUNTS)
+    if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
+        all_banks_dynamic.update(df_don_safe['bank_account'].dropna().unique())
+    if not df_exp_safe.empty and 'bank_account' in df_exp_safe.columns:
+        all_banks_dynamic.update(df_exp_safe['bank_account'].dropna().unique())
+    if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
+        all_banks_dynamic.update(df_ledg_safe['bank_name'].dropna().unique())
+        
+    valid_banks = sorted(list({str(b).strip() for b in all_banks_dynamic if str(b).strip() not in ["", "None", "nan", "N/A"]}))
+    bank_balances = {bank: 0.0 for bank in valid_banks}
     
-    if not df_ledg_safe.empty and 'balance' in df_ledg_safe.columns:
-        df_ledg_safe['balance'] = pd.to_numeric(df_ledg_safe['balance'], errors='coerce').fillna(0.0)
+    # ਬੂਲੀਅਨ (Boolean) ਫਿਕਸ
+    if not df_don_safe.empty: df_don_safe['add_to_mirror'] = df_don_safe.get('add_to_mirror', True).fillna(True).astype(bool)
+    if not df_exp_safe.empty: df_exp_safe['add_to_mirror'] = df_exp_safe.get('add_to_mirror', True).fillna(True).astype(bool)
 
-    for bank in config.BANK_ACCOUNTS:
-        if bank == "ਨਕਦ (Cash)":
-            b_in = df_don_safe[df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')]['amount'].sum() if not df_don_safe.empty else 0.0
-            b_in += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['credit'].sum() if not df_ledg_safe.empty else 0.0
+    for bank in valid_banks:
+        b_in = 0.0
+        b_out = 0.0
+        
+        # 1. Donations (Money In / Receipts)
+        if not df_don_safe.empty:
+            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
+            is_cash = "ਨਕਦ" in bank or "cash" in bank.lower()
+            if not is_cash: mask_don = mask_don & df_don_safe['add_to_mirror']
+            b_in += pd.to_numeric(df_don_safe[mask_don]['amount'], errors='coerce').fillna(0.0).sum()
             
-            b_out = df_exp_safe[df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))]['amount'].sum() if not df_exp_safe.empty else 0.0
-            b_out += df_ledg_safe[df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))]['debit'].sum() if not df_ledg_safe.empty else 0.0
-            bank_balances[bank] = b_in - b_out
-            continue
+        # 2. Expenses (Money Out / Payments)
+        if not df_exp_safe.empty:
+            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
+            is_cash = "ਨਕਦ" in bank or "cash" in bank.lower()
+            if not is_cash: mask_exp = mask_exp & df_exp_safe['add_to_mirror']
+            b_out += pd.to_numeric(df_exp_safe[mask_exp]['amount'], errors='coerce').fillna(0.0).sum()
             
-        latest_excel_bal = 0.0
-        if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            mask_excel = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_ledg_safe['balance'] != 0.0)
-            df_excel = df_ledg_safe[mask_excel].copy()
-            if not df_excel.empty:
-                if '__dt' not in df_excel.columns:
-                    df_excel['__dt'] = df_excel['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
-                df_excel = df_excel.sort_values(by=['__dt', 'id'], ascending=True)
-                latest_excel_bal = float(df_excel.iloc[-1]['balance'])
-                
+        # 3. Ledger (DB credit = Deposit/Money In, DB debit = Withdrawal/Money Out)
+        if not df_ledg_safe.empty:
+            mask_ledg = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))
+            b_in += pd.to_numeric(df_ledg_safe[mask_ledg]['credit'], errors='coerce').fillna(0.0).sum()
+            b_out += pd.to_numeric(df_ledg_safe[mask_ledg]['debit'], errors='coerce').fillna(0.0).sum()
+            
+        current_bal = b_in - b_out
+        
+        # 4. Pending Cheques 
         pending_chq = 0.0
         if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
             mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        bank_balances[bank] = latest_excel_bal - pending_chq
+        # ਆਖਰੀ ਬੈਲੇਂਸ (True Balance)
+        bank_balances[bank] = current_bal - pending_chq
         
     return bank_balances
 
-# ਨਵਾਂ ਲੌਜਿਕ: ਵਿਊ (View) ਮੁਤਾਬਕ ਸਹੀ Debit/Credit ਦੇਣਾ
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror"):
     entries = []
     is_mirror = "Mirror" in view_mode or "ਸੰਸਥਾ" in view_mode
@@ -56,9 +74,8 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
                 if not is_match: continue
                 if not is_cash and not row['add_to_mirror']: continue
             
-            # ਦਾਨ (Money In)
-            if is_mirror: d_val, c_val = float(row.get('amount') or 0.0), 0.0 # Mirror (Cash Book): Receipt = Debit
-            else: d_val, c_val = 0.0, float(row.get('amount') or 0.0)         # Bank Statement: Deposit = Credit
+            if is_mirror: d_val, c_val = float(row.get('amount') or 0.0), 0.0
+            else: d_val, c_val = 0.0, float(row.get('amount') or 0.0)
             
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': b_acc, 'Debit': d_val, 'Credit': c_val, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
     
@@ -72,9 +89,8 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
                 if not is_match: continue
                 if not is_cash and not row['add_to_mirror']: continue
             
-            # ਖਰਚਾ (Money Out)
-            if is_mirror: d_val, c_val = 0.0, float(row.get('amount') or 0.0) # Mirror (Cash Book): Payment = Credit
-            else: d_val, c_val = float(row.get('amount') or 0.0), 0.0         # Bank Statement: Withdrawal = Debit
+            if is_mirror: d_val, c_val = 0.0, float(row.get('amount') or 0.0)
+            else: d_val, c_val = float(row.get('amount') or 0.0), 0.0
             
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Account': b_acc, 'Debit': d_val, 'Credit': c_val, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
     
@@ -84,12 +100,9 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
             if pd.isna(b_acc) or str(b_acc).strip() in ["", "None", "nan"]: b_acc = "Kotak Bank Regular"
             if target_bank and not utils.is_bank_match(b_acc, target_bank): continue
             
-            # ਡਾਟਾਬੇਸ (DB) ਵਿੱਚ ਐਕਸਲ ਅੱਪਲੋਡ ਦਾ ਅਸਲੀ ਡਾਟਾ ਸੇਵ ਹੁੰਦਾ ਹੈ (debit=Out, credit=In)
             if is_mirror: 
-                # ਜੇਕਰ ਮਿਰਰ (ਸੰਸਥਾ) ਵਿਊ ਹੈ ਤਾਂ ਉਲਟਾ ਕਰ ਦਿਓ
                 d_val, c_val = float(row.get('credit') or 0.0), float(row.get('debit') or 0.0) 
             else: 
-                # ਜੇਕਰ ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਹੈ, ਤਾਂ ਓਹੀ ਅਸਲੀ ਡਾਟਾ ਰੱਖੋ!
                 d_val, c_val = float(row.get('debit') or 0.0), float(row.get('credit') or 0.0)
                 
             entries.append({'ID': row.get('id', 0), 'Date': row.get('txn_date', ''), 'Description': row.get('description', ''), 'Account': b_acc, 'Debit': d_val, 'Credit': c_val, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': row.get('source', 'Manual Entry')})
@@ -237,7 +250,6 @@ def show_page(is_admin):
         with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ", value=date.today().replace(day=1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
         with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
 
-        # Main Daybook ਹਮੇਸ਼ਾ "Mirror" (Cash Book) ਸਟਾਈਲ ਵਿੱਚ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ
         df_main = get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror")
         if not df_main.empty:
             df_main['DateObj'] = df_main['Date'].apply(utils.parse_date_to_obj).fillna(date.today())
@@ -293,7 +305,6 @@ def show_page(is_admin):
         with col_d1: start_date = st.date_input("ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ", value=date.today().replace(day=1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
         with col_d2: end_date = st.date_input("ਆਖਰੀ ਮਿਤੀ", value=date.today(), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY", disabled=show_all)
 
-        # ਇੱਥੇ view_format ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ, ਤਾਂ ਜੋ ਡਾਟਾਬੇਸ ਵਿੱਚੋਂ ਅਸਲੀ Debit/Credit ਕੱਢਿਆ ਜਾ ਸਕੇ
         df_compiled = get_ledger_data(df_don, df_exp, df_ledg, target_bank=selected_bank, view_mode=view_format)
         
         if not df_compiled.empty:
@@ -303,7 +314,6 @@ def show_page(is_admin):
             if show_all: df_period, running_bal = df_compiled.copy(), 0.0
             else:
                 df_before = df_compiled[df_compiled['DateObj'] < start_date]
-                # ਬੈਂਕ ਸਟੇਟਮੈਂਟ ਵਿੱਚ Credit ਜਮ੍ਹਾਂ ਹੁੰਦਾ ਹੈ (Credit - Debit). ਮਿਰਰ ਵਿੱਚ Debit ਜਮ੍ਹਾਂ ਹੁੰਦਾ ਹੈ (Debit - Credit).
                 if "ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ" in view_format:
                     running_bal = df_before['Credit'].sum() - df_before['Debit'].sum()
                 else:
@@ -324,7 +334,6 @@ def show_page(is_admin):
             
             df_disp = df_period[['ID', 'Date', 'Description', 'Source', 'Debit', 'Credit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']].copy()
             
-            # ਬਿਲਕੁਲ ਸਾਫ਼ ਨਾਮ
             if "ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ" in view_format:
                 df_disp.rename(columns={'Debit': 'Debit / Out (Dr)', 'Credit': 'Credit / In (Cr)'}, inplace=True)
                 style_dict = {'Debit / Out (Dr)': '{:.2f}', 'Credit / In (Cr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
