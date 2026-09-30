@@ -82,10 +82,10 @@ def show_page(is_admin):
     st.header("🏦 ਖਾਤੇ, ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ CA ਰਿਪੋਰਟਾਂ")
     
     modes = [
-        "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
+        "⚖️️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
         "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ", 
         "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)", 
-        "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book / Mirror)", 
+        "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", 
         "📝 ਦਾਨੀ ਸਟੇਟਮੈਂਟ (Donor Statement)", 
         "📉 ਖਰਚਾ ਸਟੇਟਮੈਂਟ (Expense Statement)", 
         "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)", 
@@ -247,7 +247,7 @@ def show_page(is_admin):
         else:
             st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
-    elif st.session_state.acc_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book / Mirror)":
+    elif st.session_state.acc_mode == "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)":
         st.write("### 🏦 ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ ਸਟੇਟਮੈਂਟ ਮਿਲਾਨ")
         
         all_banks_dynamic = set(config.BANK_ACCOUNTS)
@@ -261,9 +261,11 @@ def show_page(is_admin):
         selected_bank = st.selectbox("ਬੈਂਕ ਜਾਂ ਕੈਸ਼ ਖਾਤਾ ਚੁਣੋ:", sorted(list(all_banks_dynamic)))
         
         # ================= NEW: TOGGLE FOR MIRROR vs BANK VIEW =================
-        view_format = st.radio("ਦਿਖਾਉਣ ਦਾ ਤਰੀਕਾ (View Format):", 
+        st.markdown("#### 🔄 ਸਟੇਟਮੈਂਟ ਦੇਖਣ ਦਾ ਤਰੀਕਾ (View Mode)")
+        view_format = st.radio("ਦਿਖਾਉਣ ਦਾ ਤਰੀਕਾ ਚੁਣੋ:", 
             ["📖 ਸੰਸਥਾ ਦਾ ਲੈਜ਼ਰ / Mirror Book (ਪੈਸੇ ਆਏ = Debit)", "🏦 ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ (ਪੈਸੇ ਆਏ = Credit)"], 
             horizontal=True)
+        st.markdown("---")
 
         show_all = st.checkbox("✅ ਸਾਰੀਆਂ ਮਿਤੀਆਂ ਦੀਆਂ ਐਂਟਰੀਆਂ ਦਿਖਾਓ", value=True)
         col_d1, col_d2 = st.columns(2)
