@@ -44,6 +44,7 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
     entries = []
     
+    # 1. Donations (Money In = DB Debit)
     if not df_don.empty:
         df_don['add_to_mirror'] = df_don.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
@@ -55,6 +56,7 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
                 if not is_cash and not row['add_to_mirror']: continue
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': b_acc, 'Debit': float(row.get('amount') or 0.0), 'Credit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
     
+    # 2. Expenses (Money Out = DB Credit)
     if not df_exp.empty:
         df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_exp.iterrows():
@@ -66,6 +68,7 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
                 if not is_cash and not row['add_to_mirror']: continue
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Account': b_acc, 'Debit': 0.0, 'Credit': float(row.get('amount') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
     
+    # 3. Bank Ledger
     if not df_ledg.empty:
         for _, row in df_ledg.iterrows():
             b_acc = row.get('bank_name')
@@ -291,12 +294,19 @@ def show_page(is_admin):
             
             df_disp = df_period[['ID', 'Date', 'Description', 'Source', 'Debit', 'Credit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']].copy()
             
-            # View formatting logic
+            # ================= VISUALLY SWAPPING COLUMNS =================
             if "ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ" in view_format:
-                df_disp.rename(columns={'Debit': 'Deposit/In (Cr)', 'Credit': 'Withdrawal/Out (Dr)'}, inplace=True)
-                style_dict = {'Deposit/In (Cr)': '{:.2f}', 'Withdrawal/Out (Dr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
+                # Bank View: Swap columns -> Withdrawal(Dr) comes first, then Deposit(Cr)
+                df_disp['Withdrawal (Dr)'] = df_disp['Credit'] # Money Out
+                df_disp['Deposit (Cr)'] = df_disp['Debit']     # Money In
+                
+                # Rearrange the columns to put Withdrawal first
+                df_disp = df_disp[['ID', 'Date', 'Description', 'Source', 'Withdrawal (Dr)', 'Deposit (Cr)', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']]
+                style_dict = {'Withdrawal (Dr)': '{:.2f}', 'Deposit (Cr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
             else:
+                # Mirror Ledger View: Receipt(Dr) comes first, then Payment(Cr)
                 df_disp.rename(columns={'Debit': 'Receipt/In (Dr)', 'Credit': 'Payment/Out (Cr)'}, inplace=True)
+                df_disp = df_disp[['ID', 'Date', 'Description', 'Source', 'Receipt/In (Dr)', 'Payment/Out (Cr)', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']]
                 style_dict = {'Receipt/In (Dr)': '{:.2f}', 'Payment/Out (Cr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
             
             st.dataframe(df_disp.style.format(style_dict), hide_index=True, use_container_width=True)
