@@ -7,7 +7,10 @@ import utils
 
 def show_page(is_mgmt):
     st.header("📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦ ਪ੍ਰਬੰਧਨ")
-    modes = ["💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)", "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)", "📉 ਖਰਚਾ (Payment Debit)", "🏦 ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Entry)", "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)", "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)"]
+    
+    # "Manual Bank Entry" has been removed from here (moved to Admin)
+    modes = ["💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)", "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)", "📉 ਖਰਚਾ (Payment Debit)", "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)", "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)"]
+    
     if st.session_state.entry_mode not in modes: st.session_state.entry_mode = modes[0]
     st.session_state.entry_mode = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ:", modes, index=modes.index(st.session_state.entry_mode), horizontal=True)
     st.markdown("---")
@@ -186,12 +189,10 @@ def show_page(is_mgmt):
             try: exp_data_list = utils.supabase.table("expenses").select("payee_name").limit(100000).execute().data or []
             except: exp_data_list = []
             
-            # --- PAYEE DROPDOWN LOGIC ---
             unique_payees = sorted(list({e.get('payee_name') for e in exp_data_list if e.get('payee_name') and str(e.get('payee_name')).strip() != ""}))
             sel_payee = st.selectbox("ਪੁਰਾਣਾ ਪ੍ਰਾਪਤ ਕਰਤਾ ਲੱਭੋ (Select Payee)", ["➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)"] + unique_payees)
             
             with st.form("expense_form", clear_on_submit=True):
-                # Auto-fill Payee Name if selected from Dropdown
                 payee_name = st.text_input("ਭੁਗਤਾਨ ਕਿਸ ਨੂੰ ਕੀਤਾ / ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee Name)", value=sel_payee if sel_payee != "➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)" else "")
                 desc = st.text_input("ਖਰਚੇ ਦਾ ਵੇਰਵਾ (Description)")
                 
@@ -255,21 +256,6 @@ def show_page(is_mgmt):
                             )
                             with open(hf, "r", encoding="utf-8") as f:
                                 st.download_button(f"🖨️ ਵਾਊਚਰ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_exp_{sid}")
-            except: pass
-
-    elif st.session_state.entry_mode == "🏦 ਬੈਂਕ ਐਂਟਰੀ (Manual Bank Entry)":
-        if not is_mgmt:
-            with st.form("man_bank", clear_on_submit=True):
-                b_acc = st.selectbox("ਬੈਂਕ", config.BANK_ACCOUNTS); b_dt = st.date_input("ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                b_desc = st.text_input("ਵੇਰਵਾ")
-                c1, c2 = st.columns(2); b_type = c1.radio("ਕਿਸਮ", ["Credit", "Debit"]); b_amt = c2.number_input("ਰਕਮ (₹)", min_value=1.0)
-                if st.form_submit_button("ਸੇਵ ਕਰੋ", type="primary") and b_desc:
-                    d_val, c_val = (b_amt, 0.0) if "Debit" in b_type else (0.0, b_amt)
-                    utils.supabase.table("bank_ledger").insert({"txn_date": b_dt.strftime("%Y-%m-%d"), "description": b_desc, "bank_name": b_acc, "debit": d_val, "credit": c_val, "balance": 0.0, "source": "Manual Entry"}).execute()
-                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
-            try:
-                r = utils.supabase.table("bank_ledger").select("*").eq("source", "Manual Entry").order("id", desc=True).limit(50).execute().data
-                if r: st.dataframe(utils.format_dates_in_df(pd.DataFrame(r)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit']], ascending=False), hide_index=True, use_container_width=True)
             except: pass
 
     elif st.session_state.entry_mode == "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)":
