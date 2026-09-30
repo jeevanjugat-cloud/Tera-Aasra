@@ -6,8 +6,15 @@ import time
 import config
 import utils
 
+# ਨਵਾਂ ਸਖਤ ਮੈਚਿੰਗ ਫੰਕਸ਼ਨ (Strict Exact Match)
+def exact_bank_match(db_bank, target_bank):
+    db_b = str(db_bank).strip().lower()
+    tgt_b = str(target_bank).strip().lower()
+    if "cash" in tgt_b or "ਨਕਦ" in tgt_b:
+        return "cash" in db_b or "ਨਕਦ" in db_b
+    return db_b == tgt_b
+
 def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
-    # ਸਾਰੇ ਬੈਂਕ ਖਾਤਿਆਂ ਦੀ ਲਿਸਟ (Dynamically fetch all banks)
     all_banks_dynamic = set(config.BANK_ACCOUNTS)
     if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
         all_banks_dynamic.update(df_don_safe['bank_account'].dropna().unique())
@@ -19,7 +26,6 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
     valid_banks = sorted(list({str(b).strip() for b in all_banks_dynamic if str(b).strip() not in ["", "None", "nan", "N/A"]}))
     bank_balances = {bank: 0.0 for bank in valid_banks}
     
-    # ਬੂਲੀਅਨ (Boolean) ਫਿਕਸ
     if not df_don_safe.empty: df_don_safe['add_to_mirror'] = df_don_safe.get('add_to_mirror', True).fillna(True).astype(bool)
     if not df_exp_safe.empty: df_exp_safe['add_to_mirror'] = df_exp_safe.get('add_to_mirror', True).fillna(True).astype(bool)
 
@@ -27,35 +33,30 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
         b_in = 0.0
         b_out = 0.0
         
-        # 1. Donations (Money In / Receipts)
         if not df_don_safe.empty:
-            mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
+            mask_don = df_don_safe['bank_account'].apply(lambda x: exact_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
             is_cash = "ਨਕਦ" in bank or "cash" in bank.lower()
             if not is_cash: mask_don = mask_don & df_don_safe['add_to_mirror']
             b_in += pd.to_numeric(df_don_safe[mask_don]['amount'], errors='coerce').fillna(0.0).sum()
             
-        # 2. Expenses (Money Out / Payments)
         if not df_exp_safe.empty:
-            mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
+            mask_exp = df_exp_safe['bank_account'].apply(lambda x: exact_bank_match(x, bank))
             is_cash = "ਨਕਦ" in bank or "cash" in bank.lower()
             if not is_cash: mask_exp = mask_exp & df_exp_safe['add_to_mirror']
             b_out += pd.to_numeric(df_exp_safe[mask_exp]['amount'], errors='coerce').fillna(0.0).sum()
             
-        # 3. Ledger (DB credit = Deposit/Money In, DB debit = Withdrawal/Money Out)
         if not df_ledg_safe.empty:
-            mask_ledg = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))
+            mask_ledg = df_ledg_safe['bank_name'].apply(lambda x: exact_bank_match(x, bank))
             b_in += pd.to_numeric(df_ledg_safe[mask_ledg]['credit'], errors='coerce').fillna(0.0).sum()
             b_out += pd.to_numeric(df_ledg_safe[mask_ledg]['debit'], errors='coerce').fillna(0.0).sum()
             
         current_bal = b_in - b_out
         
-        # 4. Pending Cheques 
         pending_chq = 0.0
         if not df_cheques_safe.empty and 'bank_name' in df_cheques_safe.columns:
-            mask_chq = df_cheques_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
+            mask_chq = df_cheques_safe['bank_name'].apply(lambda x: exact_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        # ਆਖਰੀ ਬੈਲੇਂਸ (True Balance)
         bank_balances[bank] = current_bal - pending_chq
         
     return bank_balances
@@ -69,7 +70,7 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
         for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
             b_acc = row.get('bank_account', 'N/A')
             if target_bank:
-                is_match = utils.is_bank_match(b_acc, target_bank)
+                is_match = exact_bank_match(b_acc, target_bank)
                 is_cash = "ਨਕਦ" in target_bank or "cash" in target_bank.lower()
                 if not is_match: continue
                 if not is_cash and not row['add_to_mirror']: continue
@@ -84,7 +85,7 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
         for _, row in df_exp.iterrows():
             b_acc = row.get('bank_account', 'N/A')
             if target_bank:
-                is_match = utils.is_bank_match(b_acc, target_bank)
+                is_match = exact_bank_match(b_acc, target_bank)
                 is_cash = "ਨਕਦ" in target_bank or "cash" in target_bank.lower()
                 if not is_match: continue
                 if not is_cash and not row['add_to_mirror']: continue
@@ -98,7 +99,7 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror
         for _, row in df_ledg.iterrows():
             b_acc = row.get('bank_name')
             if pd.isna(b_acc) or str(b_acc).strip() in ["", "None", "nan"]: b_acc = "Kotak Bank Regular"
-            if target_bank and not utils.is_bank_match(b_acc, target_bank): continue
+            if target_bank and not exact_bank_match(b_acc, target_bank): continue
             
             if is_mirror: 
                 d_val, c_val = float(row.get('credit') or 0.0), float(row.get('debit') or 0.0) 
