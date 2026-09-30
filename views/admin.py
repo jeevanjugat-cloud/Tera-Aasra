@@ -10,7 +10,6 @@ import utils
 def show_page(is_admin, is_staff):
     st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
     
-    # ਜੇਕਰ ਯੂਜ਼ਰ ਐਡਮਿਨ ਹੈ, ਤਾਂ JV ਅਤੇ Bulk Upload ਮਿਲੇਗਾ, ਨਹੀਂ ਤਾਂ ਸਿਰਫ Delete ਅਤੇ Edit ਬੇਨਤੀ (Staff ਲਈ)
     if is_admin:
         modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
     else:
@@ -24,7 +23,7 @@ def show_page(is_admin, is_staff):
     
     t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਸਟਾਕ ਵਰਤੋਂ (Stock Usage)": "stock_usage", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books", "ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Staff)": "staff_profiles", "ਹਾਜ਼ਰੀ (Attendance)": "attendance"}
 
-    # ================= 1. NEW: JV AND MANUAL ENTRIES (ADMIN ONLY) =================
+    # ================= 1. JV AND MANUAL ENTRIES =================
     if st.session_state.admin_mode == "📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)":
         st.write("### 📔 ਜਰਨਲ ਵਾਊਚਰ ਅਤੇ ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ")
         
@@ -38,13 +37,13 @@ def show_page(is_admin, is_staff):
         jv_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Entry Type):", ["🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ", "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)", "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ"], horizontal=True)
         
         if jv_type == "🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ":
-            st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Credit = ਪੈਸੇ ਆਏ, Debit = ਪੈਸੇ ਗਏ)।")
+            st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Debit = ਪੈਸੇ ਆਏ/Receipt, Credit = ਪੈਸੇ ਗਏ/Payment)।")
             with st.form("jv_bank_form", clear_on_submit=True):
                 b_acc = st.selectbox("ਬੈਂਕ/ਕੈਸ਼ ਖਾਤਾ", all_b)
                 b_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
                 b_desc = st.text_input("ਵੇਰਵਾ (Description)")
                 c1, c2 = st.columns(2)
-                b_type = c1.radio("ਕਿਸਮ (Type)", ["Credit (ਪੈਸੇ ਆਏ/In)", "Debit (ਪੈਸੇ ਗਏ/Out)"])
+                b_type = c1.radio("ਕਿਸਮ (Type)", ["Debit (ਪੈਸੇ ਆਏ / In)", "Credit (ਪੈਸੇ ਗਏ / Out)"])
                 b_amt = c2.number_input("ਰਕਮ (₹)", min_value=0.01)
                 if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary") and b_desc:
                     d_val, c_val = (b_amt, 0.0) if "Debit" in b_type else (0.0, b_amt)
@@ -55,8 +54,8 @@ def show_page(is_admin, is_staff):
             st.info("ਇੱਕ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਢ ਕੇ ਦੂਜੇ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣ ਲਈ (ਜਿਵੇਂ Cash ਤੋਂ Bank ਵਿੱਚ ਜਮ੍ਹਾਂ ਕਰਾਉਣੇ)।")
             with st.form("jv_transfer_form", clear_on_submit=True):
                 c1, c2 = st.columns(2)
-                from_acc = c1.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਢਣੇ ਹਨ? (From - Debit)", all_b)
-                to_acc = c2.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣੇ ਹਨ? (To - Credit)", all_b)
+                from_acc = c1.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਢਣੇ ਹਨ? (From - Credit/Out)", all_b)
+                to_acc = c2.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣੇ ਹਨ? (To - Debit/In)", all_b)
                 t_amt = st.number_input("ਰਕਮ (₹)", min_value=0.01)
                 t_desc = st.text_input("ਵੇਰਵਾ (Description) - e.g. Cash deposited to Bank")
                 t_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
@@ -64,8 +63,10 @@ def show_page(is_admin, is_staff):
                     if from_acc == to_acc: st.error("ਦੋਵੇਂ ਖਾਤੇ ਵੱਖੋ-ਵੱਖਰੇ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ!")
                     else:
                         dt_str = t_dt.strftime("%Y-%m-%d")
-                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (To {to_acc})", "bank_name": from_acc, "debit": t_amt, "credit": 0.0, "balance": 0.0, "source": "Admin Transfer"}).execute()
-                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        # From Account gets Credit (Money Out)
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (To {to_acc})", "bank_name": from_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        # To Account gets Debit (Money In)
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": t_amt, "credit": 0.0, "balance": 0.0, "source": "Admin Transfer"}).execute()
                         st.success("✅ ਫੰਡ ਟਰਾਂਸਫਰ ਹੋ ਗਿਆ!")
                         
         elif jv_type == "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ":
@@ -99,7 +100,7 @@ def show_page(is_admin, is_staff):
             if r: st.dataframe(utils.format_dates_in_df(pd.DataFrame(r)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit', 'source']], ascending=False), hide_index=True, use_container_width=True)
         except: pass
 
-    # ================= 2. EXISTING: BULK UPLOAD =================
+    # ================= 2. BULK UPLOAD =================
     elif st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ")
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
@@ -121,10 +122,11 @@ def show_page(is_admin, is_staff):
                     elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
                         allowed_cols, table_name = ['form_no', 'card_no', 'name', 'age', 'husband_name', 'husband_death_date', 'phone', 'address', 'boys_details', 'girls_details', 'issued_by', 'join_date', 'photo_base64'], "widows"
                     elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
+                        # Updated to match new Accounting Rule (Withdrawals/Payments = Credit, Deposits/Receipts = Debit)
                         for c in ['withdrawal', 'withdrawals', 'dr']:
-                            if c in df_upload.columns and 'debit' not in df_upload.columns: df_upload['debit'] = df_upload[c]
-                        for c in ['deposit', 'deposits', 'cr']:
                             if c in df_upload.columns and 'credit' not in df_upload.columns: df_upload['credit'] = df_upload[c]
+                        for c in ['deposit', 'deposits', 'cr']:
+                            if c in df_upload.columns and 'debit' not in df_upload.columns: df_upload['debit'] = df_upload[c]
                         df_upload['debit'] = pd.to_numeric(df_upload.get('debit', 0), errors='coerce').fillna(0.0)
                         df_upload['credit'] = pd.to_numeric(df_upload.get('credit', 0), errors='coerce').fillna(0.0)
                         df_upload['balance'] = pd.to_numeric(df_upload.get('balance', 0), errors='coerce').fillna(0.0)
@@ -152,7 +154,7 @@ def show_page(is_admin, is_staff):
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e: st.error(f"❌ ਐਰਰ: {e}")
 
-    # ================= 3. EXISTING: DELETE MANAGEMENT =================
+    # ================= 3. DELETE MANAGEMENT =================
     elif st.session_state.admin_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚੋਂ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?", list(t_map.keys()), key="del_cat")]
         col_f1, col_f2 = st.columns(2)
@@ -200,7 +202,7 @@ def show_page(is_admin, is_staff):
                             st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else: st.info("ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
 
-    # ================= 4. EXISTING: EDIT MANAGEMENT =================
+    # ================= 4. EDIT MANAGEMENT =================
     elif st.session_state.admin_mode == "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ?", list(t_map.keys()), key="edit_cat")]
         col_f1, col_f2 = st.columns(2)
