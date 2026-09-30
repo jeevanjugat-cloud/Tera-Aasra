@@ -10,16 +10,21 @@ import utils
 def show_page(is_admin, is_staff):
     st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
     
-    # 📔 ਜਰਨਲ ਵਾਊਚਰ ਸਿਰਫ਼ Admin ਲਈ
-    modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"] if is_admin else ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
-    
-    if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
+    # ਜੇਕਰ ਯੂਜ਼ਰ ਐਡਮਿਨ ਹੈ, ਤਾਂ JV ਅਤੇ Bulk Upload ਮਿਲੇਗਾ, ਨਹੀਂ ਤਾਂ ਸਿਰਫ Delete ਅਤੇ Edit ਬੇਨਤੀ (Staff ਲਈ)
+    if is_admin:
+        modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
+    else:
+        modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
+        
+    if 'admin_mode' not in st.session_state or st.session_state.admin_mode not in modes: 
+        st.session_state.admin_mode = modes[0]
+        
     st.session_state.admin_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
     st.markdown("---")
     
     t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਸਟਾਕ ਵਰਤੋਂ (Stock Usage)": "stock_usage", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books", "ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Staff)": "staff_profiles", "ਹਾਜ਼ਰੀ (Attendance)": "attendance"}
 
-    # ================= JV AND MANUAL ENTRIES (ADMIN ONLY) =================
+    # ================= 1. NEW: JV AND MANUAL ENTRIES (ADMIN ONLY) =================
     if st.session_state.admin_mode == "📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)":
         st.write("### 📔 ਜਰਨਲ ਵਾਊਚਰ ਅਤੇ ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ")
         
@@ -30,9 +35,9 @@ def show_page(is_admin, is_staff):
         except:
             all_b = config.BANK_ACCOUNTS
 
-        jv_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Entry Type):", ["🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ (Bank Statement Entry)", "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)", "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ (Reversal/Adjustment)"], horizontal=True)
+        jv_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Entry Type):", ["🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ", "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)", "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ"], horizontal=True)
         
-        if jv_type == "🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ (Bank Statement Entry)":
+        if jv_type == "🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ":
             st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Credit = ਪੈਸੇ ਆਏ, Debit = ਪੈਸੇ ਗਏ)।")
             with st.form("jv_bank_form", clear_on_submit=True):
                 b_acc = st.selectbox("ਬੈਂਕ/ਕੈਸ਼ ਖਾਤਾ", all_b)
@@ -63,7 +68,7 @@ def show_page(is_admin, is_staff):
                         utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
                         st.success("✅ ਫੰਡ ਟਰਾਂਸਫਰ ਹੋ ਗਿਆ!")
                         
-        elif jv_type == "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ (Reversal/Adjustment)":
+        elif jv_type == "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ":
             st.info("ਗਲਤ ਖਰਚੇ ਜਾਂ ਦਾਨ ਨੂੰ ਠੀਕ ਕਰਨ ਲਈ Reverse (ਮਾਈਨਸ / Negative) ਐਂਟਰੀ ਪਾਓ, ਤਾਂ ਜੋ ਲੈਜ਼ਰ ਸਹੀ ਰਹੇ।")
             with st.form("jv_adj_form", clear_on_submit=True):
                 adj_target = st.selectbox("ਕੀ ਐਡਜਸਟ ਕਰਨਾ ਹੈ?", ["ਖਰਚਾ (Expense Adjustment)", "ਦਾਨ (Donation Adjustment)"])
@@ -94,7 +99,7 @@ def show_page(is_admin, is_staff):
             if r: st.dataframe(utils.format_dates_in_df(pd.DataFrame(r)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit', 'source']], ascending=False), hide_index=True, use_container_width=True)
         except: pass
 
-    # ================= EXISTING ADMIN MODES =================
+    # ================= 2. EXISTING: BULK UPLOAD =================
     elif st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ")
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
@@ -147,6 +152,7 @@ def show_page(is_admin, is_staff):
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e: st.error(f"❌ ਐਰਰ: {e}")
 
+    # ================= 3. EXISTING: DELETE MANAGEMENT =================
     elif st.session_state.admin_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚੋਂ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?", list(t_map.keys()), key="del_cat")]
         col_f1, col_f2 = st.columns(2)
@@ -194,7 +200,8 @@ def show_page(is_admin, is_staff):
                             st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else: st.info("ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
 
-    elif st.session_state.admin_mode == "✏️️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)":
+    # ================= 4. EXISTING: EDIT MANAGEMENT =================
+    elif st.session_state.admin_mode == "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ?", list(t_map.keys()), key="edit_cat")]
         col_f1, col_f2 = st.columns(2)
         with col_f1: search_name = st.text_input("ਨਾਮ/ਵੇਰਵੇ ਨਾਲ ਲੱਭੋ", key="edit_srch")
