@@ -37,16 +37,16 @@ def show_page(is_admin, is_staff):
         jv_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Entry Type):", ["🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ", "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)", "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ"], horizontal=True)
         
         if jv_type == "🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ":
-            st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Debit = ਪੈਸੇ ਆਏ/Receipt, Credit = ਪੈਸੇ ਗਏ/Payment)।")
+            st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Credit = Deposit/ਪੈਸੇ ਆਏ, Debit = Withdrawal/ਪੈਸੇ ਗਏ)।")
             with st.form("jv_bank_form", clear_on_submit=True):
                 b_acc = st.selectbox("ਬੈਂਕ/ਕੈਸ਼ ਖਾਤਾ", all_b)
                 b_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
                 b_desc = st.text_input("ਵੇਰਵਾ (Description)")
                 c1, c2 = st.columns(2)
-                b_type = c1.radio("ਕਿਸਮ (Type)", ["Debit (ਪੈਸੇ ਆਏ / In)", "Credit (ਪੈਸੇ ਗਏ / Out)"])
+                b_type = c1.radio("ਕਿਸਮ (Type)", ["Deposit/Credit (ਪੈਸੇ ਆਏ)", "Withdrawal/Debit (ਪੈਸੇ ਗਏ)"])
                 b_amt = c2.number_input("ਰਕਮ (₹)", min_value=0.01)
                 if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary") and b_desc:
-                    d_val, c_val = (b_amt, 0.0) if "Debit" in b_type else (0.0, b_amt)
+                    c_val, d_val = (b_amt, 0.0) if "Deposit/Credit" in b_type else (0.0, b_amt)
                     utils.supabase.table("bank_ledger").insert({"txn_date": b_dt.strftime("%Y-%m-%d"), "description": b_desc, "bank_name": b_acc, "debit": d_val, "credit": c_val, "balance": 0.0, "source": "Manual Entry"}).execute()
                     st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
                     
@@ -54,8 +54,8 @@ def show_page(is_admin, is_staff):
             st.info("ਇੱਕ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਢ ਕੇ ਦੂਜੇ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣ ਲਈ (ਜਿਵੇਂ Cash ਤੋਂ Bank ਵਿੱਚ ਜਮ੍ਹਾਂ ਕਰਾਉਣੇ)।")
             with st.form("jv_transfer_form", clear_on_submit=True):
                 c1, c2 = st.columns(2)
-                from_acc = c1.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਢਣੇ ਹਨ? (From - Credit/Out)", all_b)
-                to_acc = c2.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣੇ ਹਨ? (To - Debit/In)", all_b)
+                from_acc = c1.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਢਣੇ ਹਨ? (From - Withdrawal/Debit)", all_b)
+                to_acc = c2.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣੇ ਹਨ? (To - Deposit/Credit)", all_b)
                 t_amt = st.number_input("ਰਕਮ (₹)", min_value=0.01)
                 t_desc = st.text_input("ਵੇਰਵਾ (Description) - e.g. Cash deposited to Bank")
                 t_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
@@ -63,10 +63,10 @@ def show_page(is_admin, is_staff):
                     if from_acc == to_acc: st.error("ਦੋਵੇਂ ਖਾਤੇ ਵੱਖੋ-ਵੱਖਰੇ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ!")
                     else:
                         dt_str = t_dt.strftime("%Y-%m-%d")
-                        # From Account gets Credit (Money Out)
-                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (To {to_acc})", "bank_name": from_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
-                        # To Account gets Debit (Money In)
-                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": t_amt, "credit": 0.0, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        # From Account gets Debit (Withdrawal)
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (To {to_acc})", "bank_name": from_acc, "debit": t_amt, "credit": 0.0, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        # To Account gets Credit (Deposit)
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
                         st.success("✅ ਫੰਡ ਟਰਾਂਸਫਰ ਹੋ ਗਿਆ!")
                         
         elif jv_type == "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ":
@@ -122,11 +122,11 @@ def show_page(is_admin, is_staff):
                     elif upload_type == "ਵਿਧਵਾਵਾਂ (Widows)":
                         allowed_cols, table_name = ['form_no', 'card_no', 'name', 'age', 'husband_name', 'husband_death_date', 'phone', 'address', 'boys_details', 'girls_details', 'issued_by', 'join_date', 'photo_base64'], "widows"
                     elif upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)":
-                        # Updated to match new Accounting Rule (Withdrawals/Payments = Credit, Deposits/Receipts = Debit)
+                        # Original Bank Statement Rule Restored: Withdrawal -> debit, Deposit -> credit
                         for c in ['withdrawal', 'withdrawals', 'dr']:
-                            if c in df_upload.columns and 'credit' not in df_upload.columns: df_upload['credit'] = df_upload[c]
-                        for c in ['deposit', 'deposits', 'cr']:
                             if c in df_upload.columns and 'debit' not in df_upload.columns: df_upload['debit'] = df_upload[c]
+                        for c in ['deposit', 'deposits', 'cr']:
+                            if c in df_upload.columns and 'credit' not in df_upload.columns: df_upload['credit'] = df_upload[c]
                         df_upload['debit'] = pd.to_numeric(df_upload.get('debit', 0), errors='coerce').fillna(0.0)
                         df_upload['credit'] = pd.to_numeric(df_upload.get('credit', 0), errors='coerce').fillna(0.0)
                         df_upload['balance'] = pd.to_numeric(df_upload.get('balance', 0), errors='coerce').fillna(0.0)
