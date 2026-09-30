@@ -8,11 +8,10 @@ import config
 import utils
 
 def show_page(is_admin=False, is_staff=False, *args, **kwargs):
-    st.header("⚙️️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
+    st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
     
-    # ਨਵਾਂ ਟੈਬ: 🛠️ ਫਿਕਸ ਡਾਟਾਬੇਸ ਜੋੜਿਆ ਗਿਆ ਹੈ
     if is_admin:
-        modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)", "🛠️ ਫਿਕਸ ਡਾਟਾਬੇਸ (Fix Data)"]
+        modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
     else:
         modes = ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
         
@@ -30,32 +29,8 @@ def show_page(is_admin=False, is_staff=False, *args, **kwargs):
         "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books", "ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Staff)": "staff_profiles", "ਹਾਜ਼ਰੀ (Attendance)": "attendance"
     }
 
-    # ================= 1. NEW: MAGIC DATABASE FIX =================
-    if st.session_state.admin_mode == "🛠️ ਫਿਕਸ ਡਾਟਾਬੇਸ (Fix Data)" and is_admin:
-        st.write("### 🛠️ ਗਲਤ ਬੈਂਕ ਨਾਮ ਠੀਕ ਕਰੋ (Fix Database)")
-        st.info("💡 ਜੇਕਰ ਡਾਟਾਬੇਸ ਵਿੱਚ ਪੁਰਾਣੀਆਂ ਐਂਟਰੀਆਂ ਵਿੱਚ ਗਲਤੀ ਨਾਲ ਸਿਰਫ਼ 'Kotak' ਸੇਵ ਹੋਇਆ ਪਿਆ ਹੈ, ਤਾਂ ਇਹ ਟੂਲ ਇੱਕੋ ਕਲਿੱਕ ਨਾਲ ਉਸਨੂੰ ਸਾਰੇ ਸਾਫਟਵੇਅਰ ਵਿੱਚੋਂ ਬਦਲ ਦੇਵੇਗਾ।")
-        
-        with st.form("fix_db_form"):
-            col1, col2 = st.columns(2)
-            wrong_name = col1.text_input("ਗਲਤ ਨਾਮ (ਜੋ ਹਟਾਉਣਾ ਹੈ)", value="Kotak")
-            correct_name = col2.text_input("ਸਹੀ ਨਾਮ (ਜਿਸ ਨਾਲ ਬਦਲਣਾ ਹੈ)", value="Kotak Bank Regular")
-            
-            if st.form_submit_button(f"🚀 '{wrong_name}' ਨੂੰ ਹਟਾਓ ਅਤੇ ਠੀਕ ਕਰੋ", type="primary"):
-                try:
-                    # Update all 4 tables dynamically
-                    utils.supabase.table("donations").update({"bank_account": correct_name}).eq("bank_account", wrong_name).execute()
-                    utils.supabase.table("expenses").update({"bank_account": correct_name}).eq("bank_account", wrong_name).execute()
-                    utils.supabase.table("bank_ledger").update({"bank_name": correct_name}).eq("bank_name", wrong_name).execute()
-                    utils.supabase.table("cheques").update({"bank_name": correct_name}).eq("bank_name", wrong_name).execute()
-                    
-                    st.success(f"✅ ਬਹੁਤ ਵਧੀਆ! ਪੂਰੇ ਡਾਟਾਬੇਸ ਵਿੱਚੋਂ '{wrong_name}' ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਡਿਲੀਟ ਕਰਕੇ '{correct_name}' ਵਿੱਚ ਬਦਲ ਦਿੱਤਾ ਗਿਆ ਹੈ!")
-                    time.sleep(3)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ ਐਰਰ: {e}")
-
-    # ================= 2. JV AND MANUAL ENTRIES =================
-    elif st.session_state.admin_mode == "📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)":
+    # ================= 1. JV AND MANUAL ENTRIES =================
+    if st.session_state.admin_mode == "📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)":
         st.write("### 📔 ਜਰਨਲ ਵਾਊਚਰ ਅਤੇ ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ")
         
         try:
@@ -133,7 +108,7 @@ def show_page(is_admin=False, is_staff=False, *args, **kwargs):
             if r: st.dataframe(utils.format_dates_in_df(pd.DataFrame(r)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit', 'source']], ascending=False), hide_index=True, use_container_width=True)
         except Exception: pass
 
-    # ================= 3. BULK UPLOAD =================
+    # ================= 2. BULK UPLOAD =================
     elif st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ")
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
@@ -186,7 +161,7 @@ def show_page(is_admin=False, is_staff=False, *args, **kwargs):
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e: st.error(f"❌ ਐਰਰ: {e}")
 
-    # ================= 4. DELETE MANAGEMENT =================
+    # ================= 3. DELETE MANAGEMENT =================
     elif st.session_state.admin_mode == "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚੋਂ ਡਿਲੀਟ ਕਰਨਾ ਹੈ?", list(t_map.keys()), key="del_cat")]
         col_f1, col_f2 = st.columns(2)
@@ -234,7 +209,7 @@ def show_page(is_admin=False, is_staff=False, *args, **kwargs):
                             st.success("✅ ਬੇਨਤੀ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ!"); time.sleep(1.5); st.rerun()
             else: st.info("ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ ਮਿਲੀ।")
 
-    # ================= 5. EDIT MANAGEMENT =================
+    # ================= 4. EDIT MANAGEMENT =================
     elif st.session_state.admin_mode == "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)":
         table_name = t_map[st.selectbox("ਕਿਸ ਟੇਬਲ ਵਿੱਚ ਸੋਧ ਕਰਨੀ ਹੈ?", list(t_map.keys()), key="edit_cat")]
         col_f1, col_f2 = st.columns(2)
