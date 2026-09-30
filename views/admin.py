@@ -9,14 +9,93 @@ import utils
 
 def show_page(is_admin, is_staff):
     st.header("⚙️ ਐਡਮਿਨ, ਡਿਲੀਟ ਅਤੇ ਸੋਧ (Edit) ਸਿਸਟਮ")
-    modes = ["📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"] if is_admin else ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
+    
+    # "📔 ਜਰਨਲ ਵਾਊਚਰ (JV & Manual Entry)" added to Admin modes
+    modes = ["📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)", "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)", "🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"] if is_admin else ["🗑️ ਡਿਲੀਟ ਮੈਨੇਜਮੈਂਟ (Delete)", "✏️ ਸੋਧ ਮੈਨੇਜਮੈਂਟ (Edit)"]
+    
     if st.session_state.admin_mode not in modes: st.session_state.admin_mode = modes[0]
     st.session_state.admin_mode = st.radio("ਐਡਮਿਨ ਟੂਲ ਚੁਣੋ:", modes, index=modes.index(st.session_state.admin_mode), horizontal=True)
     st.markdown("---")
     
     t_map = {"ਦਾਨ (Donation)": "donations", "ਖਰਚਾ (Expense)": "expenses", "ਬੈਂਕ ਐਂਟਰੀ (Bank Ledger)": "bank_ledger", "ਪਾਰਟੀ (Party)": "parties", "ਚੈੱਕ (Cheque)": "cheques", "ਸੰਪਤੀ (Asset)": "assets", "ਦੇਣਦਾਰੀ (Liability)": "liabilities", "ਸਟਾਕ (Stock)": "stock", "ਸਟਾਕ ਵਰਤੋਂ (Stock Usage)": "stock_usage", "ਵਿਦਿਆਰਥੀ (Student)": "students", "ਵਿਧਵਾ (Widow)": "widows", "ਰਾਸ਼ਨ ਵੰਡ (Ration)": "ration_distribution", "ਰਸੀਦ ਕਿਤਾਬ (Receipt Book)": "receipt_books", "ਸਟਾਫ ਪ੍ਰੋਫਾਈਲ (Staff)": "staff_profiles", "ਹਾਜ਼ਰੀ (Attendance)": "attendance"}
 
-    if st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
+    # ================= NEW: JV AND MANUAL ENTRIES =================
+    if st.session_state.admin_mode == "📔 ਜਰਨਲ ਵਾਊਚਰ (JV / Manual)":
+        st.write("### 📔 ਜਰਨਲ ਵਾਊਚਰ ਅਤੇ ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ (Admin Only)")
+        
+        try:
+            e_accs = set([e.get('bank_account') for e in (utils.supabase.table("expenses").select("bank_account").limit(5000).execute().data or []) if e.get('bank_account')])
+            d_accs = set([d.get('bank_account') for d in (utils.supabase.table("donations").select("bank_account").limit(5000).execute().data or []) if d.get('bank_account')])
+            all_b = sorted(list(set(config.BANK_ACCOUNTS) | d_accs | e_accs))
+        except:
+            all_b = config.BANK_ACCOUNTS
+
+        jv_type = st.radio("ਐਂਟਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ (Select Entry Type):", ["🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ (Bank Statement Entry)", "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)", "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ (Reversal/Adjustment)"], horizontal=True)
+        
+        if jv_type == "🏦 ਬੈਂਕ/ਕੈਸ਼ ਮੈਨੂਅਲ ਐਂਟਰੀ (Bank Statement Entry)":
+            st.info("ਇਹ ਐਂਟਰੀ ਸਿੱਧਾ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਜਾਵੇਗੀ (Credit = ਪੈਸੇ ਆਏ, Debit = ਪੈਸੇ ਗਏ)।")
+            with st.form("jv_bank_form", clear_on_submit=True):
+                b_acc = st.selectbox("ਬੈਂਕ/ਕੈਸ਼ ਖਾਤਾ", all_b)
+                b_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
+                b_desc = st.text_input("ਵੇਰਵਾ (Description)")
+                c1, c2 = st.columns(2)
+                b_type = c1.radio("ਕਿਸਮ (Type)", ["Credit (ਪੈਸੇ ਆਏ/In)", "Debit (ਪੈਸੇ ਗਏ/Out)"])
+                b_amt = c2.number_input("ਰਕਮ (₹)", min_value=0.01)
+                if st.form_submit_button("ਐਂਟਰੀ ਸੇਵ ਕਰੋ", type="primary") and b_desc:
+                    d_val, c_val = (b_amt, 0.0) if "Debit" in b_type else (0.0, b_amt)
+                    utils.supabase.table("bank_ledger").insert({"txn_date": b_dt.strftime("%Y-%m-%d"), "description": b_desc, "bank_name": b_acc, "debit": d_val, "credit": c_val, "balance": 0.0, "source": "Manual Entry"}).execute()
+                    st.success("✅ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
+                    
+        elif jv_type == "🔄 ਫੰਡ ਟਰਾਂਸਫਰ (Fund Transfer)":
+            st.info("ਇੱਕ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਢ ਕੇ ਦੂਜੇ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣ ਲਈ (ਜਿਵੇਂ Cash ਤੋਂ Bank ਵਿੱਚ ਜਮ੍ਹਾਂ ਕਰਾਉਣੇ)।")
+            with st.form("jv_transfer_form", clear_on_submit=True):
+                c1, c2 = st.columns(2)
+                from_acc = c1.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਢਣੇ ਹਨ? (From - Debit)", all_b)
+                to_acc = c2.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਪਾਉਣੇ ਹਨ? (To - Credit)", all_b)
+                t_amt = st.number_input("ਰਕਮ (₹)", min_value=0.01)
+                t_desc = st.text_input("ਵੇਰਵਾ (Description) - e.g. Cash deposited to Bank")
+                t_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
+                if st.form_submit_button("ਟਰਾਂਸਫਰ ਕਰੋ", type="primary") and t_desc:
+                    if from_acc == to_acc: st.error("ਦੋਵੇਂ ਖਾਤੇ ਵੱਖੋ-ਵੱਖਰੇ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ!")
+                    else:
+                        dt_str = t_dt.strftime("%Y-%m-%d")
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (To {to_acc})", "bank_name": from_acc, "debit": t_amt, "credit": 0.0, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        utils.supabase.table("bank_ledger").insert({"txn_date": dt_str, "description": t_desc + f" (From {from_acc})", "bank_name": to_acc, "debit": 0.0, "credit": t_amt, "balance": 0.0, "source": "Admin Transfer"}).execute()
+                        st.success("✅ ਫੰਡ ਟਰਾਂਸਫਰ ਹੋ ਗਿਆ!")
+                        
+        elif jv_type == "⚠️ ਰਿਵਰਸਲ / ਐਡਜਸਟਮੈਂਟ (Reversal/Adjustment)":
+            st.info("ਗਲਤ ਖਰਚੇ ਜਾਂ ਦਾਨ ਨੂੰ ਠੀਕ ਕਰਨ ਲਈ Reverse (ਮਾਈਨਸ / Negative) ਐਂਟਰੀ ਪਾਓ, ਤਾਂ ਜੋ ਲੈਜ਼ਰ ਸਹੀ ਰਹੇ।")
+            with st.form("jv_adj_form", clear_on_submit=True):
+                adj_target = st.selectbox("ਕੀ ਐਡਜਸਟ ਕਰਨਾ ਹੈ?", ["ਖਰਚਾ (Expense Adjustment)", "ਦਾਨ (Donation Adjustment)"])
+                adj_desc = st.text_input("ਵੇਰਵਾ / ਨਾਮ (Description / Name)")
+                
+                if "ਖਰਚਾ" in adj_target:
+                    cat_options = [c for c in config.EXPENSE_CATEGORIES if not c.startswith("---")]
+                    adj_cat = st.selectbox("ਕੈਟਾਗਰੀ", cat_options)
+                else:
+                    adj_cat = st.selectbox("ਦਾਨ ਦੀ ਕਿਸਮ", ["ਪੈਸੇ (Monetary)"])
+                    
+                adj_amt = st.number_input("ਰਕਮ (Amount ₹) - Negative value to reverse/reduce!", value=-100.0)
+                adj_bank = st.selectbox("ਬੈਂਕ/ਕੈਸ਼ ਖਾਤਾ", all_b)
+                adj_dt = st.date_input("ਮਿਤੀ (Date)", value=date.today(), format="DD/MM/YYYY")
+                
+                if st.form_submit_button("ਐਡਜਸਟਮੈਂਟ ਸੇਵ ਕਰੋ", type="primary") and adj_desc:
+                    dt_str = adj_dt.strftime("%Y-%m-%d")
+                    if "ਖਰਚਾ" in adj_target:
+                        utils.supabase.table("expenses").insert({"description": adj_desc + " (Reversal/Adj)", "amount": adj_amt, "date": dt_str, "category": adj_cat, "bank_account": adj_bank, "add_to_mirror": True, "payee_name": "Admin Adjustment"}).execute()
+                    else:
+                        utils.supabase.table("donations").insert({"id": int(time.time() % 100000), "name": adj_desc + " (Reversal/Adj)", "phone": "", "address": "", "amount": adj_amt, "date": dt_str, "payment_mode": "Adjustment", "donation_type": "ਪੈਸੇ (Monetary)", "item_details": "", "bank_account": adj_bank, "on_account_of": "Adjustment", "add_to_mirror": True, "collector_name": "Admin"}).execute()
+                    st.success("✅ ਐਡਜਸਟਮੈਂਟ ਐਂਟਰੀ ਸੇਵ ਹੋ ਗਈ!")
+
+        st.markdown("---")
+        st.write("#### 🕒 ਪਿਛਲੀਆਂ JV / ਮੈਨੂਅਲ ਐਂਟਰੀਆਂ")
+        try:
+            r = utils.supabase.table("bank_ledger").select("*").in_("source", ["Admin JV", "Admin Transfer", "Manual Entry"]).order("id", desc=True).limit(50).execute().data
+            if r: st.dataframe(utils.format_dates_in_df(pd.DataFrame(r)[['id', 'txn_date', 'bank_name', 'description', 'debit', 'credit', 'source']], ascending=False), hide_index=True, use_container_width=True)
+        except: pass
+
+    # ================= EXISTING ADMIN MODES =================
+    elif st.session_state.admin_mode == "📂 ਬਲਕ ਅੱਪਲੋਡ (Bulk Upload)" and is_admin:
         st.write("### 📂 ਪੁਰਾਣਾ ਡਾਟਾ ਐਕਸਲ ਰਾਹੀਂ ਅੱਪਲੋਡ ਕਰੋ")
         upload_type = st.selectbox("ਡਾਟਾ ਚੁਣੋ", ["ਦਾਨ (Donations)", "ਵਿਦਿਆਰਥੀ (Students)", "ਵਿਧਵਾਵਾਂ (Widows)", "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)"])
         default_bank_upload = st.selectbox("ਇਹ ਸਟੇਟਮੈਂਟ ਕਿਸ ਬੈਂਕ ਦੀ ਹੈ?", config.BANK_ACCOUNTS, index=1) if upload_type == "ਬੈਂਕ ਐਂਟਰੀਆਂ (Bank Ledger)" else "Kotak Bank Regular"
@@ -64,7 +143,6 @@ def show_page(is_admin, is_staff):
                         for k, v in rec.items():
                             if isinstance(v, float) and math.isnan(v): rec[k] = None
 
-                    # Batch insertion to avoid timeouts
                     for i in range(0, len(records), 500): utils.supabase.table(table_name).insert(records[i:i+500]).execute()
                     st.success(f"✅ {upload_type} ਦਾ ਸਾਰਾ ਡਾਟਾ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਿਆ ਹੈ!")
                 except Exception as e: st.error(f"❌ ਐਰਰ: {e}")
