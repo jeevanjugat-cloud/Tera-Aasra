@@ -39,7 +39,7 @@ def show_page(is_mgmt):
                     cc1, cc2 = st.columns(2)
                     with cc1: cq_no = st.text_input("ਚੈੱਕ ਨੰਬਰ")
                     with cc2: cq_bank = st.text_input("ਬੈਂਕ ਦਾ ਨਾਮ")
-                add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=True)
+                add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਤਿਆਰ ਕਰੋ", type="primary")
                 
             if submitted and donor_name:
