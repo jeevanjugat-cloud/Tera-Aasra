@@ -44,7 +44,6 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
     entries = []
     
-    # 1. Donations (Money In = DB Debit)
     if not df_don.empty:
         df_don['add_to_mirror'] = df_don.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_don[df_don['donation_type'] == 'ਪੈਸੇ (Monetary)'].iterrows():
@@ -56,7 +55,6 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
                 if not is_cash and not row['add_to_mirror']: continue
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਦਾਨ: {row['name']} (Rec#{row['id']})", 'Account': b_acc, 'Debit': float(row.get('amount') or 0.0), 'Credit': 0.0, 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': float(row.get('balance') or 0.0), 'Source': 'App (Donation)'})
     
-    # 2. Expenses (Money Out = DB Credit)
     if not df_exp.empty:
         df_exp['add_to_mirror'] = df_exp.get('add_to_mirror', True).fillna(True).astype(bool)
         for _, row in df_exp.iterrows():
@@ -68,7 +66,6 @@ def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None):
                 if not is_cash and not row['add_to_mirror']: continue
             entries.append({'ID': row['id'], 'Date': row['date'], 'Description': f"ਖਰਚਾ: {row['description']}", 'Account': b_acc, 'Debit': 0.0, 'Credit': float(row.get('amount') or 0.0), 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': 0.0, 'Source': 'App (Expense)'})
     
-    # 3. Bank Ledger
     if not df_ledg.empty:
         for _, row in df_ledg.iterrows():
             b_acc = row.get('bank_name')
@@ -82,7 +79,7 @@ def show_page(is_admin):
     st.header("🏦 ਖਾਤੇ, ਬੈਂਕ ਲੈਜ਼ਰ ਅਤੇ CA ਰਿਪੋਰਟਾਂ")
     
     modes = [
-        "⚖️️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
+        "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)", 
         "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ", 
         "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)", 
         "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)", 
@@ -93,7 +90,9 @@ def show_page(is_admin):
         "📊 CA ਆਡਿਟ ਐਕਸਲ"
     ]
     
-    if st.session_state.acc_mode not in modes: st.session_state.acc_mode = modes[0]
+    if 'acc_mode' not in st.session_state or st.session_state.acc_mode not in modes: 
+        st.session_state.acc_mode = "🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)"
+        
     st.session_state.acc_mode = st.radio("ਖਾਤਾ/ਰਿਪੋਰਟ ਚੁਣੋ:", modes, index=modes.index(st.session_state.acc_mode), horizontal=True)
     st.markdown("---")
 
@@ -260,8 +259,8 @@ def show_page(is_admin):
             
         selected_bank = st.selectbox("ਬੈਂਕ ਜਾਂ ਕੈਸ਼ ਖਾਤਾ ਚੁਣੋ:", sorted(list(all_banks_dynamic)))
         
-        # ================= NEW: TOGGLE FOR MIRROR vs BANK VIEW =================
-        st.markdown("#### 🔄 ਸਟੇਟਮੈਂਟ ਦੇਖਣ ਦਾ ਤਰੀਕਾ (View Mode)")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.info("💡 **ਸਟੇਟਮੈਂਟ ਦੇਖਣ ਦਾ ਤਰੀਕਾ (View Mode):**")
         view_format = st.radio("ਦਿਖਾਉਣ ਦਾ ਤਰੀਕਾ ਚੁਣੋ:", 
             ["📖 ਸੰਸਥਾ ਦਾ ਲੈਜ਼ਰ / Mirror Book (ਪੈਸੇ ਆਏ = Debit)", "🏦 ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ (ਪੈਸੇ ਆਏ = Credit)"], 
             horizontal=True)
@@ -292,13 +291,11 @@ def show_page(is_admin):
             
             df_disp = df_period[['ID', 'Date', 'Description', 'Source', 'Debit', 'Credit', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)']].copy()
             
-            # Apply View Logic
+            # View formatting logic
             if "ਅਸਲੀ ਬੈਂਕ ਸਟੇਟਮੈਂਟ" in view_format:
-                # Bank View: Swap headers visually so Money In shows under Credit
                 df_disp.rename(columns={'Debit': 'Deposit/In (Cr)', 'Credit': 'Withdrawal/Out (Dr)'}, inplace=True)
                 style_dict = {'Deposit/In (Cr)': '{:.2f}', 'Withdrawal/Out (Dr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
             else:
-                # Mirror Ledger View: Standard Cash Book
                 df_disp.rename(columns={'Debit': 'Receipt/In (Dr)', 'Credit': 'Payment/Out (Cr)'}, inplace=True)
                 style_dict = {'Receipt/In (Dr)': '{:.2f}', 'Payment/Out (Cr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}
             
