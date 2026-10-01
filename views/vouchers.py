@@ -8,7 +8,6 @@ import utils
 def show_page(is_mgmt):
     st.header("📝 ਰੋਜ਼ਾਨਾ ਐਂਟਰੀਆਂ ਅਤੇ ਰਸੀਦ ਪ੍ਰਬੰਧਨ")
     
-    # "Manual Bank Entry" has been removed from here (moved to Admin)
     modes = ["💰 ਨਕਦ/ਬੈਂਕ ਦਾਨ (Cash/Bank Receipt)", "📦 ਸਮਾਨ ਦਾ ਦਾਨ (In-Kind Donation)", "📉 ਖਰਚਾ (Payment Debit)", "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)", "💳 ਚੈੱਕ ਰਿਕਾਰਡ (Cheque)", "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)"]
     
     if st.session_state.entry_mode not in modes: st.session_state.entry_mode = modes[0]
@@ -25,43 +24,83 @@ def show_page(is_mgmt):
             sel_donor = st.selectbox("ਪੁਰਾਣਾ ਦਾਨੀ ਲੱਭੋ", ["➕ ਨਵਾਂ ਦਾਨੀ (New Donor)"] + unique_donors)
             match = next((d for d in reversed(don_data) if d.get('name') == sel_donor), {}) if sel_donor != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else {}
             
+            # --- ਸਮਾਰਟ ਬੈਂਕ ਸਿਲੈਕਸ਼ਨ ਲੌਜਿਕ (Smart Auto Bank Logic) ---
+            pay_mode = st.radio("ਭੁਗਤਾਨ ਮੋਡ (Payment Mode)", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"], horizontal=True)
+            
+            if pay_mode in ["UPI/Google Pay", "Cheque", "NEFT/RTGS"]:
+                default_bank = "Kotak Bank Regular"
+            else:
+                default_bank = "ਨਕਦ (Cash)"
+                
+            try: 
+                b_idx = config.BANK_ACCOUNTS.index(default_bank)
+            except ValueError: 
+                b_idx = 0
+            # -------------------------------------------------------------
+            
             with st.form("donation_form", clear_on_submit=True):
                 donor_name = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ", value=sel_donor if sel_donor != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else "")
                 donor_phone = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (WhatsApp ਲਈ ਜ਼ਰੂਰੀ)", value=match.get('phone', ''))
                 donor_address = st.text_input("ਪਤਾ", value=match.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'))
                 on_account_of = st.text_input("ਕਿਸ ਮੱਦ ਲਈ (e.g. Monthly Donation)")
                 rec_no_input = st.number_input("ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1)
+                
                 col_m1, col_m2 = st.columns(2)
-                with col_m1: amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0); pay_mode = st.selectbox("ਭੁਗਤਾਨ ਮੋਡ", ["ਨਕਦ (Cash)", "UPI/Google Pay", "Cheque", "NEFT/RTGS"])
-                with col_m2: bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ?", config.BANK_ACCOUNTS); receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                with col_m1: 
+                    amount = st.number_input("ਰਕਮ (Amount ₹)", min_value=1.0)
+                with col_m2: 
+                    # ਬੈਂਕ ਖਾਤਾ ਆਪਣੇ-ਆਪ ਉੱਪਰ ਵਾਲੇ ਭੁਗਤਾਨ ਮੋਡ ਦੇ ਹਿਸਾਬ ਨਾਲ ਬਦਲ ਜਾਵੇਗਾ
+                    bank_acc = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚ ਆਏ?", config.BANK_ACCOUNTS, index=b_idx)
+                    receipt_date = st.date_input("ਰਸੀਦ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
+                
                 cq_no, cq_bank = "", ""
                 if pay_mode == "Cheque":
+                    st.markdown("---")
+                    st.info("🏦 ਚੈੱਕ ਦਾ ਵੇਰਵਾ ਭਰੋ:")
                     cc1, cc2 = st.columns(2)
-                    with cc1: cq_no = st.text_input("ਚੈੱਕ ਨੰਬਰ")
+                    with cc1: cq_no = st.text_input("ਚੈੱਕ ਨੰਬਰ*")
                     with cc2: cq_bank = st.text_input("ਬੈਂਕ ਦਾ ਨਾਮ")
-                add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=True)
+                    st.markdown("---")
+                    
+                add_to_mirror = st.checkbox("✅ ਇਸ ਦਾਨ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
                 submitted = st.form_submit_button("ਸੇਵ ਕਰੋ ਅਤੇ ਰਸੀਦ ਤਿਆਰ ਕਰੋ", type="primary")
                 
             if submitted and donor_name:
-                books = utils.supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
-                matched_book = next((b for b in books if int(b['start_no']) <= int(rec_no_input) <= int(b['end_no'])), None)
-                existing_rec = utils.supabase.table("donations").select("id").eq("id", int(rec_no_input)).execute().data
-                
-                if not matched_book: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਕਿਸੇ ਵੀ ਜਾਰੀ ਕੀਤੀ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
-                elif existing_rec: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਮੌਜੂਦ ਹੈ!")
+                if pay_mode == "Cheque" and not cq_no:
+                    st.error("❌ ਗਲਤੀ: ਕਿਰਪਾ ਕਰਕੇ ਚੈੱਕ ਨੰਬਰ ਜ਼ਰੂਰ ਭਰੋ!")
                 else:
-                    collector = matched_book['collector_name']
-                    formatted_date = receipt_date.strftime("%Y-%m-%d")
-                    utils.supabase.table("donations").insert({"id": int(rec_no_input), "name": donor_name, "phone": donor_phone, "address": donor_address, "amount": amount, "date": formatted_date, "payment_mode": pay_mode, "donation_type": "ਪੈਸੇ (Monetary)", "item_details": "", "bank_account": bank_acc, "on_account_of": on_account_of, "add_to_mirror": add_to_mirror, "collector_name": collector, "cheque_no": cq_no, "cheque_bank": cq_bank}).execute()
-                    st.success(f"✅ ਰਸੀਦ #{rec_no_input} ਸੇਵ ਹੋ ਗਈ!")
+                    books = utils.supabase.table("receipt_books").select("*").eq("status", "Active").execute().data or []
+                    matched_book = next((b for b in books if int(b['start_no']) <= int(rec_no_input) <= int(b['end_no'])), None)
+                    existing_rec = utils.supabase.table("donations").select("id").eq("id", int(rec_no_input)).execute().data
                     
-                    html_file = utils.generate_html_receipt(int(rec_no_input), donor_name, donor_phone, amount, utils.clean_date_to_display(formatted_date), pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of, collector, donor_address, cq_no, cq_bank)
-                    with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ/ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html", type="primary")
-                    
-                    wa_msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ ਜੀ।\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ, ਤੁਹਾਡਾ ਦਾਨ (Rs. {amount}) ਪ੍ਰਾਪਤ ਹੋਇਆ ਹੈ। ਰਸੀਦ ਨੰਬਰ: {rec_no_input}। ਤੇਰਾ ਆਸਰਾ ਵੱਲੋਂ ਧੰਨਵਾਦ।"
-                    wa_url = utils.wa_link(donor_phone, wa_msg)
-                    if wa_url:
-                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #25D366; color: white; border-radius: 8px; font-weight: bold; text-decoration: none;">💬 WhatsApp 'ਤੇ ਰਸੀਦ ਭੇਜੋ</a>""", unsafe_allow_html=True)
+                    if not matched_book: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਕਿਸੇ ਵੀ ਜਾਰੀ ਕੀਤੀ ਕਿਤਾਬ ਵਿੱਚ ਨਹੀਂ ਹੈ!")
+                    elif existing_rec: st.error("❌ ਗਲਤੀ: ਰਸੀਦ ਨੰਬਰ ਪਹਿਲਾਂ ਹੀ ਮੌਜੂਦ ਹੈ!")
+                    else:
+                        collector = matched_book['collector_name']
+                        formatted_date = receipt_date.strftime("%Y-%m-%d")
+                        
+                        utils.supabase.table("donations").insert({"id": int(rec_no_input), "name": donor_name, "phone": donor_phone, "address": donor_address, "amount": amount, "date": formatted_date, "payment_mode": pay_mode, "donation_type": "ਪੈਸੇ (Monetary)", "item_details": "", "bank_account": bank_acc, "on_account_of": on_account_of, "add_to_mirror": add_to_mirror, "collector_name": collector, "cheque_no": cq_no, "cheque_bank": cq_bank}).execute()
+                        
+                        # ਜੇਕਰ ਚੈੱਕ ਹੈ, ਤਾਂ Cheques ਟੇਬਲ ਵਿੱਚ Pending ਸਟੇਟਸ ਨਾਲ ਪਾਓ
+                        if pay_mode == "Cheque":
+                            utils.supabase.table("cheques").insert({
+                                "cheque_date": formatted_date,
+                                "cheque_no": cq_no,
+                                "bank_name": bank_acc,
+                                "amount": amount,
+                                "status": "Pending",
+                                "party_name": donor_name
+                            }).execute()
+
+                        st.success(f"✅ ਰਸੀਦ #{rec_no_input} ਸੇਵ ਹੋ ਗਈ!")
+                        
+                        html_file = utils.generate_html_receipt(int(rec_no_input), donor_name, donor_phone, amount, utils.clean_date_to_display(formatted_date), pay_mode, "ਪੈਸੇ (Monetary)", "", bank_acc, on_account_of, collector, donor_address, cq_no, cq_bank)
+                        with open(html_file, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਸੀਦ ਡਾਊਨਲੋਡ/ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=html_file, mime="text/html", type="primary")
+                        
+                        wa_msg = f"ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ, ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਹਿ ਜੀ।\nਸਤਿਕਾਰਯੋਗ {donor_name} ਜੀ, ਤੁਹਾਡਾ ਦਾਨ (Rs. {amount}) ਪ੍ਰਾਪਤ ਹੋਇਆ ਹੈ। ਰਸੀਦ ਨੰਬਰ: {rec_no_input}। ਤੇਰਾ ਆਸਰਾ ਵੱਲੋਂ ਧੰਨਵਾਦ।"
+                        wa_url = utils.wa_link(donor_phone, wa_msg)
+                        if wa_url:
+                            st.markdown(f"""<a href="{wa_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #25D366; color: white; border-radius: 8px; font-weight: bold; text-decoration: none;">💬 WhatsApp 'ਤੇ ਰਸੀਦ ਭੇਜੋ</a>""", unsafe_allow_html=True)
             
             st.markdown("---")
             st.write("#### 🕒 ਪਿਛਲੀਆਂ ਐਂਟਰੀਆਂ (Recent Entries)")
@@ -109,7 +148,7 @@ def show_page(is_mgmt):
             with st.form("inkind_form", clear_on_submit=True):
                 donor_name_ik = st.text_input("ਦਾਨੀ ਦਾ ਨਾਮ", value=sel_donor_ik if sel_donor_ik != "➕ ਨਵਾਂ ਦਾਨੀ (New Donor)" else "")
                 donor_phone_ik = st.text_input("ਫ਼ੋਨ ਨੰਬਰ (Optional)", value=match_ik.get('phone', ''))
-                donor_address_ik = st.text_input("ਪਤਾ", value=match.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'))
+                donor_address_ik = st.text_input("ਪਤਾ", value=match_ik.get('address', 'ਸ੍ਰੀ ਅੰਮ੍ਰਿਤਸਰ ਸਾਹਿਬ'))
                 item_details_ik = st.text_input("ਰਸੀਦ 'ਤੇ ਛਾਪਣ ਲਈ ਸਮਾਨ ਦਾ ਵੇਰਵਾ")
                 rec_no_ik = st.number_input("ਰਸੀਦ ਨੰਬਰ", min_value=1, step=1)
                 col_k1, col_k2 = st.columns(2)
@@ -203,7 +242,9 @@ def show_page(is_mgmt):
                 exp_amount = st.number_input("ਰਕਮ (₹)", min_value=1.0)
                 bank_acc_exp = st.selectbox("ਕਿਸ ਖਾਤੇ ਵਿੱਚੋਂ ਪੈਸੇ ਕੱਟੇ?", config.BANK_ACCOUNTS)
                 exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
-                add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=True)
+                
+                # ਬੈਂਕ ਲੈਜ਼ਰ ਵਾਲਾ ਟਿੱਕ By default ਬੰਦ ਕੀਤਾ ਗਿਆ ਹੈ
+                add_to_mirror_exp = st.checkbox("✅ ਇਸ ਖਰਚੇ ਨੂੰ ਬੈਂਕ ਲੈਜ਼ਰ ਵਿੱਚ ਵੀ ਪਾਓ", value=False)
                 
                 add_dest = st.radio("ਖਰੀਦਿਆ ਸਮਾਨ ਕਿੱਥੇ ਜੋੜਨਾ ਹੈ?", ["ਕਿਤੇ ਨਹੀਂ", "📦 ਸਟਾਕ ਵਿੱਚ", "🏢 ਪੱਕੀ ਸੰਪਤੀ ਵਿੱਚ"], horizontal=True)
                 try: stock_opts = [s['item_name'] for s in utils.supabase.table("stock").select("item_name").limit(50000).execute().data] + ["➕ ਨਵਾਂ ਨਾਮ"]
@@ -255,7 +296,7 @@ def show_page(is_mgmt):
                                 utils.clean_date_to_display(row_data.get('date','')), row_data.get('category',''), row_data.get('bank_account','')
                             )
                             with open(hf, "r", encoding="utf-8") as f:
-                                st.download_button(f"🖨️ ਵਾਊਚਰ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_exp_{sid}")
+                                st.download_button(f"🖨️️ ਵਾਊਚਰ #{sid} ਪ੍ਰਿੰਟ ਕਰੋ", data=f.read(), file_name=hf, mime="text/html", key=f"print_exp_{sid}")
             except: pass
 
     elif st.session_state.entry_mode == "📁 ਪਾਰਟੀ/ਵੈਂਡਰ (Party)":
