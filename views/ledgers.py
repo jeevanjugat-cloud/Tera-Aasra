@@ -6,7 +6,6 @@ import time
 import config
 import utils
 
-# ਨਵਾਂ ਸਖਤ ਮੈਚਿੰਗ ਫੰਕਸ਼ਨ (Strict Exact Match)
 def exact_bank_match(db_bank, target_bank):
     db_b = str(db_bank).strip().lower()
     tgt_b = str(target_bank).strip().lower()
@@ -182,15 +181,19 @@ def show_page(is_admin):
 
         bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques)
         total_assets = fixed_assets_val + sum(bank_balances.values())
-        total_liabilities = other_liab_val + surplus
+        
+        # ਆਟੋਮੈਟਿਕ ਬੈਲੇਂਸਿੰਗ ਫਾਰਮੂਲਾ (Auto Corpus Fund Calculation)
+        auto_corpus = total_assets - (other_liab_val + surplus)
+        total_liabilities = other_liab_val + surplus + auto_corpus
         
         st.markdown("---")
         st.subheader("⚖️ Balance Sheet")
         col_liab, col_assets = st.columns(2)
         with col_liab:
             st.markdown('<div class="bs-box"><div class="bs-header">Liabilities & Funds</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-row"><span>Corpus/Capital Funds:</span><span>₹ {other_liab_val:,.2f}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bs-row"><span>Manual Funds (ਹੋਰ ਫੰਡ):</span><span>₹ {other_liab_val:,.2f}</span></div>', unsafe_allow_html=True)
             st.markdown(f'<div class="bs-row"><span>Add: Surplus (ਬੱਚਤ):</span><span>₹ {surplus:,.2f}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bs-row" style="color:#007BFF; font-weight:bold;"><span>Auto Corpus Fund (ਆਟੋਮੈਟਿਕ):</span><span>₹ {auto_corpus:,.2f}</span></div>', unsafe_allow_html=True)
             st.markdown(f'<div class="bs-total"><span>Total Liabilities:</span><span>₹ {total_liabilities:,.2f}</span></div></div>', unsafe_allow_html=True)
         with col_assets:
             st.markdown('<div class="bs-box"><div class="bs-header">Assets (ਸੰਪਤੀ)</div>', unsafe_allow_html=True)
@@ -199,7 +202,7 @@ def show_page(is_admin):
             st.markdown(f'<div class="bs-total"><span>Total Assets:</span><span>₹ {total_assets:,.2f}</span></div></div>', unsafe_allow_html=True)
             
         assets_breakdown = "".join([f"<p>{k}: {v:,.2f}</p>" for k, v in asset_totals.items()])
-        full_html = f"<h3>Income & Expenditure Account</h3>{inc_exp_html}<br><h3>Balance Sheet</h3><div style='width:100%;'><div class='bs-box'><h4>Liabilities</h4><p>Funds & Liab: {other_liab_val:,.2f}</p><p>Surplus: {surplus:,.2f}</p><hr><p><b>Total: {total_liabilities:,.2f}</b></p></div><div class='bs-box'><h4>Assets</h4>{assets_breakdown}<p>Bank/Cash: {sum(bank_balances.values()):,.2f}</p><hr><p><b>Total: {total_assets:,.2f}</b></p></div></div>"
+        full_html = f"<h3>Income & Expenditure Account</h3>{inc_exp_html}<br><h3>Balance Sheet</h3><div style='width:100%;'><div class='bs-box'><h4>Liabilities</h4><p>Manual Funds: {other_liab_val:,.2f}</p><p>Surplus: {surplus:,.2f}</p><p><b>Auto Corpus Fund: {auto_corpus:,.2f}</b></p><hr><p><b>Total: {total_liabilities:,.2f}</b></p></div><div class='bs-box'><h4>Assets</h4>{assets_breakdown}<p>Bank/Cash: {sum(bank_balances.values()):,.2f}</p><hr><p><b>Total: {total_assets:,.2f}</b></p></div></div>"
         fin_report = utils.generate_html_report("Financial Statements", full_html)
         with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
 
@@ -398,7 +401,7 @@ def show_page(is_admin):
                 st.dataframe(df_disp, hide_index=True, use_container_width=True)
                 total_exp = pd.to_numeric(df_disp['amount'], errors='coerce').sum()
                 st.markdown(f"**ਕੁੱਲ ਖਰਚਾ (Total Expense): ₹ {total_exp:,.2f}**")
-                utils.create_print_button(df_disp, f"Expense Statement", "🖨️ ਪ੍ਰਿੰਟ ਸਟੇਟਮੈਂਟ", landscape=True)
+                utils.create_print_button(df_disp, f"Expense Statement", "🖨️️ ਪ੍ਰਿੰਟ ਸਟੇਟਮੈਂਟ", landscape=True)
             else: st.info("ਕੋਈ ਖਰਚਾ ਨਹੀਂ ਮਿਲਿਆ।")
 
     elif st.session_state.acc_mode == "📊 ਮੁੱਖ ਖਰਚੇ ਵੇਰਵਾ (Major Heads)":
