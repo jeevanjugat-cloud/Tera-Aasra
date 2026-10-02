@@ -152,7 +152,7 @@ def show_page(is_admin):
     df_ledg = pd.DataFrame(ledg_data)
     df_cheques = pd.DataFrame(chq_data)
 
-if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
+    if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
@@ -323,11 +323,9 @@ if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
                 df['__dt'] = df[col].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
                 df.drop(df[df['__dt'] > as_of_date].index, inplace=True)
                 
-        # ਇੱਥੇ detailed=True ਕੀਤਾ ਗਿਆ ਹੈ ਤਾਂ ਜੋ 3 ਵੱਖਰੇ ਕਾਲਮ ਦਿਖਾਈ ਦੇਣ
         bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe, detailed=True)
         df_bals = pd.DataFrame(list(bank_balances.values()))
         
-        # ਟੇਬਲ ਦੀ ਫਾਰਮੈਟਿੰਗ
         st.dataframe(df_bals.style.format({
             'ਅਸਲ ਬੈਲੇਂਸ (Actual)': '{:,.2f}', 
             'ਕਲੀਅਰਿੰਗ (Pending Chq)': '{:,.2f}', 
