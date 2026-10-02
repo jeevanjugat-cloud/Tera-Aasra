@@ -177,11 +177,19 @@ def show_page(is_admin):
             df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
             df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
 
-        # ---------------- 1. INCOME & EXPENDITURE HEADS ----------------
+        # ---------------- 1. INCOME & EXPENDITURE HEADS (SUMMARIZED) ----------------
         expense_heads = {}
         if not df_exp_safe.empty:
-            df_exp_safe['category'] = df_exp_safe['category'].fillna('Other Expenses').replace('', 'Other Expenses')
-            exp_grouped = df_exp_safe.groupby('category')['amount'].sum().to_dict()
+            def map_major_head_pl(cat):
+                cat = str(cat).strip()
+                if cat in ["Kirtan Smagam Expenses", "ਲੰਗਰ (Langar)", "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)"]: 
+                    return "ਧਾਰਮਿਕ ਸਮਾਗਮ (Religious Programs)"
+                if cat in ["Other Asset Purchase", "Salary", "Miscleneous Expenses Tera Aasra", "Free Distribution Clothing", "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)"]: 
+                    return "ਤੇਰਾ ਆਸਰਾ (Tera Aasra / Welfare)"
+                return "ਹੋਰ ਖਰਚੇ (Others)"
+            
+            df_exp_safe['Major Head'] = df_exp_safe['category'].apply(map_major_head_pl)
+            exp_grouped = df_exp_safe.groupby('Major Head')['amount'].sum().to_dict()
             for k, v in exp_grouped.items():
                 if v > 0: expense_heads[k] = v
                 
@@ -192,12 +200,10 @@ def show_page(is_admin):
         
         income_heads = {}
         if not df_don_safe.empty:
-            monetary_don = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
+            monetary_don = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)']
             if not monetary_don.empty:
-                monetary_don['head'] = monetary_don['on_account_of'].fillna('General Donation / Other').replace('', 'General Donation / Other')
-                inc_grouped = monetary_don.groupby('head')['amount'].sum().to_dict()
-                for k, v in inc_grouped.items():
-                    if v > 0: income_heads[k] = v
+                total_monetary = monetary_don['amount'].sum()
+                if total_monetary > 0: income_heads['Donations & Receipts'] = total_monetary
                 
         ledger_credits = df_ledg_safe['credit'].sum() if not df_ledg_safe.empty and 'credit' in df_ledg_safe.columns else 0.0
         if ledger_credits > 0: income_heads['Bank Interest / Manual Credits'] = ledger_credits
