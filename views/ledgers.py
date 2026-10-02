@@ -442,8 +442,16 @@ def show_page(is_admin):
             
             def map_major_head(cat):
                 cat = str(cat).strip()
-                if cat in ["ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)", "ਲੰਗਰ (Langar)"]: return "ਕੀਰਤਨ ਸਮਾਗਮ (Samagams)"
-                if cat in ["ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)"]: return "ਤੇਰਾ ਆਸਰਾ (Tera Aasra / Welfare)"
+                
+                # 1. ਧਾਰਮਿਕ / ਕੀਰਤਨ ਸਮਾਗਮ (Religious Programs)
+                if cat in ["Kirtan Smagam Expenses", "ਲੰਗਰ (Langar)", "ਛਪਾਈ (Printing)", "ਮਾਰਕੀਟਿੰਗ (Marketing)", "ਸਾਊਂਡ ਸਿਸਟਮ (Sound)", "ਭੇਟਾ - ਕੀਰਤਨੀਏ (Bheta Kirtaniya)", "ਭੇਟਾ - ਕਥਾਵਾਚਕ (Bheta Katha Vachak)"]: 
+                    return "ਧਾਰਮਿਕ ਸਮਾਗਮ (Religious Programs)"
+                
+                # 2. ਤੇਰਾ ਆਸਰਾ / ਵੈਲਫੇਅਰ (Tera Aasra / Welfare)
+                if cat in ["Salary", "Miscleneous Expenses Tera Aasra", "Free Distribution Clothing", "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)"]: 
+                    return "ਤੇਰਾ ਆਸਰਾ (Tera Aasra / Welfare)"
+                
+                # 3. ਬਾਕੀ ਸਾਰੇ ਖਰਚੇ
                 return "ਹੋਰ ਖਰਚੇ (Others)"
                 
             if not df_e.empty:
