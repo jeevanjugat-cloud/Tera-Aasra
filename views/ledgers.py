@@ -151,18 +151,18 @@ def show_page(is_admin):
     df_ledg = pd.DataFrame(ledg_data)
     df_cheques = pd.DataFrame(chq_data)
 
-    if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
-        st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L")
+  if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
+        st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
-            as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦੀ ਬੈਲੇਂਸ ਸ਼ੀਟ ਦੇਖਣੀ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
+            as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦੀ ਰਿਪੋਰਟ ਦੇਖਣੀ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
             
         assets_data = utils.supabase.table("assets").select("*").limit(100000).execute().data or []
         liab_data = utils.supabase.table("liabilities").select("*").limit(100000).execute().data or []
         df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value', 'asset_type', 'date_added'])
         df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value', 'date_added'])
         
-        # ਡਾਟਾ ਨੂੰ ਚੁਣੀ ਹੋਈ ਤਾਰੀਖ ਤੱਕ ਫਿਲਟਰ ਕਰਨਾ (Filtering all data by Date)
+        # ਡਾਟਾ ਨੂੰ ਚੁਣੀ ਹੋਈ ਤਾਰੀਖ ਤੱਕ ਫਿਲਟਰ ਕਰਨਾ
         df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe = df_don.copy(), df_exp.copy(), df_ledg.copy(), df_cheques.copy()
         
         for df, col in [(df_don_safe, 'date'), (df_exp_safe, 'date'), (df_ledg_safe, 'txn_date'), (df_chq_safe, 'cheque_date'), (df_assets, 'date_added'), (df_liab, 'date_added')]:
@@ -170,14 +170,70 @@ def show_page(is_admin):
                 df['__dt'] = df[col].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
                 df.drop(df[df['__dt'] > as_of_date].index, inplace=True)
 
-        # ਕੈਲਕੁਲੇਸ਼ਨ (Calculation using filtered data)
-        total_income = pd.to_numeric(df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)']['amount'], errors='coerce').fillna(0).sum() if not df_don_safe.empty else 0.0
-        total_income += pd.to_numeric(df_ledg_safe['credit'], errors='coerce').fillna(0).sum() if not df_ledg_safe.empty and 'credit' in df_ledg_safe.columns else 0.0
+        df_don_safe['amount'] = pd.to_numeric(df_don_safe.get('amount', 0), errors='coerce').fillna(0)
+        df_exp_safe['amount'] = pd.to_numeric(df_exp_safe.get('amount', 0), errors='coerce').fillna(0)
+        if not df_ledg_safe.empty:
+            df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
+            df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
+
+        # ---------------- 1. INCOME & EXPENDITURE HEADS ----------------
+        expense_heads = {}
+        if not df_exp_safe.empty:
+            df_exp_safe['category'] = df_exp_safe['category'].fillna('Other Expenses').replace('', 'Other Expenses')
+            exp_grouped = df_exp_safe.groupby('category')['amount'].sum().to_dict()
+            for k, v in exp_grouped.items():
+                if v > 0: expense_heads[k] = v
+                
+        ledger_debits = df_ledg_safe['debit'].sum() if not df_ledg_safe.empty and 'debit' in df_ledg_safe.columns else 0.0
+        if ledger_debits > 0: expense_heads['Bank Charges / Manual Debits'] = ledger_debits
+            
+        total_expense = sum(expense_heads.values())
         
-        total_expense = pd.to_numeric(df_exp_safe['amount'], errors='coerce').fillna(0).sum() if not df_exp_safe.empty else 0.0
-        total_expense += pd.to_numeric(df_ledg_safe['debit'], errors='coerce').fillna(0).sum() if not df_ledg_safe.empty and 'debit' in df_ledg_safe.columns else 0.0
+        income_heads = {}
+        if not df_don_safe.empty:
+            monetary_don = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
+            if not monetary_don.empty:
+                monetary_don['head'] = monetary_don['on_account_of'].fillna('General Donation / Other').replace('', 'General Donation / Other')
+                inc_grouped = monetary_don.groupby('head')['amount'].sum().to_dict()
+                for k, v in inc_grouped.items():
+                    if v > 0: income_heads[k] = v
+                
+        ledger_credits = df_ledg_safe['credit'].sum() if not df_ledg_safe.empty and 'credit' in df_ledg_safe.columns else 0.0
+        if ledger_credits > 0: income_heads['Bank Interest / Manual Credits'] = ledger_credits
+            
+        total_income = sum(income_heads.values())
         surplus = total_income - total_expense
+
+        # P&L HTML Generation
+        import itertools
+        inc_items = sorted(list(income_heads.items()), key=lambda x: x[1], reverse=True)
+        exp_items = sorted(list(expense_heads.items()), key=lambda x: x[1], reverse=True)
         
+        inc_exp_rows = ""
+        for exp, inc in itertools.zip_longest(exp_items, inc_items, fillvalue=("", 0)):
+            exp_name, exp_val = exp
+            inc_name, inc_val = inc
+            
+            exp_val_str = f"₹ {exp_val:,.2f}" if exp_name != "" else ""
+            inc_val_str = f"₹ {inc_val:,.2f}" if inc_name != "" else ""
+            
+            inc_exp_rows += f"<tr><td style='text-align:left; border-right:none;'>{exp_name}</td><td style='text-align:right; border-left:none;'>{exp_val_str}</td><td style='text-align:left; border-right:none;'>{inc_name}</td><td style='text-align:right; border-left:none;'>{inc_val_str}</td></tr>"
+            
+        if surplus > 0:
+            inc_exp_rows += f"<tr style='color: #0F4C81; font-weight:bold;'><td style='text-align:left; border-right:none;'>To Surplus (Excess of Income over Exp.)</td><td style='text-align:right; border-left:none;'>₹ {surplus:,.2f}</td><td style='text-align:left; border-right:none;'></td><td style='text-align:right; border-left:none;'></td></tr>"
+        elif surplus < 0:
+            inc_exp_rows += f"<tr style='color: #D92B2B; font-weight:bold;'><td style='text-align:left; border-right:none;'></td><td style='text-align:right; border-left:none;'></td><td style='text-align:left; border-right:none;'>By Deficit (Excess of Exp. over Income)</td><td style='text-align:right; border-left:none;'>₹ {abs(surplus):,.2f}</td></tr>"
+
+        inc_exp_html = f'''<table class="report-table" style="width:100%; border: 1px solid #333; margin-bottom: 20px;">
+            <tr style="background-color: #F8F1D1;"><th style="text-align:left; width:35%;">Expenditure</th><th style="text-align:right; width:15%;">Amount</th><th style="text-align:left; width:35%;">Income</th><th style="text-align:right; width:15%;">Amount</th></tr>
+            {inc_exp_rows}
+            <tr style="background-color: #eee; font-weight:bold;"><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {max(total_income, total_expense):,.2f}</td><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {max(total_income, total_expense):,.2f}</td></tr>
+            </table>'''
+            
+        st.subheader(f"📊 Income & Expenditure Account (As of {utils.clean_date_to_display(as_of_date)})")
+        st.markdown(inc_exp_html, unsafe_allow_html=True)
+        
+        # ---------------- 2. BALANCE SHEET ----------------
         asset_totals, fixed_assets_val = {}, 0.0
         if not df_assets.empty:
             df_assets['value'] = pd.to_numeric(df_assets['value'], errors='coerce').fillna(0.0)
@@ -186,41 +242,48 @@ def show_page(is_admin):
             fixed_assets_val = df_assets['value'].sum()
             
         other_liab_val = pd.to_numeric(df_liab['value'], errors='coerce').fillna(0.0).sum() if not df_liab.empty else 0.0
-        
-        st.subheader(f"📊 Income & Expenditure Account (As of {utils.clean_date_to_display(as_of_date)})")
-        inc_exp_html = f"""<table class="report-table"><tr><th>Expenditure (ਖਰਚੇ)</th><th>Amount (₹)</th><th>Income (ਆਮਦਨ)</th><th>Amount (₹)</th></tr>
-            <tr><td>Total Expenses & Payments</td><td>{total_expense:,.2f}</td><td>Total Donations & Receipts</td><td>{total_income:,.2f}</td></tr>
-            <tr style="font-weight:bold; color: #D92B2B;"><td>Surplus (ਬੱਚਤ)</td><td>{surplus if surplus > 0 else 0:,.2f}</td><td>Deficit (ਘਾਟਾ)</td><td>{abs(surplus) if surplus < 0 else 0:,.2f}</td></tr>
-            <tr style="background-color: #F8F1D1; font-weight:bold;"><td>Total</td><td>{max(total_income, total_expense):,.2f}</td><td>Total</td><td>{max(total_income, total_expense):,.2f}</td></tr></table>"""
-        st.markdown(inc_exp_html, unsafe_allow_html=True)
-        
-        # ਬੈਲੇਂਸ ਸ਼ੀਟ ਲਈ ਸਿਰਫ਼ ਨੈੱਟ ਬੈਲੇਂਸ ਹੀ ਵਰਤਿਆ ਜਾਵੇਗਾ (detailed=False)
         bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe, detailed=False)
         total_assets = fixed_assets_val + sum(bank_balances.values())
         
-        # ਆਟੋਮੈਟਿਕ ਬੈਲੇਂਸਿੰਗ ਫਾਰਮੂਲਾ (Auto Corpus Fund Calculation)
         auto_corpus = total_assets - (other_liab_val + surplus)
         total_liabilities = other_liab_val + surplus + auto_corpus
         
+        liab_list = [
+            ("<b>Capital / Corpus Fund</b>", ""),
+            ("Opening Balance / Manual Funds", f"₹ {other_liab_val:,.2f}"),
+            ("Auto Corpus Fund (Balancing Fig.)", f"₹ {auto_corpus:,.2f}"),
+            (f"<b>{'Add: Surplus' if surplus >= 0 else 'Less: Deficit'} (During the Year)</b>", f"<b>₹ {abs(surplus):,.2f}</b>"),
+            ("<b>Current Liabilities</b>", ""),
+            ("Sundry Creditors / Pending Dues", "₹ 0.00")
+        ]
+        
+        asset_list = [("<b>Fixed Assets</b>", "")]
+        for k, v in asset_totals.items():
+            if v > 0: asset_list.append((f" - {k}", f"₹ {v:,.2f}"))
+            
+        asset_list.append(("<b>Current Assets</b>", ""))
+        for k, v in bank_balances.items():
+            if v != 0: asset_list.append((f"Bank / Cash: {k}", f"₹ {v:,.2f}"))
+            
+        bs_rows = ""
+        for liab, asset in itertools.zip_longest(liab_list, asset_list, fillvalue=("", "")):
+            l_name, l_val = liab
+            a_name, a_val = asset
+            bs_rows += f"<tr><td style='text-align:left; border-right:none;'>{l_name}</td><td style='text-align:right; border-left:none;'>{l_val}</td><td style='text-align:left; border-right:none;'>{a_name}</td><td style='text-align:right; border-left:none;'>{a_val}</td></tr>"
+
+        bs_html = f'''<table class="report-table" style="width:100%; border: 1px solid #333;">
+            <tr style="background-color: #F8F1D1;"><th style="text-align:left; width:35%;">Liabilities & Funds</th><th style="text-align:right; width:15%;">Amount</th><th style="text-align:left; width:35%;">Assets & Properties</th><th style="text-align:right; width:15%;">Amount</th></tr>
+            {bs_rows}
+            <tr style="background-color: #eee; font-weight:bold;"><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {total_liabilities:,.2f}</td><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {total_assets:,.2f}</td></tr>
+            </table>'''
+            
         st.markdown("---")
         st.subheader(f"⚖️ Balance Sheet (As of {utils.clean_date_to_display(as_of_date)})")
-        col_liab, col_assets = st.columns(2)
-        with col_liab:
-            st.markdown('<div class="bs-box"><div class="bs-header">Liabilities & Funds</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-row"><span>Manual Funds (ਹੋਰ ਫੰਡ):</span><span>₹ {other_liab_val:,.2f}</span></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-row"><span>Add: Surplus (ਬੱਚਤ):</span><span>₹ {surplus:,.2f}</span></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-row" style="color:#007BFF; font-weight:bold;"><span>Auto Corpus Fund (ਆਟੋਮੈਟਿਕ):</span><span>₹ {auto_corpus:,.2f}</span></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-total"><span>Total Liabilities:</span><span>₹ {total_liabilities:,.2f}</span></div></div>', unsafe_allow_html=True)
-        with col_assets:
-            st.markdown('<div class="bs-box"><div class="bs-header">Assets (ਸੰਪਤੀ)</div>', unsafe_allow_html=True)
-            for atype, aval in asset_totals.items(): st.markdown(f'<div class="bs-row"><span>{atype}:</span><span>₹ {aval:,.2f}</span></div>', unsafe_allow_html=True)
-            for b, val in bank_balances.items(): st.markdown(f'<div class="bs-row"><span>{b}:</span><span>₹ {val:,.2f}</span></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="bs-total"><span>Total Assets:</span><span>₹ {total_assets:,.2f}</span></div></div>', unsafe_allow_html=True)
+        st.markdown(bs_html, unsafe_allow_html=True)
             
-        assets_breakdown = "".join([f"<p>{k}: {v:,.2f}</p>" for k, v in asset_totals.items()])
-        full_html = f"<h3>Income & Expenditure Account (As of {utils.clean_date_to_display(as_of_date)})</h3>{inc_exp_html}<br><h3>Balance Sheet</h3><div style='width:100%;'><div class='bs-box'><h4>Liabilities</h4><p>Manual Funds: {other_liab_val:,.2f}</p><p>Surplus: {surplus:,.2f}</p><p><b>Auto Corpus Fund: {auto_corpus:,.2f}</b></p><hr><p><b>Total: {total_liabilities:,.2f}</b></p></div><div class='bs-box'><h4>Assets</h4>{assets_breakdown}<p>Bank/Cash: {sum(bank_balances.values()):,.2f}</p><hr><p><b>Total: {total_assets:,.2f}</b></p></div></div>"
+        full_html = f"<h2 style='text-align:center; color:#0F4C81;'>Income & Expenditure Account</h2><p style='text-align:center;'>As of {utils.clean_date_to_display(as_of_date)}</p>{inc_exp_html}<br><hr><br><h2 style='text-align:center; color:#0F4C81;'>Balance Sheet</h2><p style='text-align:center;'>As of {utils.clean_date_to_display(as_of_date)}</p>{bs_html}"
         fin_report = utils.generate_html_report(f"Financial Statements as of {utils.clean_date_to_display(as_of_date)}", full_html)
-        with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
+        with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Final Statements)", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
 
         if is_admin:
             st.markdown("---")
@@ -243,7 +306,7 @@ def show_page(is_admin):
                     if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                         utils.supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
-
+                        
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ":
         st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Detailed View)")
         col_d1, _ = st.columns([1, 2])
