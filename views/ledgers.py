@@ -28,33 +28,29 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe=No
     for bank in valid_banks:
         is_cash = "ਨਕਦ" in bank or "cash" in bank.lower()
 
-        # ---------------------------------------------
-        # 1. CASH ACCOUNT (Calculated: In - Out)
-        # ---------------------------------------------
+        # 1. CASH ACCOUNT (Calculated from In - Out)
         if is_cash:
             c_in = 0.0
             c_out = 0.0
             if not df_don_safe.empty:
-                mask_don = df_don_safe['bank_account'].apply(lambda x: exact_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
+                mask_don = df_don_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank)) & (df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)')
                 c_in += pd.to_numeric(df_don_safe[mask_don]['amount'], errors='coerce').fillna(0.0).sum()
             if not df_exp_safe.empty:
-                mask_exp = df_exp_safe['bank_account'].apply(lambda x: exact_bank_match(x, bank))
+                mask_exp = df_exp_safe['bank_account'].apply(lambda x: utils.is_bank_match(x, bank))
                 c_out += pd.to_numeric(df_exp_safe[mask_exp]['amount'], errors='coerce').fillna(0.0).sum()
             if not df_ledg_safe.empty:
-                mask_ledg = df_ledg_safe['bank_name'].apply(lambda x: exact_bank_match(x, bank))
+                mask_ledg = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))
                 c_in += pd.to_numeric(df_ledg_safe[mask_ledg]['credit'], errors='coerce').fillna(0.0).sum()
                 c_out += pd.to_numeric(df_ledg_safe[mask_ledg]['debit'], errors='coerce').fillna(0.0).sum()
             bank_balances[bank] = c_in - c_out
             continue
 
-        # ---------------------------------------------
-        # 2. BANK ACCOUNTS: DIRECT LATEST UPLOADED BALANCE
-        # ---------------------------------------------
+        # 2. BANK ACCOUNTS (Pick Latest Statement Balance)
         direct_bal = 0.0
         found_uploaded = False
 
         if not df_ledg_safe.empty and 'bank_name' in df_ledg_safe.columns:
-            mask_b = df_ledg_safe['bank_name'].apply(lambda x: exact_bank_match(x, bank))
+            mask_b = df_ledg_safe['bank_name'].apply(lambda x: utils.is_bank_match(x, bank))
             df_b = df_ledg_safe[mask_b].copy()
 
             if not df_b.empty and 'balance' in df_b.columns:
@@ -65,7 +61,7 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe=No
                     if '__dt' not in valid_rows.columns:
                         valid_rows['__dt'] = valid_rows['txn_date'].apply(utils.parse_date_to_obj).fillna(date(1900, 1, 1))
                     
-                    # Sort to get the latest statement entry
+                    # Sort ascending so the very last row represents the latest entry
                     sort_cols = ['__dt']
                     if 'id' in valid_rows.columns:
                         sort_cols.append('id')
@@ -74,17 +70,15 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe=No
                     direct_bal = float(valid_rows.iloc[-1]['bal_num'])
                     found_uploaded = True
 
-        # Fallback if no uploaded statement balance exists
+        # Fallback if no statement 'balance' column exists
         if not found_uploaded:
             b_in = pd.to_numeric(df_ledg_safe[mask_b]['credit'], errors='coerce').fillna(0.0).sum() if not df_ledg_safe.empty else 0.0
             b_out = pd.to_numeric(df_ledg_safe[mask_b]['debit'], errors='coerce').fillna(0.0).sum() if not df_ledg_safe.empty else 0.0
             direct_bal = b_in - b_out
 
-        # Direct balance displayed without clearing deductions
         bank_balances[bank] = direct_bal
 
     return bank_balances
-
 def get_ledger_data(df_don, df_exp, df_ledg, target_bank=None, view_mode="Mirror"):
     entries = []
     is_mirror = "Mirror" in view_mode or "ਸੰਸਥਾ" in view_mode
