@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import date
 import io
 import time
+import itertools
 import config
 import utils
 
@@ -151,7 +152,7 @@ def show_page(is_admin):
     df_ledg = pd.DataFrame(ledg_data)
     df_cheques = pd.DataFrame(chq_data)
 
-  if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
+    if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
@@ -205,7 +206,6 @@ def show_page(is_admin):
         surplus = total_income - total_expense
 
         # P&L HTML Generation
-        import itertools
         inc_items = sorted(list(income_heads.items()), key=lambda x: x[1], reverse=True)
         exp_items = sorted(list(expense_heads.items()), key=lambda x: x[1], reverse=True)
         
@@ -306,7 +306,7 @@ def show_page(is_admin):
                     if st.form_submit_button("ਫੰਡ ਸੇਵ ਕਰੋ", type="primary"):
                         utils.supabase.table("liabilities").insert({"name": l_name, "value": l_val, "date_added": str(date.today())}).execute()
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
-                        
+
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ":
         st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Detailed View)")
         col_d1, _ = st.columns([1, 2])
