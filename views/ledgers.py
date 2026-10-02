@@ -13,7 +13,7 @@ def exact_bank_match(db_bank, target_bank):
         return "cash" in db_b or "ਨਕਦ" in db_b
     return db_b == tgt_b
 
-def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
+def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe, detailed=False):
     all_banks_dynamic = set(config.BANK_ACCOUNTS)
     if not df_don_safe.empty and 'bank_account' in df_don_safe.columns:
         all_banks_dynamic.update(df_don_safe['bank_account'].dropna().unique())
@@ -23,7 +23,8 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
         all_banks_dynamic.update(df_ledg_safe['bank_name'].dropna().unique())
         
     valid_banks = sorted(list({str(b).strip() for b in all_banks_dynamic if str(b).strip() not in ["", "None", "nan", "N/A"]}))
-    bank_balances = {bank: 0.0 for bank in valid_banks}
+    
+    bank_balances = {} if detailed else {bank: 0.0 for bank in valid_banks}
     
     if not df_don_safe.empty: df_don_safe['add_to_mirror'] = df_don_safe.get('add_to_mirror', True).fillna(True).astype(bool)
     if not df_exp_safe.empty: df_exp_safe['add_to_mirror'] = df_exp_safe.get('add_to_mirror', True).fillna(True).astype(bool)
@@ -56,7 +57,15 @@ def get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_cheques_safe):
             mask_chq = df_cheques_safe['bank_name'].apply(lambda x: exact_bank_match(x, bank)) & df_cheques_safe['status'].astype(str).str.contains('Pending', case=False, na=False)
             pending_chq = pd.to_numeric(df_cheques_safe[mask_chq]['amount'], errors='coerce').fillna(0.0).sum()
             
-        bank_balances[bank] = current_bal - pending_chq
+        if detailed:
+            bank_balances[bank] = {
+                "ਖਾਤਾ (Bank/Cash)": bank,
+                "ਅਸਲ ਬੈਲੇਂਸ (Actual)": current_bal,
+                "ਕਲੀਅਰਿੰਗ (Pending Chq)": pending_chq,
+                "ਨੈੱਟ ਬੈਲੇਂਸ (Net)": current_bal - pending_chq
+            }
+        else:
+            bank_balances[bank] = current_bal - pending_chq
         
     return bank_balances
 
@@ -185,7 +194,8 @@ def show_page(is_admin):
             <tr style="background-color: #F8F1D1; font-weight:bold;"><td>Total</td><td>{max(total_income, total_expense):,.2f}</td><td>Total</td><td>{max(total_income, total_expense):,.2f}</td></tr></table>"""
         st.markdown(inc_exp_html, unsafe_allow_html=True)
         
-        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe)
+        # ਬੈਲੇਂਸ ਸ਼ੀਟ ਲਈ ਸਿਰਫ਼ ਨੈੱਟ ਬੈਲੇਂਸ ਹੀ ਵਰਤਿਆ ਜਾਵੇਗਾ (detailed=False)
+        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe, detailed=False)
         total_assets = fixed_assets_val + sum(bank_balances.values())
         
         # ਆਟੋਮੈਟਿਕ ਬੈਲੇਂਸਿੰਗ ਫਾਰਮੂਲਾ (Auto Corpus Fund Calculation)
@@ -235,7 +245,7 @@ def show_page(is_admin):
                         st.success("ਸੇਵ ਹੋ ਗਿਆ!"); time.sleep(1); st.rerun()
 
     elif st.session_state.acc_mode == "💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ":
-        st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ")
+        st.write("### 💰 ਕੈਸ਼ ਅਤੇ ਬੈਂਕ ਬੈਲੇਂਸ (Detailed View)")
         col_d1, _ = st.columns([1, 2])
         with col_d1: as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦਾ ਬੈਲੇਂਸ ਦੇਖਣਾ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
         
@@ -245,12 +255,20 @@ def show_page(is_admin):
                 df['__dt'] = df[col].apply(utils.parse_date_to_obj).fillna(date(1900,1,1))
                 df.drop(df[df['__dt'] > as_of_date].index, inplace=True)
                 
-        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe)
-        df_bals = pd.DataFrame(list(bank_balances.items()), columns=["ਖਾਤਾ", "ਬੈਲੇਂਸ ₹"])
-        st.dataframe(df_bals.style.format({'ਬੈਲੇਂਸ ₹': '{:,.2f}'}), hide_index=True, use_container_width=True)
-        total_bal = df_bals["ਬੈਲੇਂਸ ₹"].sum()
-        st.markdown(f"**ਕੁੱਲ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
-        utils.create_print_button(df_bals, f"Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
+        # ਇੱਥੇ detailed=True ਕੀਤਾ ਗਿਆ ਹੈ ਤਾਂ ਜੋ 3 ਵੱਖਰੇ ਕਾਲਮ ਦਿਖਾਈ ਦੇਣ
+        bank_balances = get_bank_balances(df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe, detailed=True)
+        df_bals = pd.DataFrame(list(bank_balances.values()))
+        
+        # ਟੇਬਲ ਦੀ ਫਾਰਮੈਟਿੰਗ
+        st.dataframe(df_bals.style.format({
+            'ਅਸਲ ਬੈਲੇਂਸ (Actual)': '{:,.2f}', 
+            'ਕਲੀਅਰਿੰਗ (Pending Chq)': '{:,.2f}', 
+            'ਨੈੱਟ ਬੈਲੇਂਸ (Net)': '{:,.2f}'
+        }), hide_index=True, use_container_width=True)
+        
+        total_bal = df_bals["ਨੈੱਟ ਬੈਲੇਂਸ (Net)"].sum()
+        st.markdown(f"**ਕੁੱਲ ਨੈੱਟ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
+        utils.create_print_button(df_bals, f"Detailed Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
 
     elif st.session_state.acc_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ")
