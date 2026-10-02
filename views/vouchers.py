@@ -217,7 +217,6 @@ def show_page(is_mgmt):
             
             unique_payees = sorted(list({e.get('payee_name') for e in exp_data_list if e.get('payee_name') and str(e.get('payee_name')).strip() != ""}))
             
-            # --- SMART REACTIVE LOGIC START (EXPENSE) ---
             c_exp_1, c_exp_2 = st.columns(2)
             with c_exp_1:
                 sel_payee = st.selectbox("ਪੁਰਾਣਾ ਪ੍ਰਾਪਤ ਕਰਤਾ ਲੱਭੋ (Select Payee)", ["➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)"] + unique_payees)
@@ -232,7 +231,6 @@ def show_page(is_mgmt):
                 
             try: b_idx_exp = config.BANK_ACCOUNTS.index(default_bank_exp)
             except ValueError: b_idx_exp = 0
-            # --- SMART REACTIVE LOGIC END (EXPENSE) ---
             
             with st.form("expense_form", clear_on_submit=True):
                 payee_name = st.text_input("ਭੁਗਤਾਨ ਕਿਸ ਨੂੰ ਕੀਤਾ / ਪ੍ਰਾਪਤ ਕਰਤਾ (Payee Name)", value=sel_payee if sel_payee != "➕ ਨਵਾਂ ਪ੍ਰਾਪਤ ਕਰਤਾ (New Payee)" else "")
@@ -248,7 +246,6 @@ def show_page(is_mgmt):
                 
                 exp_date = st.date_input("ਖਰਚੇ ਦੀ ਮਿਤੀ", value=date.today(), format="DD/MM/YYYY")
                 
-                # ਚੈੱਕ ਕਾਲਮ (ਸਿਰਫ਼ ਉਦੋਂ ਆਉਣਗੇ ਜਦੋਂ ਬਾਹਰੋਂ Cheque ਚੁਣਿਆ ਹੋਵੇਗਾ)
                 cq_no_exp, cq_bank_exp = "", ""
                 if pay_mode_exp == "ਚੈੱਕ (Cheque)":
                     st.info("🏦 ਚੈੱਕ ਦਾ ਵੇਰਵਾ ਭਰੋ:")
@@ -275,7 +272,6 @@ def show_page(is_mgmt):
                     final_cat = new_cat.strip() if new_cat else cat
                     f_dt = exp_date.strftime("%Y-%m-%d")
                     
-                    # ਖਰਚੇ ਦੇ ਵੇਰਵੇ ਵਿੱਚ ਚੈੱਕ ਨੰਬਰ ਸ਼ਾਮਲ ਕਰੋ
                     final_desc = desc
                     if pay_mode_exp == "ਚੈੱਕ (Cheque)":
                         final_desc += f" (Chq No: {cq_no_exp})"
@@ -283,7 +279,6 @@ def show_page(is_mgmt):
                     res_ins = utils.supabase.table("expenses").insert({"description": final_desc, "amount": exp_amount, "date": f_dt, "category": final_cat, "bank_account": bank_acc_exp, "add_to_mirror": add_to_mirror_exp, "payee_name": payee_name}).execute()
                     inserted_id = res_ins.data[0]['id'] if res_ins.data else "N/A"
                     
-                    # ਜੇਕਰ ਚੈੱਕ ਦਿੱਤਾ ਹੈ, ਤਾਂ 'Pending' ਸਟੇਟਸ ਨਾਲ Cheques ਟੇਬਲ ਵਿੱਚ ਸੇਵ ਕਰੋ
                     if pay_mode_exp == "ਚੈੱਕ (Cheque)":
                         utils.supabase.table("cheques").insert({
                             "cheque_date": f_dt,
@@ -357,13 +352,52 @@ def show_page(is_mgmt):
                 if st.form_submit_button("ਸੇਵ ਕਰੋ", type="primary") and cq:
                     utils.supabase.table("cheques").insert({"cheque_no": cq, "bank_name": cb, "party_name": cp, "amount": ca, "cheque_date": str(cd), "status": cs}).execute()
                     st.success("✅ ਸੇਵ ਹੋ ਗਿਆ!")
-        try:
-                r = utils.supabase.table("cheques").select("*").order("id", desc=True).limit(50).execute().data
+            
+            st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੇ ਚੈੱਕ (ਸਟੇਟਸ ਬਦਲਣ ਲਈ ਹੇਠਾਂ ਟੇਬਲ ਵਿੱਚ ਬਦਲਾਅ ਕਰੋ)")
+            try:
+                r = utils.supabase.table("cheques").select("*").order("id", desc=True).limit(100).execute().data
                 if r:
-                    df = utils.format_dates_in_df(pd.DataFrame(r)[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount', 'status']], ascending=False)
-                    st.dataframe(df, hide_index=True, use_container_width=True)
+                    df = pd.DataFrame(r)[['id', 'cheque_date', 'cheque_no', 'party_name', 'bank_name', 'amount', 'status']]
+                    df = utils.format_dates_in_df(df, ascending=False)
+                    
+                    # ਆਟੋਮੈਟਿਕ ਐਡਿਟ ਟੇਬਲ (Editable Table for Status)
+                    edited_chq = st.data_editor(
+                        df, 
+                        column_config={
+                            "status": st.column_config.SelectboxColumn("ਸਟੇਟਸ (Status)", options=["Pending", "Cleared", "Cancelled"], required=True),
+                            "id": st.column_config.Column("ID", disabled=True),
+                            "cheque_date": st.column_config.Column("ਮਿਤੀ", disabled=True),
+                            "cheque_no": st.column_config.Column("ਚੈੱਕ ਨੰਬਰ", disabled=True),
+                            "party_name": st.column_config.Column("ਪਾਰਟੀ", disabled=True),
+                            "bank_name": st.column_config.Column("ਬੈਂਕ", disabled=True),
+                            "amount": st.column_config.Column("ਰਕਮ (₹)", disabled=True)
+                        },
+                        hide_index=True, 
+                        use_container_width=True, 
+                        key="editor_cheques"
+                    )
+                    
+                    if st.button("💾 ਨਵਾਂ ਸਟੇਟਸ ਸੇਵ ਕਰੋ (Update Status)", type="primary"):
+                        updates = 0
+                        for i in range(len(df)):
+                            old_val = df.iloc[i]['status']
+                            new_val = edited_chq.iloc[i]['status']
+                            c_id = int(edited_chq.iloc[i]['id'])
+                            if old_val != new_val:
+                                utils.supabase.table("cheques").update({"status": new_val}).eq("id", c_id).execute()
+                                updates += 1
+                        
+                        if updates > 0:
+                            st.success(f"✅ {updates} ਚੈੱਕਾਂ ਦਾ ਸਟੇਟਸ ਸਫਲਤਾਪੂਰਵਕ ਬਦਲ ਗਿਆ ਹੈ!")
+                            time.sleep(1.5)
+                            st.rerun()
+                        else:
+                            st.info("ਸਟੇਟਸ ਵਿੱਚ ਕੋਈ ਬਦਲਾਅ ਨਹੀਂ ਕੀਤਾ ਗਿਆ।")
+                            
                     utils.create_print_button(df, "Cheque Register", "🖨️ ਚੈੱਕ ਰਜਿਸਟਰ ਪ੍ਰਿੰਟ ਕਰੋ")
             except: pass
+
     elif st.session_state.entry_mode == "🖨️ ਪੁਰਾਣੀ ਰਸੀਦ / ਵਾਊਚਰ (Reprint)":
         rt = st.radio("ਪ੍ਰਿੰਟ ਕਰੋ:", ["ਦਾਨ ਰਸੀਦ", "ਖਰਚਾ ਵਾਊਚਰ"], horizontal=True)
         c1, c2 = st.columns(2)
