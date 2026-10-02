@@ -357,11 +357,48 @@ def show_page(is_mgmt):
                 if st.form_submit_button("ਸੇਵ ਕਰੋ", type="primary") and cq:
                     utils.supabase.table("cheques").insert({"cheque_no": cq, "bank_name": cb, "party_name": cp, "amount": ca, "cheque_date": str(cd), "status": cs}).execute()
                     st.success("✅ ਸੇਵ ਹੋ ਗਿਆ!")
+           st.markdown("---")
+            st.write("#### 🕒 ਪਿਛਲੇ ਚੈੱਕ (ਸਟੇਟਸ ਬਦਲਣ ਲਈ ਹੇਠਾਂ ਟੇਬਲ ਵਿੱਚ ਬਦਲਾਅ ਕਰੋ)")
             try:
-                r = utils.supabase.table("cheques").select("*").order("id", desc=True).limit(50).execute().data
+                r = utils.supabase.table("cheques").select("*").order("id", desc=True).limit(100).execute().data
                 if r:
-                    df = utils.format_dates_in_df(pd.DataFrame(r)[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount', 'status']], ascending=False)
-                    st.dataframe(df, hide_index=True, use_container_width=True)
+                    df = pd.DataFrame(r)[['id', 'cheque_date', 'cheque_no', 'party_name', 'bank_name', 'amount', 'status']]
+                    df = utils.format_dates_in_df(df, ascending=False)
+                    
+                    # ਆਟੋਮੈਟਿਕ ਐਡਿਟ ਟੇਬਲ (Editable Table for Status)
+                    edited_chq = st.data_editor(
+                        df, 
+                        column_config={
+                            "status": st.column_config.SelectboxColumn("ਸਟੇਟਸ (Status)", options=["Pending", "Cleared", "Cancelled"], required=True),
+                            "id": st.column_config.Column("ID", disabled=True),
+                            "cheque_date": st.column_config.Column("ਮਿਤੀ", disabled=True),
+                            "cheque_no": st.column_config.Column("ਚੈੱਕ ਨੰਬਰ", disabled=True),
+                            "party_name": st.column_config.Column("ਪਾਰਟੀ", disabled=True),
+                            "bank_name": st.column_config.Column("ਬੈਂਕ", disabled=True),
+                            "amount": st.column_config.Column("ਰਕਮ (₹)", disabled=True)
+                        },
+                        hide_index=True, 
+                        use_container_width=True, 
+                        key="editor_cheques"
+                    )
+                    
+                    if st.button("💾 ਨਵਾਂ ਸਟੇਟਸ ਸੇਵ ਕਰੋ (Update Status)", type="primary"):
+                        updates = 0
+                        for i in range(len(df)):
+                            old_val = df.iloc[i]['status']
+                            new_val = edited_chq.iloc[i]['status']
+                            c_id = int(edited_chq.iloc[i]['id'])
+                            if old_val != new_val:
+                                utils.supabase.table("cheques").update({"status": new_val}).eq("id", c_id).execute()
+                                updates += 1
+                        
+                        if updates > 0:
+                            st.success(f"✅ {updates} ਚੈੱਕਾਂ ਦਾ ਸਟੇਟਸ ਸਫਲਤਾਪੂਰਵਕ ਬਦਲ ਗਿਆ ਹੈ!")
+                            time.sleep(1.5)
+                            st.rerun()
+                        else:
+                            st.info("ਸਟੇਟਸ ਵਿੱਚ ਕੋਈ ਬਦਲਾਅ ਨਹੀਂ ਕੀਤਾ ਗਿਆ।")
+                            
                     utils.create_print_button(df, "Cheque Register", "🖨️ ਚੈੱਕ ਰਜਿਸਟਰ ਪ੍ਰਿੰਟ ਕਰੋ")
             except: pass
 
