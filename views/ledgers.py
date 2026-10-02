@@ -152,7 +152,7 @@ def show_page(is_admin):
     df_ledg = pd.DataFrame(ledg_data)
     df_cheques = pd.DataFrame(chq_data)
 
-    if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
+if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
@@ -163,7 +163,7 @@ def show_page(is_admin):
         df_assets = pd.DataFrame(assets_data) if assets_data else pd.DataFrame(columns=['name', 'value', 'asset_type', 'date_added'])
         df_liab = pd.DataFrame(liab_data) if liab_data else pd.DataFrame(columns=['name', 'value', 'date_added'])
         
-        # ਡਾਟਾ ਨੂੰ ਚੁਣੀ ਹੋਈ ਤਾਰੀਖ ਤੱਕ ਫਿਲਟਰ ਕਰਨਾ
+        # Data filtering
         df_don_safe, df_exp_safe, df_ledg_safe, df_chq_safe = df_don.copy(), df_exp.copy(), df_ledg.copy(), df_cheques.copy()
         
         for df, col in [(df_don_safe, 'date'), (df_exp_safe, 'date'), (df_ledg_safe, 'txn_date'), (df_chq_safe, 'cheque_date'), (df_assets, 'date_added'), (df_liab, 'date_added')]:
@@ -199,16 +199,15 @@ def show_page(is_admin):
         total_expense = sum(expense_heads.values())
         
         income_heads = {}
+        total_income = 0.0
         if not df_don_safe.empty:
-            monetary_don = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)']
-            if not monetary_don.empty:
-                total_monetary = monetary_don['amount'].sum()
-                if total_monetary > 0: income_heads['Donations & Receipts'] = total_monetary
-                
-        ledger_credits = df_ledg_safe['credit'].sum() if not df_ledg_safe.empty and 'credit' in df_ledg_safe.columns else 0.0
-        if ledger_credits > 0: income_heads['Bank Interest / Manual Credits'] = ledger_credits
+            total_income += df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)']['amount'].sum()
+        if not df_ledg_safe.empty and 'credit' in df_ledg_safe.columns:
+            total_income += df_ledg_safe['credit'].sum()
             
-        total_income = sum(income_heads.values())
+        if total_income > 0:
+            income_heads['Donations (ਕੁੱਲ ਦਾਨ)'] = total_income
+            
         surplus = total_income - total_expense
 
         # P&L HTML Generation
@@ -231,7 +230,7 @@ def show_page(is_admin):
             inc_exp_rows += f"<tr style='color: #D92B2B; font-weight:bold;'><td style='text-align:left; border-right:none;'></td><td style='text-align:right; border-left:none;'></td><td style='text-align:left; border-right:none;'>By Deficit (Excess of Exp. over Income)</td><td style='text-align:right; border-left:none;'>₹ {abs(surplus):,.2f}</td></tr>"
 
         inc_exp_html = f'''<table class="report-table" style="width:100%; border: 1px solid #333; margin-bottom: 20px;">
-            <tr style="background-color: #F8F1D1;"><th style="text-align:left; width:35%;">Expenditure</th><th style="text-align:right; width:15%;">Amount</th><th style="text-align:left; width:35%;">Income</th><th style="text-align:right; width:15%;">Amount</th></tr>
+            <tr style="background-color: #F8F1D1;"><th style="text-align:left; width:35%;">Expenditure (ਖਰਚੇ)</th><th style="text-align:right; width:15%;">Amount</th><th style="text-align:left; width:35%;">Donations (ਦਾਨ)</th><th style="text-align:right; width:15%;">Amount</th></tr>
             {inc_exp_rows}
             <tr style="background-color: #eee; font-weight:bold;"><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {max(total_income, total_expense):,.2f}</td><td style="text-align:left; border-right:none;">Total</td><td style="text-align:right; border-left:none;">₹ {max(total_income, total_expense):,.2f}</td></tr>
             </table>'''
