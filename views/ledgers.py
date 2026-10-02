@@ -448,7 +448,7 @@ def show_page(is_admin):
                     return "ਧਾਰਮਿਕ ਸਮਾਗਮ (Religious Programs)"
                 
                 # 2. ਤੇਰਾ ਆਸਰਾ / ਵੈਲਫੇਅਰ (Tera Aasra / Welfare)
-                if cat in ["Salary", "Miscleneous Expenses Tera Aasra", "Free Distribution Clothing", "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)"]: 
+                if cat in ["Other Asset Purchase", "Salary", "Miscleneous Expenses Tera Aasra", "Free Distribution Clothing", "ਰਾਸ਼ਨ ਖਰੀਦ (Purchase of Ration)", "ਅਧਿਆਪਕਾਂ ਦੀ ਤਨਖਾਹ (Payment to Teachers)", "ਅਕਾਊਂਟੈਂਟ ਦੀ ਫੀਸ (Accountant Fee)", "ਫਰਨੀਚਰ (Furniture)", "ਬਿਲਡਿੰਗ (Building)", "ਛਪਾਈ ਅਤੇ ਇਸ਼ਤਿਹਾਰ (Printing & Advt)"]: 
                     return "ਤੇਰਾ ਆਸਰਾ (Tera Aasra / Welfare)"
                 
                 # 3. ਬਾਕੀ ਸਾਰੇ ਖਰਚੇ
