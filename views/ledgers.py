@@ -4,6 +4,7 @@ from datetime import date
 import io
 import time
 import itertools
+import urllib.parse
 import config
 import utils
 
@@ -151,9 +152,22 @@ def show_page(is_admin):
     df_exp = pd.DataFrame(exp_data)
     df_ledg = pd.DataFrame(ledg_data)
     df_cheques = pd.DataFrame(chq_data)
+    
+    # Safe Query Params fetcher
+    def get_query_param(key):
+        if hasattr(st, "query_params"): return st.query_params.get(key, None)
+        else:
+            p = st.experimental_get_query_params()
+            return p.get(key, [None])[0]
+            
+    def clear_query_params():
+        if hasattr(st, "query_params"): st.query_params.clear()
+        else: st.experimental_set_query_params()
 
     if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
+        st.info("💡 **ਨੋਟ:** ਕਿਸੇ ਵੀ ਹੈੱਡ ਜਾਂ ਬੈਂਕ ਦਾ ਪੂਰਾ ਵੇਰਵਾ ਦੇਖਣ ਲਈ ਉਸਦੇ ਨੀਲੇ ਰੰਗ ਦੇ ਨਾਮ (Hyperlink) ਉੱਤੇ ਕਲਿੱਕ ਕਰੋ।")
+        
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
             as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦੀ ਰਿਪੋਰਟ ਦੇਖਣੀ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
@@ -177,7 +191,7 @@ def show_page(is_admin):
             df_ledg_safe['credit'] = pd.to_numeric(df_ledg_safe.get('credit', 0), errors='coerce').fillna(0)
             df_ledg_safe['debit'] = pd.to_numeric(df_ledg_safe.get('debit', 0), errors='coerce').fillna(0)
 
-        # ---------------- 1. INCOME & EXPENDITURE HEADS (SUMMARIZED) ----------------
+        # ---------------- 1. INCOME & EXPENDITURE HEADS ----------------
         expense_heads = {}
         if not df_exp_safe.empty:
             def map_major_head_pl(cat):
@@ -210,7 +224,7 @@ def show_page(is_admin):
             
         surplus = total_income - total_expense
 
-        # P&L HTML Generation
+        # P&L HTML Generation with Hyperlinks
         inc_items = sorted(list(income_heads.items()), key=lambda x: x[1], reverse=True)
         exp_items = sorted(list(expense_heads.items()), key=lambda x: x[1], reverse=True)
         
@@ -219,10 +233,13 @@ def show_page(is_admin):
             exp_name, exp_val = exp
             inc_name, inc_val = inc
             
+            exp_name_html = f"<a href='?detail={urllib.parse.quote(exp_name)}' target='_self' style='text-decoration:none; color:#007BFF; font-weight:bold;'>{exp_name}</a>" if exp_name else ""
+            inc_name_html = f"<a href='?detail={urllib.parse.quote(inc_name)}' target='_self' style='text-decoration:none; color:#007BFF; font-weight:bold;'>{inc_name}</a>" if inc_name else ""
+            
             exp_val_str = f"₹ {exp_val:,.2f}" if exp_name != "" else ""
             inc_val_str = f"₹ {inc_val:,.2f}" if inc_name != "" else ""
             
-            inc_exp_rows += f"<tr><td style='text-align:left; border-right:none;'>{exp_name}</td><td style='text-align:right; border-left:none;'>{exp_val_str}</td><td style='text-align:left; border-right:none;'>{inc_name}</td><td style='text-align:right; border-left:none;'>{inc_val_str}</td></tr>"
+            inc_exp_rows += f"<tr><td style='text-align:left; border-right:none;'>{exp_name_html}</td><td style='text-align:right; border-left:none;'>{exp_val_str}</td><td style='text-align:left; border-right:none;'>{inc_name_html}</td><td style='text-align:right; border-left:none;'>{inc_val_str}</td></tr>"
             
         if surplus > 0:
             inc_exp_rows += f"<tr style='color: #0F4C81; font-weight:bold;'><td style='text-align:left; border-right:none;'>To Surplus (Excess of Income over Exp.)</td><td style='text-align:right; border-left:none;'>₹ {surplus:,.2f}</td><td style='text-align:left; border-right:none;'></td><td style='text-align:right; border-left:none;'></td></tr>"
@@ -268,7 +285,9 @@ def show_page(is_admin):
             
         asset_list.append(("<b>Current Assets</b>", ""))
         for k, v in bank_balances.items():
-            if v != 0: asset_list.append((f"Bank / Cash: {k}", f"₹ {v:,.2f}"))
+            if v != 0: 
+                b_link = f"<a href='?bank_detail={urllib.parse.quote(k)}' target='_self' style='text-decoration:none; color:#007BFF; font-weight:bold;'>Bank / Cash: {k}</a>"
+                asset_list.append((b_link, f"₹ {v:,.2f}"))
             
         bs_rows = ""
         for liab, asset in itertools.zip_longest(liab_list, asset_list, fillvalue=("", "")):
@@ -290,30 +309,51 @@ def show_page(is_admin):
         fin_report = utils.generate_html_report(f"Financial Statements as of {utils.clean_date_to_display(as_of_date)}", full_html)
         with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Final Statements)", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
 
-        # ---------------- 3. INTERACTIVE DRILL-DOWN (ਵੇਰਵਾ ਦੇਖੋ) ----------------
-        st.markdown("---")
-        st.subheader("🔍 ਡਿਟੇਲ ਵੇਰਵਾ ਦੇਖੋ (Drill-down Details)")
-        st.write("ਉੱਪਰ ਦਿੱਤੀ ਰਿਪੋਰਟ ਵਿਚੋਂ ਕਿਸੇ ਵੀ ਹੈੱਡ ਦਾ ਪੂਰਾ ਵੇਰਵਾ (Detailed Statement) ਦੇਖਣ ਲਈ ਹੇਠਾਂ ਚੁਣੋ:")
+        # ---------------- 3. HYPERLINK DRILL-DOWN LOGIC ----------------
+        detail_val = get_query_param("detail")
+        bank_detail_val = get_query_param("bank_detail")
         
-        detail_heads = ["-- ਚੁਣੋ (Select) --", "Donations (ਕੁੱਲ ਦਾਨ)"] + list(expense_heads.keys())
-        sel_detail = st.selectbox("ਕੈਟਾਗਰੀ / ਹੈੱਡ ਚੁਣੋ:", detail_heads)
-        
-        if sel_detail == "Donations (ਕੁੱਲ ਦਾਨ)":
-            if not df_don_safe.empty:
-                mon_df = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
-                if not mon_df.empty:
-                    mon_df = mon_df[['id', 'date', 'name', 'on_account_of', 'payment_mode', 'amount']]
-                    mon_df = utils.format_dates_in_df(mon_df, ascending=False)
-                    st.dataframe(mon_df, hide_index=True, use_container_width=True)
-                    st.info(f"**Total Donations (ਕੁੱਲ ਦਾਨ): ₹ {mon_df['amount'].sum():,.2f}**")
-        elif sel_detail != "-- ਚੁਣੋ (Select) --":
-            if not df_exp_safe.empty:
-                exp_detail = df_exp_safe[df_exp_safe['Major Head'] == sel_detail].copy()
-                if not exp_detail.empty:
-                    exp_detail = exp_detail[['id', 'date', 'payee_name', 'description', 'category', 'amount']]
-                    exp_detail = utils.format_dates_in_df(exp_detail, ascending=False)
-                    st.dataframe(exp_detail, hide_index=True, use_container_width=True)
-                    st.info(f"**Total {sel_detail}: ₹ {exp_detail['amount'].sum():,.2f}**")
+        if detail_val:
+            st.markdown("---")
+            st.subheader(f"🔍 '{detail_val}' ਦਾ ਪੂਰਾ ਵੇਰਵਾ (Detailed Statement)")
+            if "Donations" in detail_val or "ਦਾਨ" in detail_val:
+                if not df_don_safe.empty:
+                    mon_df = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
+                    if not mon_df.empty:
+                        mon_df = mon_df[['id', 'date', 'name', 'on_account_of', 'payment_mode', 'amount']]
+                        mon_df = utils.format_dates_in_df(mon_df, ascending=False)
+                        st.dataframe(mon_df, hide_index=True, use_container_width=True)
+                        st.info(f"**Total (ਕੁੱਲ): ₹ {mon_df['amount'].sum():,.2f}**")
+            else:
+                if not df_exp_safe.empty:
+                    exp_detail = df_exp_safe[df_exp_safe['Major Head'] == detail_val].copy()
+                    if not exp_detail.empty:
+                        exp_detail = exp_detail[['id', 'date', 'payee_name', 'description', 'category', 'amount']]
+                        exp_detail = utils.format_dates_in_df(exp_detail, ascending=False)
+                        st.dataframe(exp_detail, hide_index=True, use_container_width=True)
+                        st.info(f"**Total (ਕੁੱਲ): ₹ {exp_detail['amount'].sum():,.2f}**")
+                        
+            if st.button("❌ ਵੇਰਵਾ ਬੰਦ ਕਰੋ (Close Details)", type="primary"):
+                clear_query_params()
+                st.rerun()
+
+        if bank_detail_val:
+            st.markdown("---")
+            st.subheader(f"🔍 '{bank_detail_val}' ਦਾ ਪੂਰਾ ਵੇਰਵਾ (Bank Details)")
+            st.write(f"**{bank_detail_val}** ਦਾ ਪੈਂਡਿੰਗ ਚੈੱਕ ਰਿਕਾਰਡ:")
+            if not df_chq_safe.empty:
+                pend_chq = df_chq_safe[(df_chq_safe['bank_name'] == bank_detail_val) & (df_chq_safe['status'] == 'Pending')]
+                if not pend_chq.empty:
+                    st.warning("⏳ ਕਲੀਅਰਿੰਗ ਵਾਲੇ ਪੈਂਡਿੰਗ ਚੈੱਕ:")
+                    pend_chq_disp = utils.format_dates_in_df(pend_chq[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount']], ascending=False)
+                    st.dataframe(pend_chq_disp, hide_index=True, use_container_width=True)
+                else:
+                    st.success("✅ ਇਸ ਬੈਂਕ ਦਾ ਕੋਈ ਚੈੱਕ ਪੈਂਡਿੰਗ (Clearing) ਵਿੱਚ ਨਹੀਂ ਹੈ।")
+            st.info(f"💡 ਇਸ ਖਾਤੇ ਦੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਅਤੇ ਲੈਜ਼ਰ ਦੇਖਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ '🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)' ਟੈਬ ਵਿੱਚ ਜਾ ਕੇ '{bank_detail_val}' ਚੁਣੋ ਜੀ।")
+            
+            if st.button("❌ ਵੇਰਵਾ ਬੰਦ ਕਰੋ (Close Details)", key="close_bank_btn", type="primary"):
+                clear_query_params()
+                st.rerun()
 
         if is_admin:
             st.markdown("---")
@@ -359,23 +399,7 @@ def show_page(is_admin):
         
         total_bal = df_bals["ਨੈੱਟ ਬੈਲੇਂਸ (Net)"].sum()
         st.markdown(f"**ਕੁੱਲ ਨੈੱਟ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
-        utils.create_print_button(df_bals, f"Detailed Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨️️ ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
-        
-        # ---------------- 3. BANK DRILL-DOWN (ਵੇਰਵਾ ਦੇਖੋ) ----------------
-        st.markdown("---")
-        st.subheader("🔍 ਬੈਂਕ ਬੈਲੇਂਸ ਅਤੇ ਪੈਂਡਿੰਗ ਚੈੱਕ ਦਾ ਵੇਰਵਾ (Drill-down)")
-        sel_bank_det = st.selectbox("ਵੇਰਵਾ ਦੇਖਣ ਲਈ ਖਾਤਾ ਚੁਣੋ:", ["-- ਚੁਣੋ (Select) --"] + list(bank_balances.keys()))
-        if sel_bank_det != "-- ਚੁਣੋ (Select) --":
-            st.write(f"**{sel_bank_det}** ਦਾ ਪੈਂਡਿੰਗ ਰਿਕਾਰਡ:")
-            if not df_chq_safe.empty:
-                pend_chq = df_chq_safe[(df_chq_safe['bank_name'] == sel_bank_det) & (df_chq_safe['status'] == 'Pending')]
-                if not pend_chq.empty:
-                    st.warning("⏳ ਕਲੀਅਰਿੰਗ ਵਾਲੇ ਪੈਂਡਿੰਗ ਚੈੱਕ:")
-                    pend_chq_disp = utils.format_dates_in_df(pend_chq[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount']], ascending=False)
-                    st.dataframe(pend_chq_disp, hide_index=True, use_container_width=True)
-                else:
-                    st.success("✅ ਇਸ ਬੈਂਕ ਦਾ ਕੋਈ ਚੈੱਕ ਪੈਂਡਿੰਗ (Clearing) ਵਿੱਚ ਨਹੀਂ ਹੈ।")
-            st.info(f"💡 ਇਸ ਖਾਤੇ ਦੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਅਤੇ ਲੈਜ਼ਰ ਦੇਖਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ '🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)' ਟੈਬ ਵਿੱਚ ਜਾ ਕੇ '{sel_bank_det}' ਚੁਣੋ ਜੀ।")
+        utils.create_print_button(df_bals, f"Detailed Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨 ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
 
     elif st.session_state.acc_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ")
