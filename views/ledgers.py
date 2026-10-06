@@ -154,7 +154,6 @@ def show_page(is_admin):
 
     if st.session_state.acc_mode == "⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ (P&L)":
         st.write("### ⚖️ ਬੈਲੇਂਸ ਸ਼ੀਟ ਅਤੇ P&L (Professional Statement)")
-        
         col_d1, _ = st.columns([1, 2])
         with col_d1: 
             as_of_date = st.date_input("ਕਿਸ ਤਾਰੀਖ ਤੱਕ ਦੀ ਰਿਪੋਰਟ ਦੇਖਣੀ ਹੈ?", value=date.today(), format="DD/MM/YYYY")
@@ -291,58 +290,54 @@ def show_page(is_admin):
         fin_report = utils.generate_html_report(f"Financial Statements as of {utils.clean_date_to_display(as_of_date)}", full_html)
         with open(fin_report, "r", encoding="utf-8") as file: st.download_button("🖨️ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ (Print Final Statements)", data=file.read(), file_name=fin_report, mime="text/html", type="primary")
 
-        # ---------------- 3. BUTTON GRID DRILL-DOWN (ਵੇਰਵਾ ਦੇਖੋ) ----------------
+        # ---------------- 3. INTERACTIVE DRILL-DOWN (ਵੇਰਵਾ ਦੇਖੋ) ਬਟਨ ----------------
         st.markdown("---")
-        st.write("#### 🔍 ਡਿਟੇਲ ਵੇਰਵਾ ਦੇਖਣ ਲਈ ਹੇਠਾਂ ਦਿੱਤੇ ਬਟਨਾਂ 'ਤੇ ਕਲਿੱਕ ਕਰੋ:")
+        st.subheader("🔍 ਹਰੇਕ ਕੈਟਾਗਰੀ ਅਤੇ ਬੈਂਕ ਦਾ ਵੇਰਵਾ (Detailed Breakdown)")
+        st.info("💡 ਕਿਸੇ ਵੀ ਹੈੱਡ ਦਾ ਪੂਰਾ ਰਿਕਾਰਡ ਦੇਖਣ ਲਈ ਹੇਠਾਂ ਦਿੱਤੇ ਬਕਸੇ (Box) 'ਤੇ ਕਲਿੱਕ ਕਰੋ ਜੀ।")
         
-        if 'view_detail' not in st.session_state:
-            st.session_state.view_detail = None
-            
-        all_buttons = ["Donations (ਕੁੱਲ ਦਾਨ)"] + list(expense_heads.keys()) + list(bank_balances.keys())
-        
-        # Display buttons in columns of 3
-        cols = st.columns(3)
-        for i, btn_name in enumerate(all_buttons):
-            btn_label = f"🏦 {btn_name}" if btn_name in bank_balances else f"🔍 {btn_name}"
-            if cols[i % 3].button(btn_label, use_container_width=True):
-                st.session_state.view_detail = btn_name
-        
-        if st.session_state.view_detail:
-            sel_detail = st.session_state.view_detail
-            st.markdown("---")
-            st.write(f"### 📄 '{sel_detail}' ਦਾ ਪੂਰਾ ਵੇਰਵਾ")
-            
-            if sel_detail == "Donations (ਕੁੱਲ ਦਾਨ)":
-                if not df_don_safe.empty:
-                    mon_df = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
-                    if not mon_df.empty:
-                        mon_df = mon_df[['id', 'date', 'name', 'on_account_of', 'payment_mode', 'amount']]
-                        mon_df = utils.format_dates_in_df(mon_df, ascending=False)
-                        st.dataframe(mon_df, hide_index=True, use_container_width=True)
-                        st.info(f"**Total (ਕੁੱਲ): ₹ {mon_df['amount'].sum():,.2f}**")
-            elif sel_detail in expense_heads:
-                if not df_exp_safe.empty:
-                    exp_detail = df_exp_safe[df_exp_safe['Major Head'] == sel_detail].copy()
-                    if not exp_detail.empty:
-                        exp_detail = exp_detail[['id', 'date', 'payee_name', 'description', 'category', 'amount']]
-                        exp_detail = utils.format_dates_in_df(exp_detail, ascending=False)
-                        st.dataframe(exp_detail, hide_index=True, use_container_width=True)
-                        st.info(f"**Total (ਕੁੱਲ): ₹ {exp_detail['amount'].sum():,.2f}**")
-            elif sel_detail in bank_balances:
-                st.write(f"**{sel_detail}** ਦਾ ਪੈਂਡਿੰਗ ਰਿਕਾਰਡ:")
-                if not df_chq_safe.empty:
-                    pend_chq = df_chq_safe[(df_chq_safe['bank_name'] == sel_detail) & (df_chq_safe['status'] == 'Pending')]
+        c_inc, c_exp = st.columns(2)
+        with c_inc:
+            st.markdown("#### 🟢 ਆਮਦਨ (Income)")
+            for inc_name, inc_val in inc_items:
+                with st.expander(f"📂 {inc_name} (₹ {inc_val:,.2f})"):
+                    if "Donations" in inc_name or "ਦਾਨ" in inc_name:
+                        mon_df = df_don_safe[df_don_safe['donation_type'] == 'ਪੈਸੇ (Monetary)'].copy()
+                        if not mon_df.empty:
+                            mon_df = mon_df[['id', 'date', 'name', 'on_account_of', 'payment_mode', 'amount']]
+                            mon_df = utils.format_dates_in_df(mon_df, ascending=False)
+                            st.dataframe(mon_df, hide_index=True, use_container_width=True)
+                    else:
+                        ledg_cr = df_ledg_safe[df_ledg_safe['credit'] > 0]
+                        if not ledg_cr.empty:
+                            st.dataframe(utils.format_dates_in_df(ledg_cr[['txn_date', 'bank_name', 'description', 'credit']], ascending=False), hide_index=True, use_container_width=True)
+                            
+        with c_exp:
+            st.markdown("#### 🔴 ਖਰਚੇ (Expenditure)")
+            for exp_name, exp_val in exp_items:
+                with st.expander(f"📂 {exp_name} (₹ {exp_val:,.2f})"):
+                    if exp_name == "Bank Charges / Manual Debits":
+                        ledg_db = df_ledg_safe[df_ledg_safe['debit'] > 0]
+                        if not ledg_db.empty:
+                            st.dataframe(utils.format_dates_in_df(ledg_db[['txn_date', 'bank_name', 'description', 'debit']], ascending=False), hide_index=True, use_container_width=True)
+                    else:
+                        exp_detail = df_exp_safe[df_exp_safe['Major Head'] == exp_name].copy()
+                        if not exp_detail.empty:
+                            exp_detail = exp_detail[['id', 'date', 'payee_name', 'description', 'category', 'amount']]
+                            exp_detail = utils.format_dates_in_df(exp_detail, ascending=False)
+                            st.dataframe(exp_detail, hide_index=True, use_container_width=True)
+
+        st.markdown("#### 🏦 ਬੈਂਕ ਅਤੇ ਕੈਸ਼ ਖਾਤੇ (Bank & Cash Details)")
+        for b_name, b_val in bank_balances.items():
+            if b_val != 0:
+                with st.expander(f"🏦 {b_name} (₹ {b_val:,.2f})"):
+                    pend_chq = df_chq_safe[(df_chq_safe['bank_name'] == b_name) & (df_chq_safe['status'] == 'Pending')]
                     if not pend_chq.empty:
                         st.warning("⏳ ਕਲੀਅਰਿੰਗ ਵਾਲੇ ਪੈਂਡਿੰਗ ਚੈੱਕ:")
                         pend_chq_disp = utils.format_dates_in_df(pend_chq[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount']], ascending=False)
                         st.dataframe(pend_chq_disp, hide_index=True, use_container_width=True)
                     else:
                         st.success("✅ ਇਸ ਬੈਂਕ ਦਾ ਕੋਈ ਚੈੱਕ ਪੈਂਡਿੰਗ (Clearing) ਵਿੱਚ ਨਹੀਂ ਹੈ।")
-                st.info(f"💡 ਇਸ ਖਾਤੇ ਦੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਅਤੇ ਲੈਜ਼ਰ ਦੇਖਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ '🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)' ਟੈਬ ਵਿੱਚ ਜਾ ਕੇ '{sel_detail}' ਚੁਣੋ ਜੀ।")
-
-            if st.button("❌ ਵੇਰਵਾ ਬੰਦ ਕਰੋ (Close Details)", type="primary"):
-                st.session_state.view_detail = None
-                st.rerun()
+                    st.info(f"💡 ਇਸ ਖਾਤੇ ਦੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਅਤੇ ਲੈਜ਼ਰ ਦੇਖਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ '🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)' ਟੈਬ ਵਿੱਚ ਜਾਓ ਜੀ।")
 
         if is_admin:
             st.markdown("---")
@@ -389,6 +384,23 @@ def show_page(is_admin):
         total_bal = df_bals["ਨੈੱਟ ਬੈਲੇਂਸ (Net)"].sum()
         st.markdown(f"**ਕੁੱਲ ਨੈੱਟ ਬੈਲੇਂਸ: ₹ {total_bal:,.2f}**")
         utils.create_print_button(df_bals, f"Detailed Bank Balances as of {utils.clean_date_to_display(as_of_date)}", "🖨 ਬੈਲੇਂਸ ਰਿਪੋਰਟ ਪ੍ਰਿੰਟ ਕਰੋ")
+        
+        # ---------------- 3. BANK DRILL-DOWN (ਵੇਰਵਾ ਦੇਖੋ) ----------------
+        st.markdown("---")
+        st.subheader("🔍 ਬੈਂਕ ਬੈਲੇਂਸ ਅਤੇ ਪੈਂਡਿੰਗ ਚੈੱਕ ਦਾ ਵੇਰਵਾ (Drill-down)")
+        st.info("💡 ਕਿਸੇ ਵੀ ਬੈਂਕ ਦਾ ਪੂਰਾ ਰਿਕਾਰਡ ਦੇਖਣ ਲਈ ਹੇਠਾਂ ਦਿੱਤੇ ਬਕਸੇ (Box) 'ਤੇ ਕਲਿੱਕ ਕਰੋ ਜੀ।")
+        for b_name in bank_balances.keys():
+            b_val = df_bals.loc[df_bals['ਖਾਤਾ (Bank/Cash)'] == b_name, 'ਨੈੱਟ ਬੈਲੇਂਸ (Net)'].values[0]
+            if b_val != 0:
+                with st.expander(f"🏦 {b_name} (₹ {b_val:,.2f})"):
+                    pend_chq = df_chq_safe[(df_chq_safe['bank_name'] == b_name) & (df_chq_safe['status'] == 'Pending')]
+                    if not pend_chq.empty:
+                        st.warning("⏳ ਕਲੀਅਰਿੰਗ ਵਾਲੇ ਪੈਂਡਿੰਗ ਚੈੱਕ:")
+                        pend_chq_disp = utils.format_dates_in_df(pend_chq[['id', 'cheque_date', 'cheque_no', 'party_name', 'amount']], ascending=False)
+                        st.dataframe(pend_chq_disp, hide_index=True, use_container_width=True)
+                    else:
+                        st.success("✅ ਇਸ ਬੈਂਕ ਦਾ ਕੋਈ ਚੈੱਕ ਪੈਂਡਿੰਗ (Clearing) ਵਿੱਚ ਨਹੀਂ ਹੈ।")
+                    st.info(f"💡 ਇਸ ਖਾਤੇ ਦੀਆਂ ਸਾਰੀਆਂ ਐਂਟਰੀਆਂ ਅਤੇ ਲੈਜ਼ਰ ਦੇਖਣ ਲਈ ਉੱਪਰ ਦਿੱਤੇ '🏦 ਬੈਂਕ ਲੈਜ਼ਰ (Bank Book)' ਟੈਬ ਵਿੱਚ ਜਾਓ ਜੀ।")
 
     elif st.session_state.acc_mode == "📖 ਮੁੱਖ ਲੈਜ਼ਰ (Main Daybook)":
         st.write("### 📖 ਮੁੱਖ ਲੈਜ਼ਰ / ਡੇਅ ਬੁੱਕ")
@@ -424,7 +436,7 @@ def show_page(is_admin):
             df_disp.rename(columns={'Debit': 'Receipt/In (Dr)', 'Credit': 'Payment/Out (Cr)'}, inplace=True)
             
             st.dataframe(df_disp.style.format({'Receipt/In (Dr)': '{:.2f}', 'Payment/Out (Cr)': '{:.2f}', 'ਐਕਸਲ ਬੈਲੇਂਸ (Uploaded Balance)': '{:.2f}', 'ਚੱਲਦਾ ਬੈਲੇਂਸ (Running)': '{:.2f}'}), hide_index=True, use_container_width=True)
-            utils.create_print_button(df_disp, f"Main Ledger ({filter_opt})", "🖨️️ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
+            utils.create_print_button(df_disp, f"Main Ledger ({filter_opt})", "🖨️ ਲੈਜ਼ਰ ਪ੍ਰਿੰਟ ਕਰੋ", landscape=True)
         else:
             st.info("ਕੋਈ ਐਂਟਰੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।")
 
